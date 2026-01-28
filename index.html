@@ -1,14 +1,663 @@
-<!doctype html>
+<!-- 
+    [UPDATE LOG] Version 1.1.0
+    - [DESIGN] Image Aspect Ratio: 그리드 이미지 비율을 정사각형(1:1)으로 고정하고 꽉 차게(Cover) 표시하도록 수정.
+    - [RESPONSIVE] Affiliate Banner: 광고 배너(iframe)에 반응형 클래스 적용 (Mobile: 100% Width / PC: Fixed 900px).
+    - [SYS] Versioning: 코드 관리용 버전 주석 추가.
+-->
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Korea Decode | The Future Edit</title>
+    
+    <!-- 폰트: 강렬하고 모던한 서체 -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://www.booking.com/affiliate/prelanding_sdk"></script>
+    
+    <style>
+        /* --- [1. 네오 트렌드 변수 (Acid & Dark)] --- */
+        :root {
+            --bg-main: #000000;
+            --bg-sec: #111111;
+            
+            --text-white: #FFFFFF;
+            --text-gray: #888888;
+            
+            /* 핵심 포인트 컬러: 애시드 그린 */
+            --accent: #CCFF00; 
+            --accent-glow: 0 0 20px rgba(204, 255, 0, 0.4);
+            
+            --border: 1px solid rgba(255, 255, 255, 0.15);
+            --border-accent: 1px solid var(--accent);
+            
+            --nav-width: 80px; /* 얇은 독 바 */
+            --header-height: 50px; /* 티커 높이 */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        /* 스크롤바 숨김 (미니멀함 극대화) */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-white);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { text-decoration: none; color: inherit; cursor: pointer; }
+        button { border: none; background: none; cursor: pointer; font-family: inherit; }
+
+        /* --- [New Section: About Korea Decode] --- */
+        .about-koreadecode {
+            margin-bottom: 80px;
+            padding: 40px;
+            background: var(--bg-sec);
+            border: var(--border);
+            border-radius: 8px;
+        }
+
+        .about-koreadecode h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-white);
+            margin-bottom: 25px;
+        }
+
+        .about-koreadecode p {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: var(--text-gray);
+        }
+
+        .about-koreadecode p:first-of-type {
+            margin-bottom: 20px;
+        }
+
+
+        /* --- [2. 움직이는 뉴스 티커 (Marquee)] --- */
+        .marquee-container {
+            position: fixed; top: 0; left: var(--nav-width); right: 0;
+            height: var(--header-height); background: var(--accent); color: #000;
+            display: flex; align-items: center; overflow: hidden; z-index: 900;
+            border-bottom: 2px solid #000;
+            transition: left 0.3s ease;
+        }
+        
+        .marquee-content {
+            display: flex; gap: 40px; white-space: nowrap;
+            animation: scroll 20s linear infinite;
+            font-weight: 700; text-transform: uppercase; font-size: 0.9rem;
+        }
+        
+        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* --- [3. 사이드 독 (Navigation Dock)] --- */
+        .side-dock {
+            width: var(--nav-width); height: 100vh;
+            position: fixed; left: 0; top: 0;
+            background: var(--bg-sec);
+            border-right: var(--border);
+            display: flex; flex-direction: column; align-items: center; padding: 30px 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .dock-logo {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 1.5rem; font-weight: 700;
+            writing-mode: vertical-rl; text-orientation: mixed;
+            transform: rotate(180deg);
+            color: var(--text-white);
+            margin-bottom: auto; cursor: pointer;
+            letter-spacing: 2px;
+        }
+        .dock-logo span { color: var(--accent); }
+
+        .dock-menu { display: flex; flex-direction: column; gap: 30px; margin-bottom: auto; }
+        
+        .dock-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-gray); font-size: 1.5rem;
+            transition: 0.3s; position: relative;
+        }
+        
+        .dock-btn:hover, .dock-btn.active {
+            color: var(--bg-main); background: var(--accent);
+            box-shadow: var(--accent-glow);
+        }
+        
+        /* 툴팁 효과 (PC만) */
+        .dock-btn::after {
+            content: attr(data-label);
+            position: absolute; left: 70px; 
+            background: #fff; color: #000; padding: 5px 10px;
+            font-size: 0.8rem; font-weight: 700; border-radius: 4px;
+            opacity: 0; pointer-events: none; transition: 0.2s;
+            white-space: nowrap;
+        }
+        .dock-btn:hover::after { opacity: 1; left: 60px; }
+
+        /* --- [4. 메인 레이아웃] --- */
+        .wrapper {
+            margin-left: var(--nav-width);
+            margin-top: var(--header-height);
+            padding: 0;
+            display: flex;
+            transition: margin 0.3s ease;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 60px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%; /* 모바일 대응 */
+        }
+
+        /* 큰 타이틀 영역 */
+        .big-header {
+            margin-bottom: 80px;
+            border-bottom: var(--border);
+            padding-bottom: 40px;
+        }
+        
+        .headline {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 4rem; line-height: 1; color: var(--text-white); text-transform: uppercase;
+            word-break: break-word; /* 긴 단어 줄바꿈 */
+        }
+        .headline span { color: transparent; -webkit-text-stroke: 1px var(--text-white); }
+
+        /* 히어로 카드 (비대칭) */
+        .hero-box {
+            display: grid; grid-template-columns: 1.5fr 1fr;
+            border: var(--border); margin-bottom: 100px;
+            position: relative;
+        }
+        
+        .hero-img-wrap { height: 500px; overflow: hidden; position: relative; }
+        .hero-img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%); transition: 0.5s; }
+        .hero-box:hover .hero-img { filter: grayscale(0%); transform: scale(1.05); }
+        
+        .hero-info {
+            padding: 50px; display: flex; flex-direction: column; justify-content: center;
+            border-left: var(--border);
+            background: var(--bg-sec);
+        }
+        
+        .label-accent {
+            color: var(--accent); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; font-size: 0.9rem;
+        }
+        
+        .hero-title-txt {
+            font-size: 2.5rem; font-weight: 700; line-height: 1.1; margin-bottom: 30px;
+        }
+        
+        .cta-arrow {
+            width: 60px; height: 60px; border-radius: 50%; border: 1px solid var(--text-white);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; transition: 0.3s;
+        }
+        .hero-box:hover .cta-arrow { background: var(--accent); border-color: var(--accent); color: #000; transform: rotate(-45deg); }
+
+        /* 리스트 스타일 (잡지형) */
+        .magazine-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+            border-top: var(--border); border-left: var(--border);
+        }
+
+        .mag-card {
+            border-right: var(--border); border-bottom: var(--border);
+            padding: 40px; transition: 0.3s; cursor: pointer; position: relative;
+            background: var(--bg-main);
+            /* 애니메이션 효과 */
+            opacity: 0; transform: translateY(20px); animation: fadeInUp 0.5s forwards;
+        }
+        
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+        
+        .mag-card:hover { background: #1a1a1a; }
+        .mag-card:hover .mag-title { color: var(--accent); }
+
+        /* [UPDATED] 이미지 정사각형 고정 */
+        .mag-img {
+            width: 100%;
+            aspect-ratio: 1 / 1; /* 정사각형 비율 강제 */
+            object-fit: cover; /* 이미지를 영역에 꽉 채움 */
+            margin-bottom: 25px;
+            filter: brightness(0.8); transition: 0.3s;
+        }
+        .mag-card:hover .mag-img { filter: brightness(1.1); }
+
+        .mag-meta { font-size: 0.8rem; color: var(--text-gray); margin-bottom: 15px; text-transform: uppercase; }
+        .mag-title { font-size: 1.4rem; font-weight: 700; line-height: 1.3; transition: 0.3s; }
+
+        /* 더보기 버튼 스타일 */
+        .load-more-container {
+            text-align: center; margin-top: 60px; margin-bottom: 60px;
+        }
+        .load-more-btn {
+            background: transparent;
+            border: 1px solid var(--text-white);
+            color: var(--text-white);
+            padding: 15px 40px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+            display: none; /* 초기엔 JS로 제어 */
+        }
+        .load-more-btn:hover {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+            box-shadow: var(--accent-glow);
+        }
+
+        /* --- [5. 상세 페이지 (오버레이)] --- */
+        #view-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            display: none; opacity: 0; transition: 0.4s;
+            overflow-y: auto; backdrop-filter: blur(10px);
+            padding-bottom: 80px; /* 하단 여백 */
+        }
+
+        .view-inner {
+            max-width: 900px; margin: 0 auto; padding: 80px 20px;
+        }
+
+        .close-btn {
+            position: fixed; top: 30px; right: 30px;
+            color: #fff; font-size: 2rem; cursor: pointer; z-index: 2100;
+            transition: 0.3s;
+            background: rgba(0,0,0,0.5); /* 모바일에서 잘 보이게 배경 추가 */
+            width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .close-btn:hover { color: var(--accent); transform: rotate(90deg); }
+
+        .view-content img { max-width: 100%; height: auto; margin: 30px 0; border: 1px solid #333; }
+        .view-content { font-size: 1.2rem; line-height: 1.8; color: #ddd; font-family: 'Inter', sans-serif; }
+        .view-content h2 { color: var(--accent); margin-top: 50px; font-family: 'Space Grotesk'; }
+
+        /* [UPDATED] 광고 배너 래퍼 및 반응형 아이프레임 */
+        .ad-banner-wrapper {
+            margin-top: 80px; 
+            width: 100%; 
+            display: flex; 
+            justify-content: center;
+            overflow-x: auto; /* 가로 스크롤 허용 (fallback) */
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .ad-banner-wrapper::-webkit-scrollbar { display: none; }
+        
+        .responsive-iframe {
+            width: 900px; 
+            height: 200px; 
+            border: none;
+            transition: width 0.3s ease; /* 부드러운 전환 */
+        }
+
+        /* --- [6. 반응형 (Mobile Optimized)] --- */
+        @media (max-width: 1024px) {
+            .hero-box { grid-template-columns: 1fr; }
+            .hero-img-wrap { height: 300px; }
+            .hero-info { border-left: none; border-top: var(--border); }
+            .magazine-grid { grid-template-columns: 1fr 1fr; }
+            .ad-banner-wrapper { justify-content: flex-start; }
+        }
+
+        /* 모바일 전용 스타일 (768px 이하) */
+        @media (max-width: 768px) {
+            :root { 
+                --nav-width: 0px; 
+            }
+            
+            /* 사이드바 -> 하단바 변신 */
+            .side-dock { 
+                width: 100%; height: 70px; 
+                bottom: 0; top: auto; /* 아래로 이동 */
+                flex-direction: row; 
+                border-right: none; border-top: 1px solid #222; 
+                padding: 0 10px; 
+                justify-content: space-around;
+                background: rgba(17, 17, 17, 0.95); /* 반투명 배경 */
+                backdrop-filter: blur(10px);
+            }
+            .dock-logo { display: none; }
+            .dock-menu { flex-direction: row; width: 100%; justify-content: space-around; margin: 0; gap: 0; }
+            .dock-btn { width: 45px; height: 45px; font-size: 1.3rem; }
+            .dock-btn::after { display: none; } /* 툴팁 숨김 */
+            
+            /* 레이아웃 조정 */
+            .wrapper { 
+                margin-left: 0; 
+                margin-top: 50px; 
+                margin-bottom: 80px; /* 하단바 가림 방지 */
+            }
+            .content-area { padding: 30px 20px; }
+            
+            /* 티커 */
+            .marquee-container { left: 0; }
+            
+            /* 타이포그래피 */
+            .headline { font-size: 15vw; line-height: 0.9; }
+            .hero-title-txt { font-size: 1.8rem; }
+            .mag-title { font-size: 1.2rem; }
+            
+            /* 그리드 & 히어로 */
+            .magazine-grid { grid-template-columns: 1fr; border-left: none; }
+            .mag-card { border-left: none; padding: 30px 0; border-bottom: 1px solid #222; }
+            .hero-box { margin-bottom: 50px; }
+            .hero-img-wrap { height: 250px; }
+            .hero-info { padding: 30px 20px; }
+            
+            /* 상세 뷰 */
+            .view-inner { padding: 60px 20px 100px; }
+            .close-btn { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 1.5rem; }
+            #v-title { font-size: 2rem !important; }
+
+            /* [UPDATED] 모바일 배너 스타일 */
+            .responsive-iframe {
+                width: 100%; /* 화면 너비에 맞춤 */
+                min-width: 300px; /* 최소 너비 보장 */
+                /* 높이는 유지하거나 필요시 조정 */
+            }
+            .ad-banner-wrapper {
+                justify-content: center; /* 중앙 정렬 */
+            }
+        }
+        
+        /* 로딩 */
+        #loader {
+            position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syncopate'; font-size: 2rem; color: var(--accent);
+            letter-spacing: 5px; animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+
+    <div id="loader">LOADING_</div>
+
+    <!-- 뉴스 티커 -->
+    <div class="marquee-container">
+        <div class="marquee-content" id="marquee-text">
+            <!-- JS로 채워짐 -->
+            <span>BREAKING: DISCOVER SEOUL'S HIDDEN GEMS</span>
+            <span>///</span>
+            <span>TRENDING: K-POP COMEBACK NEWS</span>
+            <span>///</span>
+            <span>GUIDE: BEST K-FOOD SPOTS 2025</span>
+            <span>///</span>
+        </div>
+    </div>
+
+    <!-- 왼쪽 독 메뉴 -->
+    <aside class="side-dock">
+        <div class="dock-logo" onclick="location.reload()">KD<span>.</span></div>
+        
+        <div class="dock-menu">
+            <button class="dock-btn active" data-label="All Feed" onclick="filter('all', this)">
+                <i class="ph ph-squares-four"></i>
+            </button>
+            <!-- 카테고리 버튼들이 여기에 추가됨 -->
+        </div>
+
+        <button class="dock-btn" data-label="Search">
+            <i class="ph ph-magnifying-glass"></i>
+        </button>
+    </aside>
+
+    <div class="wrapper">
+        <div class="content-area">
+            
+            <div class="big-header">
+                <div style="color:var(--accent); font-weight:700; margin-bottom:10px;">THE PULSE OF KOREA</div>
+                <h1 class="headline">Korea<br><span>Decode</span></h1>
+            </div>
+
+            <!-- New Static Content Section for AdSense Compliance -->
+            <section class="about-koreadecode">
+                <h2>Unveiling the Layers of Korea</h2>
+                <p>
+                    Welcome to Korea Decode, your premier gateway to understanding the dynamic and multifaceted world of South Korea. Our mission is to meticulously unpack the trends, decode the culture, and illuminate the innovations that shape this vibrant nation. From the pulsating rhythms of K-Pop and the intricate narratives of K-Drama to the groundbreaking advancements in technology and the rich tapestry of traditional heritage, we bring you closer to the heart of Korea.
+                </p>
+                <p>
+                    At Korea Decode, we believe in providing insightful, well-researched, and engaging content that goes beyond the surface. Whether you're a long-time admirer, a curious newcomer, or a global enthusiast, join us as we explore the essence of Korea, one decode at a time. Dive into our expertly curated articles, trend analyses, and cultural deep-dives to discover what truly makes Korea unique.
+                </p>
+            </section>
+
+            <!-- 히어로 영역 -->
+            <div id="hero-slot"></div>
+
+            <!-- 메거진 그리드 -->
+            <div style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:end;">
+                <h2 style="font-size:2rem;">LATEST_DROPS</h2>
+                <span style="color:var(--accent)">/// SCROLL DOWN</span>
+            </div>
+            
+            <div id="grid-slot" class="magazine-grid"></div>
+
+            <!-- 더보기 버튼 -->
+            <div class="load-more-container">
+                <button id="load-more-btn" class="load-more-btn" onclick="loadMorePosts()">
+                    Load More ///
+                </button>
+            </div>
+
+            <!-- [수정] 메인 리스트 하단 광고 슬롯 (CSS 클래스 적용) -->
+            <div class="ad-banner-wrapper">
+                <iframe class="responsive-iframe" src="https://www.trip.com/partners/ad/S9752059?Allianceid=4817513&SID=76470416&trip_sub1=" frameborder="0" scrolling="no" id="S9752059_home"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 상세 페이지 (전체 화면 오버레이) -->
+    <div id="view-overlay">
+        <div class="close-btn" onclick="closePost()"><i class="ph ph-x"></i></div>
+        <div class="view-inner">
+            <div style="text-align:center; margin-bottom:60px;">
+                <span id="v-cat" style="color:var(--accent); border:1px solid var(--accent); padding:5px 15px; border-radius:50px; font-weight:700;">CAT</span>
+                <h1 id="v-title" style="font-size:3rem; margin-top:30px; font-weight:700; line-height:1.2;">Title</h1>
+                <div style="color:#666; margin-top:20px;" id="v-date">Date</div>
+            </div>
+            <img id="v-img" style="width:100%; border-radius:20px; margin-bottom:50px;">
+            <div id="v-content" class="view-content"></div>
+            
+            <!-- [수정] 뷰창 하단 어필리에이트 광고 (CSS 클래스 적용) -->
+            <div class="ad-banner-wrapper">
+                <iframe class="responsive-iframe" src="https://www.trip.com/partners/ad/S9752059?Allianceid=4817513&SID=76470416&trip_sub1=" frameborder="0" scrolling="no" id="S9752059"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const WP_URL = 'https://koreadecode.mycafe24.com';
+        let allPosts = []; // API로 가져온 전체 글
+        let gridPosts = []; // 히어로를 제외한 그리드용 글 리스트
+        let catsMap = {};
+        
+        // 더보기 기능 변수
+        let currentGridIndex = 0;
+        const LOAD_STEP = 6; // 한 번에 불러올 개수
+
+        // 카테고리별 아이콘
+        function getIcon(name) {
+            name = name.toLowerCase();
+            if(name.includes('travel')) return 'ph-airplane';
+            if(name.includes('food')) return 'ph-pizza';
+            if(name.includes('k-pop')) return 'ph-music-note';
+            if(name.includes('tech')) return 'ph-robot';
+            return 'ph-star';
+        }
+
+        async function init() {
+            try {
+                await fetchCats();
+                await fetchPosts();
+            } catch(e) {
+                console.log("Error:", e);
+                document.getElementById('loader').innerText = "OFFLINE_";
+            }
+        }
+
+        async function fetchCats() {
+            const res = await fetch(`${WP_URL}/wp-json/wp/v2/categories`);
+            const cats = await res.json();
+            const menu = document.querySelector('.dock-menu');
+            
+            cats.forEach(c => {
+                if(c.count > 0) {
+                    catsMap[c.id] = c.name;
+                    const btn = document.createElement('button');
+                    btn.className = 'dock-btn';
+                    btn.setAttribute('data-label', c.name);
+                    btn.innerHTML = `<i class="ph ${getIcon(c.name)}"></i>`;
+                    btn.onclick = (e) => filter(c.id, e.currentTarget);
+                    menu.appendChild(btn);
+                }
+            });
+        }
+
+        async function fetchPosts() {
+            // 충분한 양의 글을 가져옴 (예: 50개)
+            const res = await fetch(`${WP_URL}/wp-json/wp/v2/posts?_embed&per_page=50`);
+            allPosts = await res.json();
+            
+            document.getElementById('loader').style.display = 'none';
+            
+            // 초기 렌더링
+            renderAll(allPosts);
+            updateMarquee(allPosts);
+        }
+
+        function updateMarquee(posts) {
+            const mq = document.getElementById('marquee-text');
+            const titles = posts.slice(0, 5).map(p => `<span>${p.title.rendered}</span> <span>///</span>`).join(' ');
+            mq.innerHTML = titles + titles;
+        }
+
+        function renderAll(posts) {
+            const heroSlot = document.getElementById('hero-slot');
+            const gridSlot = document.getElementById('grid-slot');
+            
+            heroSlot.innerHTML = '';
+            gridSlot.innerHTML = '';
+            document.getElementById('load-more-btn').style.display = 'none';
+
+            if(posts.length === 0) {
+                gridSlot.innerHTML = '<div style="padding:40px">No posts found.</div>';
+                return;
+            }
+
+            // 1. 히어로 섹션 (첫 번째 글)
+            renderHero(posts[0]);
+
+            // 2. 나머지 글 준비
+            gridPosts = posts.slice(1);
+            currentGridIndex = 0;
+
+            // 3. 최초 6개 로드
+            loadMorePosts();
+        }
+
+        function loadMorePosts() {
+            const gridSlot = document.getElementById('grid-slot');
+            const btn = document.getElementById('load-more-btn');
+            
+            // 다음 배치 가져오기
+            const nextBatch = gridPosts.slice(currentGridIndex, currentGridIndex + LOAD_STEP);
+            
+            nextBatch.forEach((p, idx) => {
+                const div = document.createElement('div');
+                div.className = 'mag-card';
+                div.style.animationDelay = `${idx * 0.1}s`; // 순차적 등장 효과
+                div.onclick = () => openPost(p.id);
+                div.innerHTML = `
+                    <div class="mag-meta">${getCat(p)}</div>
+                    <img src="${getImg(p)}" class="mag-img">
+                    <div class="mag-title">${p.title.rendered}</div>
+                `;
+                gridSlot.appendChild(div);
+            });
+
+            currentGridIndex += LOAD_STEP;
+
+            // 더 보여줄 글이 남았는지 확인
+            if (currentGridIndex < gridPosts.length) {
+                btn.style.display = 'inline-block';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function renderHero(p) {
+            const img = getImg(p);
+            document.getElementById('hero-slot').innerHTML = `
+                <div class="hero-box" onclick="openPost(${p.id})">
+                    <div class="hero-img-wrap"><img src="${img}" class="hero-img"></div>
+                    <div class="hero-info">
+                        <div class="label-accent">FEATURED STORY</div>
+                        <div class="hero-title-txt">${p.title.rendered}</div>
+                        <div class="cta-arrow"><i class="ph ph-arrow-right"></i></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openPost(id) {
+            const p = allPosts.find(x => x.id === id);
+            document.getElementById('v-cat').innerText = getCat(p);
+            document.getElementById('v-title').innerHTML = p.title.rendered;
+            document.getElementById('v-date').innerText = new Date(p.date).toDateString();
+            document.getElementById('v-img').src = getImg(p);
+            document.getElementById('v-content').innerHTML = p.content.rendered;
+            
+            const overlay = document.getElementById('view-overlay');
+            overlay.style.display = 'block';
+            setTimeout(() => overlay.style.opacity = 1, 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePost() {
+            const overlay = document.getElementById('view-overlay');
+            overlay.style.opacity = 0;
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }, 400);
+        }
+
+        function filter(cid, btn) {
+            document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            if(cid === 'all') renderAll(allPosts);
+            else {
+                const filtered = allPosts.filter(p => p.categories.includes(cid));
+                renderAll(filtered); // 필터링된 결과로 재렌더링
+            }
+        }
+
+        function getImg(p) { return p._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1550424683-1498c8c52d8e?w=800'; }
+        function getCat(p) { return (p.categories && p.categories.length) ? (catsMap[p.categories[0]] || 'NEWS') : 'NEWS'; }
+
+        init();
+    </script>
 </body>
 </html>
