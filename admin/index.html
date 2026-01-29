@@ -100,6 +100,13 @@
 
         /* Migration Log */
         .log-box { background: #000; color: #0f0; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); margin-top: 10px; }
+
+        /* Image Preview Box */
+        .img-preview-box { width: 100%; height: 200px; background-color: var(--bg-input); border: 2px dashed var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+        .img-preview-box:hover { border-color: var(--accent); }
+        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .img-placeholder { text-align: center; color: var(--text-muted); font-size: 13px; }
+
     </style>
 </head>
 <body>
@@ -187,7 +194,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Topic Idea (Korean or English)</label>
-                            <textarea id="ai-topic" class="form-textarea" rows="3" placeholder="예: 성수동 팝업스토어 투어 가이드"></textarea>
+                            <textarea id="ai-topic" class="form-textarea" rows="3" placeholder="Example: Best Street Food in Myeongdong"></textarea>
                         </div>
                         <button class="btn btn-ai" style="width: 100%;" onclick="runAIPhase1()">
                             <i class="ph ph-brain"></i> Generate Plan
@@ -207,23 +214,27 @@
                             <div id="ai-keywords-container"></div>
                         </div>
                         <button class="btn btn-primary" style="width: 100%;" onclick="runAIPhase2()">
-                            <i class="ph ph-pen-nib"></i> Write Full Article
+                            <i class="ph ph-pen-nib"></i> Write Full Article with Media
                         </button>
                     </div>
 
-                    <!-- Step 3: Media -->
+                    <!-- Step 3: Visuals (Manual Override) -->
                     <div class="ai-step" id="step-3" style="opacity: 0.5; pointer-events: none;">
                         <div class="ai-step-badge">3</div>
-                        <div class="ai-step-title">Visuals</div>
+                        <div class="ai-step-title">Featured Image</div>
+                        <div class="img-preview-box" id="ai-img-preview-box">
+                            <img id="selected-ai-img" style="display: none;">
+                            <div class="img-placeholder" id="ai-img-placeholder">
+                                Auto-selected by AI<br>
+                                Click to change
+                            </div>
+                        </div>
                         <div class="form-group">
-                            <label class="form-label">Recommended Image Search</label>
+                            <label class="form-label">Search Replacement</label>
                             <div style="display: flex; gap: 8px;">
                                 <input type="text" id="ai-img-query" class="form-input">
                                 <button class="btn btn-outline" onclick="searchUnsplashAI()">Search</button>
                             </div>
-                        </div>
-                        <div id="ai-img-preview" style="margin-top: 10px; border-radius: 8px; overflow: hidden; height: 150px; background: #333; display: none;">
-                            <img id="selected-ai-img" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                     </div>
 
@@ -464,8 +475,7 @@
 
             for (const path of migrationList) {
                 try {
-                    logBox.innerHTML += `> Fetching ${path}...
-`;
+                    logBox.innerHTML += `> Fetching ${path}..\n`;
                     const res = await fetch(path);
                     if (!res.ok) throw new Error('File not found');
                     
@@ -482,22 +492,31 @@
                     else if(path.includes('/k-pop/')) category = 'K-pop';
                     else if(path.includes('/beauty/')) category = 'Beauty';
 
-                    // 3. Extract Image
+                    // 3. Extract Image (Priority: og:image -> article img -> placeholder)
                     let image = '';
                     const ogImage = doc.querySelector('meta[property="og:image"]');
-                    if (ogImage) {
-                        image = ogImage.content.replace('http://koreadecode.mycafe24.com', '').replace('https://koreadecode.mycafe24.com', '');
+                    const firstImg = doc.querySelector('article img');
+                    
+                    if (ogImage) image = ogImage.content;
+                    else if (firstImg) image = firstImg.src;
+
+                    // Clean Image URL
+                    if (image) {
+                        image = image.replace(/http:\/\/koreadecode\.mycafe24\.com/g, '');
+                        image = image.replace(/https:\/\/koreadecode\.mycafe24\.com/g, '');
+                    }
+                    if (!image || image.trim() === '') {
+                         // Default Placeholder if extraction failed
+                         image = 'https://images.unsplash.com/photo-1576085898323-218337e3e43c?w=800'; 
                     }
 
                     // 4. Extract Content
                     let contentEl = doc.querySelector('.elementor-widget-theme-post-content') || doc.querySelector('article') || doc.body;
                     let content = contentEl.innerHTML;
                     
-                    // FIX: Broken images in content
-                    content = content.replace(/http:\/\/koreadecode.mycafe24.com/g, '');
-                    content = content.replace(/https:\/\/koreadecode.mycafe24.com/g, '');
-
-                    // 5. Clean up content (remove scripts, styles)
+                    // Clean Content
+                    content = content.replace(/http:\/\/koreadecode\.mycafe24\.com/g, '');
+                    content = content.replace(/https:\/\/koreadecode\.mycafe24\.com/g, '');
                     content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "");
                     content = content.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
 
@@ -537,7 +556,8 @@
             document.getElementById('ai-keywords-container').innerHTML = '';
             quill.setText('');
             activeImage = '';
-            document.getElementById('ai-img-preview').style.display = 'none';
+            document.getElementById('selected-ai-img').style.display = 'none';
+            document.getElementById('ai-img-placeholder').style.display = 'block';
         };
 
         window.runAIPhase1 = async () => {
@@ -564,11 +584,55 @@
 
         window.runAIPhase2 = async () => {
             const title = document.getElementById('ai-suggested-title').value;
+            const topic = document.getElementById('ai-topic').value;
             const btn = document.querySelector('#step-2 .btn-primary');
-            btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing...';
+            btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing & Fetching Media...';
+
+            // 1. Fetch images from Unsplash for content
+            let contentImages = [];
+            try {
+                const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=3&query=${topic}&client_id=${UNSPLASH_ACCESS_KEY}`);
+                const data = await res.json();
+                if(data.results && data.results.length > 0) {
+                    // Set Featured Image
+                    activeImage = data.results[0].urls.regular;
+                    document.getElementById('selected-ai-img').src = activeImage;
+                    document.getElementById('selected-ai-img').style.display = 'block';
+                    document.getElementById('ai-img-placeholder').style.display = 'none';
+                    
+                    // Collect others for content
+                    contentImages = data.results.slice(1).map(img => img.urls.regular);
+                }
+            } catch(e) { console.log('Image fetch fail', e); }
+
             setTimeout(() => {
-                const content = `<h2>Introduction</h2><p>Here is everything you need to know about <strong>${title}</strong>...</p>`;
+                let imgHtml = '';
+                contentImages.forEach(src => {
+                    imgHtml += `<img src="${src}" alt="${title}" style="width:100%; border-radius:8px; margin: 20px 0;"><br>`;
+                });
+
+                const content = `
+                    <h2>Why ${title} is Trending Now</h2>
+                    <p>Korea is constantly evolving, and <strong>${title}</strong> is at the forefront of the latest cultural wave. Whether you are a first-time visitor or a seasoned traveler, understanding this trend is key to experiencing the real Korea.</p>
+                    <br>
+                    ${imgHtml}
+                    <br>
+                    <h3>Key Highlights</h3>
+                    <ul>
+                        <li><strong>Authentic Experience:</strong> Discover the hidden gems that locals love.</li>
+                        <li><strong>Instagrammable Spots:</strong> Perfect for your social media feed.</li>
+                        <li><strong>Cultural Insight:</strong> Learn the history behind the trend.</li>
+                    </ul>
+                    <br>
+                    <h3>Recommended Reads</h3>
+                    <p>Check out more details on <a href="https://en.wikipedia.org/wiki/South_Korea" target="_blank">Wikipedia</a> or local news.</p>
+                    <br>
+                    <h3>Final Thoughts</h3>
+                    <p>Don't miss out on this when you visit Korea. It's more than just a trend; it's a lifestyle.</p>
+                `;
+                
                 quill.clipboard.dangerouslyPasteHTML(content);
+                
                 document.getElementById('step-2').classList.remove('active');
                 document.getElementById('step-3').style.opacity = '1';
                 document.getElementById('step-3').style.pointerEvents = 'auto';
@@ -593,7 +657,8 @@
                     el.onclick = () => {
                         activeImage = img.urls.regular;
                         document.getElementById('selected-ai-img').src = activeImage;
-                        document.getElementById('ai-img-preview').style.display = 'block';
+                        document.getElementById('selected-ai-img').style.display = 'block';
+                        document.getElementById('ai-img-placeholder').style.display = 'none';
                         document.getElementById('modal-unsplash').style.display = 'none';
                     };
                     container.appendChild(el);
