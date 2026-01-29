@@ -38,7 +38,9 @@ let editingPostId = null;
 let editingPersonaId = null;
 let availablePersonas = [];
 
+// --- CORE INITIALIZATION ---
 function init() {
+    // Initialize Quill Editor
     quill = new Quill('#editor-container', {
         theme: 'snow',
         modules: {
@@ -58,6 +60,7 @@ function init() {
     });
     quill.on('text-change', calculateSEOScore);
 
+    // Firebase Auth State Listener
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
@@ -69,13 +72,58 @@ function init() {
         }
     });
 
+    // --- STATIC EVENT LISTENERS ---
+    // Main Navigation
     document.querySelectorAll('.nav-item[data-view]').forEach(el => {
         el.addEventListener('click', () => switchView(el.dataset.view));
     });
+
+    // Login/Logout
     document.getElementById('btn-login').addEventListener('click', doLogin);
     document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-    document.getElementById('btn-generate-persona').addEventListener('click', generateRandomPersona);
 
+    // AI Writer Buttons
+    document.getElementById('btn-reset-ai').addEventListener('click', resetAI);
+    document.getElementById('btn-seo-polish').addEventListener('click', runSEOPolish);
+    document.getElementById('btn-run-ai-phase1').addEventListener('click', runAIPhase1);
+    document.getElementById('btn-run-ai-phase2').addEventListener('click', runAIPhase2);
+    document.getElementById('btn-search-unsplash').addEventListener('click', searchUnsplashAI);
+    document.getElementById('btn-save-post').addEventListener('click', publishPost);
+    document.getElementById('btn-show-preview').addEventListener('click', showMobilePreview);
+
+
+    // Settings Page Buttons
+    document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+    document.getElementById('btn-remove-duplicates').addEventListener('click', removeDuplicates);
+    document.getElementById('btn-generate-persona').addEventListener('click', generateRandomPersona);
+    document.getElementById('btn-save-persona').addEventListener('click', saveOrUpdatePersona);
+    document.getElementById('btn-cancel-persona').addEventListener('click', resetPersonaForm);
+
+    // Migration
+    document.getElementById('btn-start-migration').addEventListener('click', startMigration);
+
+    // Modals
+    document.getElementById('btn-close-unsplash').addEventListener('click', () => closeModal('modal-unsplash'));
+    document.getElementById('btn-close-preview').addEventListener('click', () => closeModal('modal-preview'));
+
+    // --- DELEGATED EVENT LISTENERS ---
+    // For dynamically created persona buttons
+    const personaList = document.getElementById('persona-list');
+    personaList.addEventListener('click', (event) => {
+        const button = event.target.closest('button');
+        if (!button) return;
+
+        const action = button.dataset.action;
+        const id = button.dataset.id;
+
+        if (action === 'edit') {
+            editPersona(id);
+        } else if (action === 'delete') {
+            deletePersona(id);
+        }
+    });
+
+    // --- INITIAL DATA LOAD ---
     const savedKey = localStorage.getItem('openai_key');
     if (savedKey) document.getElementById('setting-openai-key').value = savedKey;
 
@@ -84,7 +132,9 @@ function init() {
     document.getElementById('auto-start-date').value = now.toISOString().slice(0, 16);
 }
 
-window.switchView = (viewName) => {
+
+// --- VIEW SWITCHING ---
+const switchView = (viewName) => {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
     document.getElementById(`view-${viewName}`).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -100,6 +150,7 @@ window.switchView = (viewName) => {
     }
 };
 
+// --- AUTHENTICATION ---
 async function doLogin() {
     const e = document.getElementById('login-email').value;
     const p = document.getElementById('login-password').value;
@@ -110,13 +161,16 @@ async function doLogin() {
     }
 }
 
-window.saveSettings = () => {
+// --- SETTINGS ---
+const saveSettings = () => {
     const k = document.getElementById('setting-openai-key').value;
     localStorage.setItem('openai_key', k);
     alert('Settings Saved');
 };
 
-window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+// --- MODALS ---
+const closeModal = (id) => document.getElementById(id).style.display = 'none';
+
 
 // --- PERSONA MANAGEMENT ---
 async function loadPersonas() {
@@ -131,29 +185,30 @@ async function loadPersonas() {
             p.id = doc.id;
             availablePersonas.push(p);
             list.innerHTML += `
-                        <div class="persona-card">
-                            <div style="display:flex; align-items:center;">
-                                <div class="persona-avatar">${p.name[0]}</div>
-                                <div class="persona-details">
-                                    <div class="persona-name">${p.name} (${p.age})</div>
-                                    <div class="persona-role">${p.nationality} • ${p.job}</div>
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:8px;">
-                                <button class="btn btn-outline" style="padding: 4px 8px; font-size:12px;" onclick="editPersona('${doc.id}')"><i class="ph ph-pencil"></i></button>
-                                <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger); padding: 4px 8px; font-size:12px;" onclick="deletePersona('${doc.id}')"><i class="ph ph-trash"></i></button>
-                            </div>
+                <div class="persona-card">
+                    <div style="display:flex; align-items:center;">
+                        <div class="persona-avatar">${p.name[0]}</div>
+                        <div class="persona-details">
+                            <div class="persona-name">${p.name} (${p.age})</div>
+                            <div class="persona-role">${p.nationality} • ${p.job}</div>
                         </div>
-                    `;
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-outline" data-action="edit" data-id="${doc.id}" style="padding: 4px 8px; font-size:12px;"><i class="ph ph-pencil"></i></button>
+                        <button class="btn btn-outline" data-action="delete" data-id="${doc.id}" style="color:var(--danger); border-color:var(--danger); padding: 4px 8px; font-size:12px;"><i class="ph ph-trash"></i></button>
+                    </div>
+                </div>
+            `;
         });
         if (availablePersonas.length === 0) list.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No personas created yet.</div>';
         refreshPersonaSelect();
     } catch (e) {
         console.error(e);
+        list.innerHTML = 'Failed to load personas.';
     }
 }
 
-window.editPersona = (id) => {
+const editPersona = (id) => {
     const p = availablePersonas.find(item => item.id === id);
     if (!p) return;
 
@@ -175,12 +230,11 @@ window.editPersona = (id) => {
     });
 };
 
-window.resetPersonaForm = () => {
+const resetPersonaForm = () => {
     editingPersonaId = null;
     document.getElementById('p-name').value = '';
     document.getElementById('p-likes').value = '';
     document.getElementById('p-bio').value = '';
-
     document.getElementById('persona-form-title').innerText = "Create New Persona";
     document.getElementById('btn-save-persona').innerText = "Add Persona";
     document.getElementById('btn-cancel-persona').style.display = 'none';
@@ -206,7 +260,7 @@ function generateRandomPersona() {
     document.getElementById('p-bio').value = bio;
 }
 
-window.createPersona = async () => {
+async function saveOrUpdatePersona() {
     const name = document.getElementById('p-name').value;
     const age = document.getElementById('p-age').value;
     const gender = document.getElementById('p-gender').value;
@@ -217,29 +271,21 @@ window.createPersona = async () => {
 
     if (!name || !job) return alert('Name and Job are required');
 
+    const personaData = {
+        name,
+        age,
+        gender,
+        nationality,
+        job,
+        likes,
+        bio
+    };
+
     if (editingPersonaId) {
-        // UPDATE
-        await updateDoc(doc(db, "personas", editingPersonaId), {
-            name,
-            age,
-            gender,
-            nationality,
-            job,
-            likes,
-            bio
-        });
+        await updateDoc(doc(db, "personas", editingPersonaId), personaData);
         alert('Persona Updated!');
     } else {
-        // CREATE
-        await addDoc(collection(db, "personas"), {
-            name,
-            age,
-            gender,
-            nationality,
-            job,
-            likes,
-            bio
-        });
+        await addDoc(collection(db, "personas"), personaData);
         alert('Persona Created!');
     }
 
@@ -247,8 +293,8 @@ window.createPersona = async () => {
     loadPersonas();
 };
 
-window.deletePersona = async (id) => {
-    if (confirm('Delete this persona?')) {
+const deletePersona = async (id) => {
+    if (confirm('Are you sure you want to delete this persona?')) {
         await deleteDoc(doc(db, "personas", id));
         loadPersonas();
     }
