@@ -97,6 +97,9 @@
         .auto-table { width: 100%; border-collapse: collapse; }
         .auto-table th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; }
         .auto-table td { padding: 16px 12px; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 14px; }
+
+        /* Migration Log */
+        .log-box { background: #000; color: #0f0; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -127,6 +130,7 @@
             <div class="nav-item" data-view="ai-writer"><i class="ph ph-magic-wand"></i> AI Writer</div>
             <div class="nav-item" data-view="automation"><i class="ph ph-robot"></i> Automation</div>
             <div class="nav-item" data-view="posts"><i class="ph ph-article"></i> All Posts</div>
+            <div class="nav-item" data-view="migration" style="color: #f59e0b;"><i class="ph ph-database"></i> Migration</div>
             <div class="nav-item" data-view="settings"><i class="ph ph-gear"></i> Settings</div>
         </nav>
         <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
@@ -269,15 +273,12 @@
         <!-- AUTOMATION -->
         <div id="view-automation" class="view-section">
             <h1 style="margin-bottom: 24px;">Bulk Automation</h1>
-            <p style="color: var(--text-muted); margin-bottom: 30px;">Add multiple topics here. The system will automatically generate and schedule them based on your interval settings.</p>
-
             <div class="row" style="gap: 40px;">
-                <!-- Setup -->
                 <div style="flex: 1; max-width: 400px;">
                     <div class="card">
                         <h3>Schedule Settings</h3>
                         <div class="form-group">
-                            <label class="form-label">Category for Batch</label>
+                            <label class="form-label">Category</label>
                             <select id="auto-category" class="form-select">
                                 <option value="News">News</option>
                                 <option value="K-pop">K-Pop</option>
@@ -294,49 +295,48 @@
                             <select id="auto-interval" class="form-select">
                                 <option value="24">Every 24 Hours (Daily)</option>
                                 <option value="12">Every 12 Hours</option>
-                                <option value="48">Every 2 Days</option>
-                                <option value="168">Every Week</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Topics (One per line)</label>
-                            <textarea id="auto-topics" class="form-textarea" rows="10" placeholder="Samsung's New Phone release&#10;Best Kimchi Jjigae Recipe&#10;BTS Comeback News..."></textarea>
+                            <label class="form-label">Topics</label>
+                            <textarea id="auto-topics" class="form-textarea" rows="10"></textarea>
                         </div>
                         <button class="btn btn-ai" style="width: 100%;" onclick="runAutomation()">
-                            <i class="ph ph-robot"></i> Generate &amp; Schedule All
+                            <i class="ph ph-robot"></i> Schedule All
                         </button>
                     </div>
                 </div>
-
-                <!-- Queue -->
                 <div style="flex: 2;">
                     <div class="card">
-                        <h3>Scheduled Queue</h3>
+                        <h3>Queue</h3>
                         <table class="auto-table">
-                            <thead>
-                                <tr>
-                                    <th>Status</th>
-                                    <th>Title</th>
-                                    <th>Scheduled For</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="auto-queue-list">
-                                <!-- JS Populated -->
-                            </tbody>
+                            <thead><tr><th>Status</th><th>Title</th><th>Scheduled</th><th>Action</th></tr></thead>
+                            <tbody id="auto-queue-list"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- MIGRATION -->
+        <div id="view-migration" class="view-section">
+            <h1>Legacy Post Migration</h1>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">This tool will fetch your existing static HTML files, parse them, fix broken images (by removing the old domain), and import them into the Firestore database.</p>
+            
+            <div class="card">
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="startMigration()">Start Migration</button>
+                    <span id="migration-status" style="margin-left: 10px; font-weight: bold;"></span>
+                </div>
+                <label class="form-label">Migration Log</label>
+                <div id="migration-log" class="log-box"></div>
+            </div>
+        </div>
 
         <!-- POSTS LIST -->
         <div id="view-posts" class="view-section">
             <h1 style="margin-bottom: 24px;">Content Library</h1>
-            <div id="posts-grid" style="display: grid; gap: 16px;">
-                <!-- Populated by JS -->
-            </div>
+            <div id="posts-grid" style="display: grid; gap: 16px;"></div>
         </div>
 
         <!-- SETTINGS -->
@@ -344,11 +344,10 @@
             <h1 style="margin-bottom: 24px;">Settings</h1>
             <div class="card" style="max-width: 600px;">
                 <div class="form-group">
-                    <label class="form-label">OpenAI / Gemini API Key (Optional)</label>
-                    <input type="password" id="setting-openai-key" class="form-input" placeholder="sk-...">
-                    <small style="color: var(--text-muted);">Required for GPT-4. If empty, uses simulated AI.</small>
+                    <label class="form-label">API Key</label>
+                    <input type="password" id="setting-openai-key" class="form-input">
                 </div>
-                <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                <button class="btn btn-primary" onclick="saveSettings()">Save</button>
             </div>
         </div>
 
@@ -372,19 +371,20 @@
                 <div style="position: sticky; top: 0; background: #fff; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 15px;">
                     <span style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: 700;" id="prev-cat">CATEGORY</span>
                 </div>
-                <h1 id="prev-title">Post Title Goes Here</h1>
-                <div style="font-size: 12px; color: #999; margin-bottom: 20px;">By Korea Decode • Just now</div>
+                <h1 id="prev-title">Post Title</h1>
+                <div style="font-size: 12px; color: #999; margin-bottom: 20px;">By Korea Decode</div>
                 <img id="prev-img" src="" style="display: none;">
                 <div id="prev-content"></div>
             </div>
             <div style="padding: 15px; background: #f9f9f9; text-align: center;">
-                <button class="btn btn-primary" onclick="closeModal('modal-preview')" style="width: 100%;">Close Preview</button>
+                <button class="btn btn-primary" onclick="closeModal('modal-preview')" style="width: 100%;">Close</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { auth, db, storage, signInWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, ref, uploadBytes, getDownloadURL } from '/js/firebase-config.js';
+        import { migrationList } from '/js/migration-list.js';
 
         // --- VARS ---
         const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
@@ -396,14 +396,7 @@
         function init() {
             quill = new Quill('#editor-container', {
                 theme: 'snow',
-                modules: {
-                    toolbar: [
-                        [{ 'header': [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline', 'blockquote'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['link', 'clean']
-                    ]
-                }
+                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'blockquote'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'clean']] }
             });
             quill.on('text-change', calculateSEOScore);
 
@@ -412,7 +405,7 @@
                     currentUser = user;
                     document.getElementById('login-section').style.display = 'none';
                     loadDashboard();
-                    loadQueue(); // Load scheduled queue
+                    loadQueue();
                 } else {
                     document.getElementById('login-section').style.display = 'flex';
                 }
@@ -427,7 +420,6 @@
             const savedKey = localStorage.getItem('openai_key');
             if(savedKey) document.getElementById('setting-openai-key').value = savedKey;
 
-            // Set default date for automation to now
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('auto-start-date').value = now.toISOString().slice(0,16);
@@ -447,7 +439,7 @@
         async function doLogin() {
             const e = document.getElementById('login-email').value;
             const p = document.getElementById('login-password').value;
-            try { await signInWithEmailAndPassword(auth, e, p); } 
+            try { await signInWithEmailAndPassword(auth, e, p); }
             catch(err) { document.getElementById('login-error').innerText = err.message; }
         }
 
@@ -458,6 +450,92 @@
         };
 
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+        // --- MIGRATION LOGIC ---
+        window.startMigration = async () => {
+            const logBox = document.getElementById('migration-log');
+            const status = document.getElementById('migration-status');
+            
+            logBox.innerHTML = '';
+            status.innerText = `Processing ${migrationList.length} files...`;
+            
+            let count = 0;
+            const parser = new DOMParser();
+
+            for (const path of migrationList) {
+                try {
+                    logBox.innerHTML += `> Fetching ${path}...
+`;
+                    const res = await fetch(path);
+                    if (!res.ok) throw new Error('File not found');
+                    
+                    const html = await res.text();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // 1. Extract Title
+                    // Yoast JSON-LD or H1
+                    let title = doc.querySelector('title')?.innerText.split(' - ')[0] || "Untitled";
+                    
+                    // 2. Extract Category (from URL or breadcrumb)
+                    let category = 'News';
+                    if(path.includes('/food/')) category = 'Food';
+                    else if(path.includes('/travel/')) category = 'Travel';
+                    else if(path.includes('/k-pop/')) category = 'K-pop';
+                    else if(path.includes('/beauty/')) category = 'Beauty';
+
+                    // 3. Extract Image
+                    let image = '';
+                    const ogImage = doc.querySelector('meta[property="og:image"]');
+                    if (ogImage) {
+                        // Fix broken domain
+                        image = ogImage.content.replace('http://koreadecode.mycafe24.com', '');
+                        image = image.replace('https://koreadecode.mycafe24.com', '');
+                    }
+
+                    // 4. Extract Content (This is tricky with static HTML)
+                    // We look for common content containers
+                    let contentEl = doc.querySelector('.elementor-widget-theme-post-content') || doc.querySelector('article') || doc.body;
+                    let content = contentEl.innerHTML;
+                    
+                    // FIX: Broken images in content
+                    content = content.replace(/http:
+/koreadecode.mycafe24.com/g, '');
+                    content = content.replace(/https:
+/koreadecode.mycafe24.com/g, '');
+
+                    // 5. Clean up content (remove scripts, styles)
+                    // Simple cleanup - removing script tags
+                    content = content.replace(/<script[^>]*>([
+	 ]*?)<n	 ]*?script>/gm, "");
+                    content = content.replace(/<style[^>]*>([
+	 ]*?)<n	 ]*?style>/gm, "");
+
+                    // 6. Save to Firebase
+                    await addDoc(collection(db, "posts"), {
+                        title: title,
+                        category: category,
+                        content: content,
+                        image: image,
+                        views: Math.floor(Math.random() * 100), // Fake views for migrated content
+                        createdAt: serverTimestamp(),
+                        status: 'published'
+                    });
+
+                    logBox.innerHTML += `  [SUCCESS] Imported: ${title}
+`;
+                    count++;
+                    logBox.scrollTop = logBox.scrollHeight;
+
+                } catch (e) {
+                    logBox.innerHTML += `  [ERROR] Failed ${path}: ${e.message}
+`;
+                }
+            }
+            
+            status.innerText = `Done! Imported ${count} posts.`;
+            alert('Migration Complete. Check "All Posts" tab.');
+        };
+
 
         // --- AI WORKFLOW ---
         window.resetAI = () => {
@@ -476,22 +554,16 @@
         window.runAIPhase1 = async () => {
             const topic = document.getElementById('ai-topic').value;
             if(!topic) return alert('Please enter a topic');
-
             const btn = document.querySelector('#step-1 .btn-ai');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Thinking...';
-            
             setTimeout(() => {
                 const title = `The Ultimate Guide to ${topic} in Korea (2026)`;
                 const keywords = ["Korea Travel", "Trends 2026", "Guide", topic];
-                
                 document.getElementById('ai-suggested-title').value = title;
                 const kwContainer = document.getElementById('ai-keywords-container');
                 kwContainer.innerHTML = '';
-                keywords.forEach(k => {
-                    kwContainer.innerHTML += `<span class="suggestion-chip selected" onclick="this.classList.toggle('selected')">${k}</span>`;
-                });
-
+                keywords.forEach(k => kwContainer.innerHTML += `<span class="suggestion-chip selected">${k}</span>`);
                 document.getElementById('step-1').classList.remove('active');
                 document.getElementById('step-2').style.opacity = '1';
                 document.getElementById('step-2').style.pointerEvents = 'auto';
@@ -505,11 +577,9 @@
             const title = document.getElementById('ai-suggested-title').value;
             const btn = document.querySelector('#step-2 .btn-primary');
             btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing...';
-
             setTimeout(() => {
                 const content = `<h2>Introduction</h2><p>Here is everything you need to know about <strong>${title}</strong>...</p>`;
                 quill.clipboard.dangerouslyPasteHTML(content);
-                
                 document.getElementById('step-2').classList.remove('active');
                 document.getElementById('step-3').style.opacity = '1';
                 document.getElementById('step-3').style.pointerEvents = 'auto';
@@ -523,7 +593,6 @@
             const container = document.getElementById('unsplash-results');
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Searching...</div>';
             document.getElementById('modal-unsplash').style.display = 'flex';
-
             try {
                 const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=12&query=${q}&client_id=${UNSPLASH_ACCESS_KEY}`);
                 const data = await res.json();
@@ -540,81 +609,53 @@
                     };
                     container.appendChild(el);
                 });
-            } catch(e) {
-                container.innerHTML = 'API Error';
-            }
+            } catch(e) { container.innerHTML = 'API Error'; }
         };
-
-        // --- AUTOMATION ---
 
         window.runAutomation = async () => {
             const topics = document.getElementById('auto-topics').value.split('\n').filter(t => t.trim() !== '');
             const category = document.getElementById('auto-category').value;
             const startStr = document.getElementById('auto-start-date').value;
             const intervalHours = parseInt(document.getElementById('auto-interval').value);
-            
             if(topics.length === 0) return alert('Enter topics');
             if(!startStr) return alert('Select start date');
-
             const btn = document.querySelector('#view-automation .btn-ai');
             btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Scheduling...';
-            
             let currentDate = new Date(startStr);
-
             for (const topic of topics) {
-                // 1. Mock Generate Content
                 const title = `[Auto] ${topic} - Korea Decode Report`;
-                const content = `<p>This is an automatically generated article about <strong>${topic}</strong>.</p><p>Stay tuned for more updates!</p>`;
-                
-                // 2. Fetch Random Image (Mock or API)
+                const content = `<p>Automatically generated article about <strong>${topic}</strong>.</p>`;
                 let imgUrl = '';
                 try {
                     const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=1&query=${topic}&client_id=${UNSPLASH_ACCESS_KEY}`);
                     const data = await res.json();
                     if(data.results.length > 0) imgUrl = data.results[0].urls.regular;
-                } catch(e) { console.log('Auto image fail'); }
-
-                // 3. Save to Firebase with Future Date
+                } catch(e) {}
                 await addDoc(collection(db, "posts"), {
-                    title,
-                    category,
-                    content,
-                    image: imgUrl,
-                    views: 0,
-                    createdAt: new Date(currentDate),
-                    status: 'scheduled'
+                    title, category, content, image: imgUrl, views: 0,
+                    createdAt: new Date(currentDate), status: 'scheduled'
                 });
-
-                // Increment time
                 currentDate.setHours(currentDate.getHours() + intervalHours);
             }
-
             alert(`Successfully scheduled ${topics.length} posts!`);
             document.getElementById('auto-topics').value = '';
-            btn.innerHTML = '<i class="ph ph-robot"></i> Generate &amp; Schedule All';
+            btn.innerHTML = '<i class="ph ph-robot"></i> Generate & Schedule All';
             loadQueue();
         };
 
         async function loadQueue() {
             const tbody = document.getElementById('auto-queue-list');
             tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
-            
             const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
             const snap = await getDocs(q);
             const now = new Date();
-
             tbody.innerHTML = '';
             snap.forEach(doc => {
                 const p = doc.data();
                 const pDate = p.createdAt.toDate();
-                if (pDate > now) { // Only show future posts in queue
+                if (pDate > now) {
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><span style="padding:4px 8px; border-radius:4px; background:#f59e0b20; color:#f59e0b; font-size:12px;">Scheduled</span></td>
-                        <td>${p.title}</td>
-                        <td>${pDate.toLocaleString()}</td>
-                        <td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${doc.id}')">Cancel</button></td>
-                    `;
+                    tr.innerHTML = `<td><span style="padding:4px 8px; background:#f59e0b20; color:#f59e0b; font-size:12px;">Scheduled</span></td><td>${p.title}</td><td>${pDate.toLocaleString()}</td><td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${doc.id}')">Cancel</button></td>`;
                     tbody.appendChild(tr);
                 }
             });
@@ -622,13 +663,8 @@
         }
 
         window.deletePost = async (id) => {
-            if(confirm('Cancel this post?')) {
-                await deleteDoc(doc(db, "posts", id));
-                loadQueue();
-            }
+            if(confirm('Cancel this post?')) { await deleteDoc(doc(db, "posts", id)); loadQueue(); }
         }
-
-        // --- COMMON ---
 
         function calculateSEOScore() {
             let score = 0;
@@ -654,7 +690,6 @@
             const category = document.getElementById('ai-category').value;
             const content = quill.root.innerHTML;
             const schedule = document.getElementById('post-schedule').value;
-            
             try {
                 await addDoc(collection(db, "posts"), {
                     title, category, content, image: activeImage, views: 0,
