@@ -12,14 +12,20 @@
         .post-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 15px; }
         .post-meta { color: #666; font-size: 0.9rem; }
         .post-image { width: 100%; height: auto; border-radius: 8px; margin-bottom: 30px; object-fit: cover; max-height: 500px;}
-        .post-content { font-size: 1.1rem; line-height: 1.8; }
+        .post-content { font-size: 1.1rem; line-height: 1.8; color: #333; }
         .post-content img { max-width: 100%; height: auto; border-radius: 4px; }
         .loading { text-align: center; padding: 50px; }
+
+        /* Writer Card */
+        .writer-card { margin-top: 60px; padding-top: 30px; border-top: 1px solid #eee; display: flex; align-items: flex-start; gap: 20px; }
+        .writer-avatar { width: 60px; height: 60px; border-radius: 50%; background: #000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; flex-shrink: 0; }
+        .writer-info h3 { margin: 0 0 5px 0; font-size: 18px; }
+        .writer-role { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; font-weight: 600; }
+        .writer-bio { font-size: 14px; color: #555; line-height: 1.5; font-style: italic; }
     </style>
 </head>
 <body class="page-template-default">
     
-    <!-- Simple Navigation (Mimicking existing site) -->
     <header style="padding: 20px; border-bottom: 1px solid #eee; text-align: center;">
         <a href="/"><img src="/wp-content/uploads/2026/01/KOD_vertical-logo.png" alt="Korea Decode" style="height: 50px;"></a>
     </header>
@@ -52,19 +58,36 @@
 
                 const date = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleDateString() : '';
                 
-                let html = ""
-                    + "<article>"
-                    + "    <header class=\"post-header\">"
-                    + "        <h1 class=\"post-title\">${post.title}</h1>"
-                    + "        <div class=\"post-meta\">"
-                    + "            <span>${post.category}</span> | <span>${date}</span>"
-                    + "        </div>"
-                    + "    </header>"
-                    + ` ${post.image ? `<img src="${post.image}" alt="${post.title}" class="post-image">` : ''}`
-                    + "    <div class=\"post-content\">"
-                    + ` ${post.content.replace(/\n/g, '<br>')}`
-                    + "    </div>"
-                    + "</article>";
+                // Writer Block
+                let writerHtml = '';
+                if (post.writer) {
+                    writerHtml = `
+                        <div class="writer-card">
+                            <div class="writer-avatar">${(post.writer.avatar || post.writer.name[0] || 'K')}</div>
+                            <div class="writer-info">
+                                <span class="writer-role">${post.writer.job || 'Editor'}</span>
+                                <h3>${post.writer.name}</h3>
+                                <p class="writer-bio">${post.writer.bio || 'Sharing the best of Korea.'}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let html = `
+                    <article>
+                        <header class="post-header">
+                            <h1 class="post-title">${post.title}</h1>
+                            <div class="post-meta">
+                                <span>${post.category}</span> | <span>${date}</span>
+                            </div>
+                        </header>
+                        ${post.image ? `<img src="${post.image}" alt="${post.title}" class="post-image">` : ''}
+                        <div class="post-content">
+                            ${post.content}
+                        </div>
+                        ${writerHtml}
+                    </article>
+                `;
                 document.getElementById('app').innerHTML = html;
             } else {
                 document.getElementById('app').innerHTML = '<p class="text-center">Post not found.</p>';

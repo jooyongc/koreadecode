@@ -435,22 +435,73 @@
 
                 <!-- Persona Settings -->
                 <div class="card">
-                    <h3>AI Writer Personas</h3>
-                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">Create specialized personas to write with different tones and expertise.</p>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3>AI Writer Personas</h3>
+                        <button class="btn btn-ai" style="padding: 6px 12px; font-size:12px;" onclick="generateRandomPersona()">
+                            <i class="ph ph-magic-wand"></i> AI Generate
+                        </button>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">Create specialized personas. Their Bio will appear at the bottom of their posts.</p>
                     
                     <div id="persona-list"></div>
 
                     <div style="background: var(--bg-body); padding: 16px; border-radius: 8px; margin-top: 20px; border: 1px solid var(--border);">
-                        <h4 style="margin-top: 0;">Create New Persona</h4>
-                        <div class="form-group"><input id="p-name" class="form-input" placeholder="Name (e.g., Jenny)"></div>
+                        <h4 style="margin-top: 0; margin-bottom: 16px;">Create / Review Persona</h4>
+                        <div class="form-group"><label class="form-label">Name</label><input id="p-name" class="form-input" placeholder="e.g. Jenny Kim"></div>
                         <div style="display: flex; gap: 10px;">
-                            <div class="form-group" style="flex: 1;"><input id="p-age" class="form-input" placeholder="Age"></div>
-                            <div class="form-group" style="flex: 1;"><input id="p-gender" class="form-input" placeholder="Gender"></div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Age</label>
+                                <select id="p-age" class="form-select">
+                                    <option value="20s">20s</option>
+                                    <option value="30s">30s</option>
+                                    <option value="40s">40s</option>
+                                    <option value="50s+">50s+</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Gender</label>
+                                <select id="p-gender" class="form-select">
+                                    <option value="Female">Female</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Non-binary">Non-binary</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group"><input id="p-nationality" class="form-input" placeholder="Nationality (e.g., USA, France)"></div>
-                        <div class="form-group"><input id="p-job" class="form-input" placeholder="Job/Expertise (e.g., K-Beauty Editor)"></div>
-                        <div class="form-group"><input id="p-likes" class="form-input" placeholder="Likes (e.g., Tteokbokki, BTS)"></div>
-                        <button class="btn btn-ai" style="width: 100%;" onclick="createPersona()">Add Persona</button>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Nationality</label>
+                                <select id="p-nationality" class="form-select">
+                                    <option value="USA">USA</option>
+                                    <option value="UK">UK</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="Australia">Australia</option>
+                                    <option value="France">France</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="Singapore">Singapore</option>
+                                    <option value="Japan">Japan</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Job / Role</label>
+                                <select id="p-job" class="form-select">
+                                    <option value="Travel Blogger">Travel Blogger</option>
+                                    <option value="K-Beauty Editor">K-Beauty Editor</option>
+                                    <option value="Food Critic">Food Critic</option>
+                                    <option value="K-Pop Stan">K-Pop Stan</option>
+                                    <option value="Digital Nomad">Digital Nomad</option>
+                                    <option value="Student">Student</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group"><label class="form-label">Likes / Expertise</label><input id="p-likes" class="form-input" placeholder="e.g. Spicy food, skincare, hiking"></div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Writer Bio (Auto-generated)</label>
+                            <textarea id="p-bio" class="form-textarea" rows="3" placeholder="Click 'AI Generate' or write your own..."></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" style="width: 100%;" onclick="createPersona()">Add Persona</button>
                     </div>
                 </div>
             </div>
@@ -501,7 +552,7 @@
         function init() {
             quill = new Quill('#editor-container', {
                 theme: 'snow',
-                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'blockquote'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'clean']]} 
+                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'blockquote'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'clean']] }
             });
             quill.on('text-change', calculateSEOScore);
 
@@ -510,7 +561,7 @@
                     currentUser = user;
                     document.getElementById('login-section').style.display = 'none';
                     loadDashboard();
-                    loadPersonas(); // Load personas on start
+                    loadPersonas();
                 } else {
                     document.getElementById('login-section').style.display = 'flex';
                 }
@@ -580,7 +631,6 @@
                                 <div class="persona-details">
                                     <div class="persona-name">${p.name} (${p.age})</div>
                                     <div class="persona-role">${p.nationality} • ${p.job}</div>
-                                    <div class="persona-role" style="color:var(--accent);">Likes: ${p.likes}</div>
                                 </div>
                             </div>
                             <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger); padding: 4px 8px; font-size:12px;" onclick="deletePersona('${doc.id}')"><i class="ph ph-trash"></i></button>
@@ -592,6 +642,27 @@
             } catch(e) { console.error(e); }
         }
 
+        window.generateRandomPersona = () => {
+             const names = ["Emma", "Liam", "Sophia", "Noah", "Olivia", "James", "Ava", "William"];
+             const jobs = ["Travel Blogger", "K-Beauty Editor", "Food Critic", "K-Pop Stan", "Digital Nomad", "Student"];
+             const countries = ["USA", "UK", "Canada", "Australia", "France", "Germany", "Singapore"];
+             const likesList = ["Spicy tteokbokki", "Hidden cafes", "Indie music", "Skincare routines", "History", "Street food"];
+             
+             const rName = names[Math.floor(Math.random() * names.length)] + " " + ["Smith", "Kim", "Lee", "Johnson", "Brown"][Math.floor(Math.random() * 5)];
+             const rJob = jobs[Math.floor(Math.random() * jobs.length)];
+             const rCountry = countries[Math.floor(Math.random() * countries.length)];
+             const rLikes = likesList[Math.floor(Math.random() * likesList.length)];
+             
+             document.getElementById('p-name').value = rName;
+             document.getElementById('p-job').value = rJob;
+             document.getElementById('p-nationality').value = rCountry;
+             document.getElementById('p-likes').value = rLikes;
+             
+             // Auto-generate bio
+             const bio = `Hi, I'm ${rName}! I'm a ${rJob} from ${rCountry} currently exploring every corner of Korea. I'm obsessed with ${rLikes} and love sharing my honest experiences. Follow along for my local tips!`;
+             document.getElementById('p-bio').value = bio;
+        };
+
         window.createPersona = async () => {
             const name = document.getElementById('p-name').value;
             const age = document.getElementById('p-age').value;
@@ -599,18 +670,16 @@
             const nationality = document.getElementById('p-nationality').value;
             const job = document.getElementById('p-job').value;
             const likes = document.getElementById('p-likes').value;
+            const bio = document.getElementById('p-bio').value;
 
             if(!name || !job) return alert('Name and Job are required');
 
-            await addDoc(collection(db, "personas"), { name, age, gender, nationality, job, likes });
+            await addDoc(collection(db, "personas"), { name, age, gender, nationality, job, likes, bio });
             
             // Clear inputs
             document.getElementById('p-name').value = '';
-            document.getElementById('p-age').value = '';
-            document.getElementById('p-gender').value = '';
-            document.getElementById('p-nationality').value = '';
-            document.getElementById('p-job').value = '';
             document.getElementById('p-likes').value = '';
+            document.getElementById('p-bio').value = '';
             
             loadPersonas();
             alert('Persona Created!');
@@ -766,7 +835,7 @@
             let persona = availablePersonas.find(p => p.id === personaId);
             if (!persona) {
                 // Default fallback
-                persona = { name: "Editor", nationality: "Seoul", job: "Travel Guide", likes: "everything", age: "30" };
+                persona = { name: "Korea Decode Editor", nationality: "Seoul", job: "Travel Guide", likes: "everything", age: "30", bio: "Your guide to all things Korea." };
             }
 
             let contentImages = [];
@@ -941,17 +1010,32 @@
             const content = quill.root.innerHTML;
             const schedule = document.getElementById('post-schedule').value;
             
+            // Get selected Persona info
+            const personaId = document.getElementById('ai-persona-select').value;
+            let persona = availablePersonas.find(p => p.id === personaId);
+            if (!persona) {
+                persona = { name: "Korea Decode Editor", job: "Editor", bio: "Your guide to all things Korea." };
+            }
+            
+            const writerData = {
+                name: persona.name,
+                job: persona.job,
+                bio: persona.bio || "Writer at Korea Decode",
+                avatar: persona.name[0]
+            };
+
             try {
                 if (editingPostId) {
                     await updateDoc(doc(db, "posts", editingPostId), {
-                        title, category, content, image: activeImage
+                        title, category, content, image: activeImage, writer: writerData
                     });
                     alert('Post Updated!');
                 } else {
                     await addDoc(collection(db, "posts"), {
                         title, category, content, image: activeImage, views: 0,
                         createdAt: schedule ? new Date(schedule) : serverTimestamp(),
-                        status: schedule ? 'scheduled' : 'published'
+                        status: schedule ? 'scheduled' : 'published',
+                        writer: writerData
                     });
                     alert('Post Published!');
                 }
@@ -975,7 +1059,7 @@
                         <div>
                             <div style="font-weight:700; font-size:16px;">${p.title}</div>
                             <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                                ${p.category} • ${p.views || 0} views
+                                ${p.category} • ${p.views || 0} views • ${p.writer?.name || 'Admin'}
                             </div>
                         </div>
                         <div style="display:flex; gap: 8px;">
@@ -1002,15 +1086,16 @@
                     let contentEl = doc.querySelector('.elementor-widget-theme-post-content') || doc.querySelector('article') || doc.body;
                     let content = contentEl.innerHTML;
                     
-                    content = content.replace(/http:\/\/koreadecode.mycafe24.com/g, '');
-                    content = content.replace(/https:\/\/koreadecode.mycafe24.com/g, '');
+                    content = content.replace(/http:\/\/koreadecode\.mycafe24\.com/g, '');
+                    content = content.replace(/https:\/\/koreadecode\.mycafe24\.com/g, '');
                     content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "");
                     content = content.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
 
                     await addDoc(collection(db, "posts"), {
                         title, category: 'Archive', content, 
                         image: 'https://images.unsplash.com/photo-1576085898323-218337e3e43c?w=800',
-                        views: 0, createdAt: serverTimestamp(), status: 'published'
+                        views: 0, createdAt: serverTimestamp(), status: 'published',
+                        writer: { name: "Korea Decode Archive", job: "System", bio: "Legacy content from our previous blog." }
                     });
                     logBox.innerHTML += `> Imported ${title}\n`;
                 } catch(e) {}
