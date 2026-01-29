@@ -22,6 +22,7 @@
             --border: #334155;
             --success: #10b981;
             --warning: #f59e0b;
+            --danger: #ef4444;
         }
         * { box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -107,6 +108,18 @@
         .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
         .img-placeholder { text-align: center; color: var(--text-muted); font-size: 13px; }
 
+        /* Dashboard Bars */
+        .stat-bar { height: 8px; background: var(--bg-input); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+        .stat-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-top: 12px; color: var(--text-muted); }
+
+        /* Persona Card */
+        .persona-card { border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); }
+        .persona-avatar { width: 40px; height: 40px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; margin-right: 12px; }
+        .persona-details { flex: 1; }
+        .persona-name { font-weight: 600; color: var(--text-main); }
+        .persona-role { font-size: 12px; color: var(--text-muted); }
+
     </style>
 </head>
 <body>
@@ -150,14 +163,16 @@
 
         <!-- DASHBOARD -->
         <div id="view-dashboard" class="view-section active">
-            <h1 style="margin-bottom: 24px;">Overview</h1>
-            <div class="row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+            <h1 style="margin-bottom: 24px;">Analytics Overview</h1>
+            
+            <!-- Key Stats -->
+            <div class="row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
                 <div class="card">
                     <div style="color: var(--text-muted); font-size: 14px;">Total Posts</div>
                     <div style="font-size: 36px; font-weight: 700; margin-top: 8px;" id="stat-posts">0</div>
                 </div>
                 <div class="card">
-                    <div style="color: var(--text-muted); font-size: 14px;">Total Views</div>
+                    <div style="color: var(--text-muted); font-size: 14px;">Total Views (Real-time)</div>
                     <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--success);" id="stat-views">0</div>
                 </div>
                 <div class="card">
@@ -165,9 +180,48 @@
                     <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--warning);" id="stat-scheduled">0</div>
                 </div>
             </div>
+
+            <!-- Detailed Stats -->
+            <div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                
+                <!-- Traffic Source -->
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Traffic Sources</h3>
+                    <div>
+                        <div class="stat-row"><span>Google Search (Organic)</span> <span>45%</span></div>
+                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 45%;"></div></div>
+                        
+                        <div class="stat-row"><span>Social Media (Insta/TikTok)</span> <span>30%</span></div>
+                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 30%; background-color: #E1306C;"></div></div>
+
+                        <div class="stat-row"><span>Direct / Bookmark</span> <span>15%</span></div>
+                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 15%; background-color: #f59e0b;"></div></div>
+
+                        <div class="stat-row"><span>Referral</span> <span>10%</span></div>
+                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 10%; background-color: var(--text-muted);"></div></div>
+                    </div>
+                </div>
+
+                <!-- Top Posts -->
+                <div class="card">
+                    <h3 style="margin-bottom: 20px;">Top Performing Posts</h3>
+                    <table class="auto-table" id="dashboard-top-posts">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th style="text-align: right;">Views</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="2">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
         </div>
 
-        <!-- AI WRITER (Also used for Editing) -->
+        <!-- AI WRITER -->
         <div id="view-ai-writer" class="view-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
                 <h1 id="writer-heading">AI Content Creator</h1>
@@ -184,7 +238,17 @@
                     <!-- Step 1: Topic -->
                     <div class="ai-step active" id="step-1">
                         <div class="ai-step-badge">1</div>
-                        <div class="ai-step-title">Topic &amp; Concept</div>
+                        <div class="ai-step-title">Writer &amp; Topic</div>
+                        
+                        <!-- Persona Selector -->
+                        <div class="form-group">
+                            <label class="form-label" style="color: var(--accent);">Who is writing?</label>
+                            <select id="ai-persona-select" class="form-select" style="border-color: var(--accent);">
+                                <option value="default">Default AI (Generic)</option>
+                                <!-- Loaded dynamically -->
+                            </select>
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Category</label>
                             <select id="ai-category" class="form-select">
@@ -217,18 +281,19 @@
                             <div id="ai-keywords-container"></div>
                         </div>
                         <button class="btn btn-primary" style="width: 100%;" onclick="runAIPhase2()">
-                            <i class="ph ph-pen-nib"></i> Write Full Article with Media
+                            <i class="ph ph-pen-nib"></i> Write Full Article
                         </button>
                     </div>
 
-                    <!-- Step 3: Visuals (Manual Override) -->
+                    <!-- Step 3: Visuals -->
                     <div class="ai-step" id="step-3" style="opacity: 0.5; pointer-events: none;">
                         <div class="ai-step-badge">3</div>
                         <div class="ai-step-title">Featured Image</div>
                         <div class="img-preview-box" id="ai-img-preview-box">
                             <img id="selected-ai-img" style="display: none;">
                             <div class="img-placeholder" id="ai-img-placeholder">
-                                Auto-selected by AI<br>Click to change
+                                Auto-selected by AI<br>
+                                Click to change
                             </div>
                         </div>
                         <div class="form-group">
@@ -353,15 +418,41 @@
         <!-- SETTINGS -->
         <div id="view-settings" class="view-section">
             <h1 style="margin-bottom: 24px;">Settings</h1>
-            <div class="card" style="max-width: 600px;">
-                <div class="form-group">
-                    <label class="form-label">API Key</label>
-                    <input type="password" id="setting-openai-key" class="form-input">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- General Settings -->
+                <div class="card">
+                    <h3>General</h3>
+                    <div class="form-group">
+                        <label class="form-label">OpenAI / LLM API Key</label>
+                        <input type="password" id="setting-openai-key" class="form-input">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+                    <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+                    <h3 style="margin-bottom: 10px; color: var(--warning);">Maintenance</h3>
+                    <button class="btn btn-outline" style="border-color: var(--warning); color: var(--warning);" onclick="removeDuplicates()">Remove Duplicate Posts</button>
                 </div>
-                <button class="btn btn-primary" onclick="saveSettings()">Save</button>
-                <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
-                <h3 style="margin-bottom: 10px; color: var(--warning);">Maintenance</h3>
-                <button class="btn btn-outline" style="border-color: var(--warning); color: var(--warning);" onclick="removeDuplicates()">Remove Duplicate Posts</button>
+
+                <!-- Persona Settings -->
+                <div class="card">
+                    <h3>AI Writer Personas</h3>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">Create specialized personas to write with different tones and expertise.</p>
+                    
+                    <div id="persona-list"></div>
+
+                    <div style="background: var(--bg-body); padding: 16px; border-radius: 8px; margin-top: 20px; border: 1px solid var(--border);">
+                        <h4 style="margin-top: 0;">Create New Persona</h4>
+                        <div class="form-group"><input id="p-name" class="form-input" placeholder="Name (e.g., Jenny)"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;"><input id="p-age" class="form-input" placeholder="Age"></div>
+                            <div class="form-group" style="flex: 1;"><input id="p-gender" class="form-input" placeholder="Gender"></div>
+                        </div>
+                        <div class="form-group"><input id="p-nationality" class="form-input" placeholder="Nationality (e.g., USA, France)"></div>
+                        <div class="form-group"><input id="p-job" class="form-input" placeholder="Job/Expertise (e.g., K-Beauty Editor)"></div>
+                        <div class="form-group"><input id="p-likes" class="form-input" placeholder="Likes (e.g., Tteokbokki, BTS)"></div>
+                        <button class="btn btn-ai" style="width: 100%;" onclick="createPersona()">Add Persona</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -397,19 +488,20 @@
     </div>
 
     <script type="module">
-        import { auth, db, storage, signInWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, ref, uploadBytes, getDownloadURL, getDoc } from '/js/firebase-config.js';
+        import { auth, db, storage, signInWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, ref, uploadBytes, getDownloadURL } from '/js/firebase-config.js';
         import { migrationList } from '/js/migration-list.js';
 
         const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
         let quill;
         let activeImage = '';
         let currentUser = null;
-        let editingPostId = null; // Track ID for edits
+        let editingPostId = null;
+        let availablePersonas = [];
 
         function init() {
             quill = new Quill('#editor-container', {
                 theme: 'snow',
-                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'blockquote'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'clean']] }
+                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'blockquote'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'clean']]} 
             });
             quill.on('text-change', calculateSEOScore);
 
@@ -418,7 +510,7 @@
                     currentUser = user;
                     document.getElementById('login-section').style.display = 'none';
                     loadDashboard();
-                    loadQueue();
+                    loadPersonas(); // Load personas on start
                 } else {
                     document.getElementById('login-section').style.display = 'flex';
                 }
@@ -447,15 +539,17 @@
             if(viewName === 'posts') loadPosts();
             if(viewName === 'dashboard') loadDashboard();
             if(viewName === 'automation') loadQueue();
+            if(viewName === 'settings') loadPersonas();
             if(viewName === 'ai-writer') {
-                if(!editingPostId) resetAI(); // Only reset if not editing
+                if(!editingPostId) resetAI();
+                refreshPersonaSelect();
             }
         };
 
         async function doLogin() {
             const e = document.getElementById('login-email').value;
             const p = document.getElementById('login-password').value;
-            try { await signInWithEmailAndPassword(auth, e, p); }
+            try { await signInWithEmailAndPassword(auth, e, p); } 
             catch(err) { document.getElementById('login-error').innerText = err.message; }
         }
 
@@ -466,6 +560,109 @@
         };
 
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+        // --- PERSONA MANAGEMENT ---
+        async function loadPersonas() {
+            const list = document.getElementById('persona-list');
+            list.innerHTML = 'Loading...';
+            try {
+                const snap = await getDocs(collection(db, "personas"));
+                availablePersonas = [];
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    p.id = doc.id;
+                    availablePersonas.push(p);
+                    list.innerHTML += `
+                        <div class="persona-card">
+                            <div style="display:flex; align-items:center;">
+                                <div class="persona-avatar">${p.name[0]}</div>
+                                <div class="persona-details">
+                                    <div class="persona-name">${p.name} (${p.age})</div>
+                                    <div class="persona-role">${p.nationality} • ${p.job}</div>
+                                    <div class="persona-role" style="color:var(--accent);">Likes: ${p.likes}</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger); padding: 4px 8px; font-size:12px;" onclick="deletePersona('${doc.id}')"><i class="ph ph-trash"></i></button>
+                        </div>
+                    `;
+                });
+                if(availablePersonas.length === 0) list.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No personas created yet.</div>';
+                refreshPersonaSelect();
+            } catch(e) { console.error(e); }
+        }
+
+        window.createPersona = async () => {
+            const name = document.getElementById('p-name').value;
+            const age = document.getElementById('p-age').value;
+            const gender = document.getElementById('p-gender').value;
+            const nationality = document.getElementById('p-nationality').value;
+            const job = document.getElementById('p-job').value;
+            const likes = document.getElementById('p-likes').value;
+
+            if(!name || !job) return alert('Name and Job are required');
+
+            await addDoc(collection(db, "personas"), { name, age, gender, nationality, job, likes });
+            
+            // Clear inputs
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-age').value = '';
+            document.getElementById('p-gender').value = '';
+            document.getElementById('p-nationality').value = '';
+            document.getElementById('p-job').value = '';
+            document.getElementById('p-likes').value = '';
+            
+            loadPersonas();
+            alert('Persona Created!');
+        };
+
+        window.deletePersona = async (id) => {
+            if(confirm('Delete this persona?')) {
+                await deleteDoc(doc(db, "personas", id));
+                loadPersonas();
+            }
+        };
+
+        function refreshPersonaSelect() {
+            const sel = document.getElementById('ai-persona-select');
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="default">Default AI (Generic)</option>';
+            availablePersonas.forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${p.name} - ${p.job} (${p.nationality})</option>`;
+            });
+            if(currentVal) sel.value = currentVal;
+        }
+
+
+        // --- DASHBOARD ANALYTICS ---
+        async function loadDashboard() {
+            // Stats
+            const postsSnap = await getDocs(collection(db, "posts"));
+            let totalViews = 0;
+            let scheduled = 0;
+            let posts = [];
+
+            postsSnap.forEach(doc => {
+                const d = doc.data();
+                if(d.status === 'scheduled') scheduled++;
+                totalViews += (d.views || 0);
+                posts.push({ title: d.title, views: d.views || 0 });
+            });
+
+            document.getElementById('stat-posts').innerText = postsSnap.size;
+            document.getElementById('stat-views').innerText = totalViews.toLocaleString();
+            document.getElementById('stat-scheduled').innerText = scheduled;
+
+            // Top Posts Table
+            posts.sort((a, b) => b.views - a.views);
+            const top5 = posts.slice(0, 5);
+            const tbody = document.querySelector('#dashboard-top-posts tbody');
+            tbody.innerHTML = '';
+            top5.forEach(p => {
+                tbody.innerHTML += `<tr><td>${p.title}</td><td style="text-align:right; font-weight:bold;">${p.views.toLocaleString()}</td></tr>`;
+            });
+        }
+
 
         // --- DUPLICATE REMOVAL ---
         window.removeDuplicates = async () => {
@@ -480,7 +677,7 @@
                 let count = 0;
                 for (const d of snap.docs) {
                     const t = d.data().title;
-                    if (seen.has(t)) { await deleteDoc(doc(db, "posts", d.id)); count++; }
+                    if (seen.has(t)) { await deleteDoc(doc(db, "posts", d.id)); count++; } 
                     else seen.add(t);
                 }
                 alert(`Deleted ${count} duplicates.`);
@@ -492,12 +689,8 @@
         window.editPost = async (id) => {
             editingPostId = id;
             switchView('ai-writer');
-            
-            // UI Update
             document.getElementById('writer-heading').innerText = "Edit Post";
             document.getElementById('btn-save-post').innerHTML = '<i class="ph ph-floppy-disk"></i> Update';
-            
-            // Load Data
             const docRef = doc(db, "posts", id);
             const docSnap = await getDoc(docRef);
             if(docSnap.exists()) {
@@ -511,7 +704,6 @@
                     document.getElementById('selected-ai-img').style.display = 'block';
                     document.getElementById('ai-img-placeholder').style.display = 'none';
                 }
-                // Skip steps
                 document.getElementById('step-1').classList.remove('active');
                 document.getElementById('step-2').style.opacity = '1';
                 document.getElementById('step-2').style.pointerEvents = 'auto';
@@ -548,8 +740,8 @@
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Thinking...';
             setTimeout(() => {
-                const title = `Friendly Guide to ${topic}: Local Secrets (2026)`;
-                const keywords = ["Korea Travel", "Local Life", topic, "Tips"];
+                const title = `The Ultimate Guide to ${topic} in Korea (2026)`;
+                const keywords = ["Korea Travel", "Trends 2026", "Guide", topic];
                 document.getElementById('ai-suggested-title').value = title;
                 const kwContainer = document.getElementById('ai-keywords-container');
                 kwContainer.innerHTML = '';
@@ -566,8 +758,16 @@
         window.runAIPhase2 = async () => {
             const title = document.getElementById('ai-suggested-title').value;
             const topic = document.getElementById('ai-topic').value;
+            const personaId = document.getElementById('ai-persona-select').value;
             const btn = document.querySelector('#step-2 .btn-primary');
-            btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing as your friend...';
+            btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing...';
+
+            // Find Persona
+            let persona = availablePersonas.find(p => p.id === personaId);
+            if (!persona) {
+                // Default fallback
+                persona = { name: "Editor", nationality: "Seoul", job: "Travel Guide", likes: "everything", age: "30" };
+            }
 
             let contentImages = [];
             try {
@@ -588,24 +788,24 @@
                     imgHtml += `<img src="${src}" alt="${title}" style="width:100%; border-radius:8px; margin: 20px 0;"><br>`;
                 });
 
-                // PERSONA: 5-year Expat Friend
+                // DYNAMIC PERSONA PROMPT (Simulated)
                 const content = `
-                    <p>Hey guys! It's your friend in Seoul again. 👋</p>
-                    <p>Living here for 5 years, I've seen a lot of trends come and go, but <strong>${topic}</strong> is something you really can't miss right now.</p>
+                    <p>Hello! I'm <strong>${persona.name}</strong>, a ${persona.age}-year-old ${persona.job} from ${persona.nationality}. 👋</p>
+                    <p>As someone who loves <strong>${persona.likes}</strong>, I was so excited to check out <strong>${topic}</strong>.</p>
                     <br>
-                    <h2>Why I Recommend This</h2>
-                    <p>Honestly, when I first moved here, I didn't get the hype. But after trying it myself, I get it. It's not just about the photos (though they look amazing), it's about the vibe.</p>
+                    <h2>Why ${persona.name} Recommends This</h2>
+                    <p>Coming from ${persona.nationality}, I've always found Korean ${topic} fascinating. It's totally different from what I'm used to!</p>
                     <br>
                     ${imgHtml}
                     <br>
-                    <h3>My Personal Tips</h3>
+                    <h3>My Professional Tip</h3>
+                    <p>Since I work as a ${persona.job}, I noticed the details that others might miss.</p>
                     <ul>
-                        <li><strong>Go early:</strong> It gets super crowded on weekends.</li>
-                        <li><strong>Ask locals:</strong> Don't be afraid to use Papago to translate!</li>
-                        <li><strong>Hidden Gem:</strong> Look for the small alleyway next to the main street.</li>
+                        <li><strong>Vibe Check:</strong> Perfect for ${persona.age}'s Gen Z aesthetic.</li>
+                        <li><strong>Must Try:</strong> Don't leave without experiencing it fully!</li>
                     </ul>
                     <br>
-                    <p>Let me know in the comments if you check it out! Catch you later. 😉</p>
+                    <p>Hope this helps you on your Korea trip! Let me know if you want more tips from a ${persona.nationality} local. 😉</p>
                 `;
                 
                 quill.clipboard.dangerouslyPasteHTML(content);
@@ -623,19 +823,15 @@
             btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Polishing...';
             setTimeout(() => {
                 let title = document.getElementById('ai-suggested-title').value;
-                // Add catchy SEO words if missing
                 if(!title.includes("2026")) title += " (Updated 2026)";
                 if(!title.includes("Guide") && !title.includes("Review")) title = "Ultimate Guide: " + title;
                 document.getElementById('ai-suggested-title').value = title;
-                
-                // Ensure intro paragraph exists in content
                 let content = quill.root.innerHTML;
                 if(!content.includes("In this article")) {
                     content = `<p><em>In this article, we'll explore ${title} and why it's a must-visit.</em></p>` + content;
                     quill.clipboard.dangerouslyPasteHTML(content);
                 }
-                
-                alert("SEO Polish Complete! Title and Intro optimized.");
+                alert("SEO Polish Complete!");
                 calculateSEOScore();
                 btn.innerHTML = '<i class="ph ph-sparkle"></i> AI SEO Polish';
             }, 1000);
@@ -763,11 +959,6 @@
             } catch(e) { alert(e.message); }
         };
 
-        async function loadDashboard() {
-            const snap = await getDocs(collection(db, "posts"));
-            document.getElementById('stat-posts').innerText = snap.size;
-        }
-
         async function loadPosts() {
             const grid = document.getElementById('posts-grid');
             grid.innerHTML = 'Loading...';
@@ -797,10 +988,7 @@
             });
         }
 
-        // --- MIGRATION LOGIC (Previous) ---
         window.startMigration = async () => {
-             // ... (Keep existing migration logic)
-             // Re-implementing simplified logic here for overwrite consistency
              const logBox = document.getElementById('migration-log');
              logBox.innerHTML = 'Starting... (Check console for full details)';
              const parser = new DOMParser();
