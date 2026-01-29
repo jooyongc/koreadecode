@@ -663,27 +663,6 @@
              document.getElementById('p-bio').value = bio;
         };
 
-        window.generateRandomPersona = () => {
-             const names = ["Emma", "Liam", "Sophia", "Noah", "Olivia", "James", "Ava", "William"];
-             const jobs = ["Travel Blogger", "K-Beauty Editor", "Food Critic", "K-Pop Stan", "Digital Nomad", "Student"];
-             const countries = ["USA", "UK", "Canada", "Australia", "France", "Germany", "Singapore"];
-             const likesList = ["Spicy tteokbokki", "Hidden cafes", "Indie music", "Skincare routines", "History", "Street food"];
-             
-             const rName = names[Math.floor(Math.random() * names.length)] + " " + ["Smith", "Kim", "Lee", "Johnson", "Brown"][Math.floor(Math.random() * 5)];
-             const rJob = jobs[Math.floor(Math.random() * jobs.length)];
-             const rCountry = countries[Math.floor(Math.random() * countries.length)];
-             const rLikes = likesList[Math.floor(Math.random() * likesList.length)];
-             
-             document.getElementById('p-name').value = rName;
-             document.getElementById('p-job').value = rJob;
-             document.getElementById('p-nationality').value = rCountry;
-             document.getElementById('p-likes').value = rLikes;
-             
-             // Auto-generate bio
-             const bio = `Hi, I'm ${rName}! I'm a ${rJob} from ${rCountry} currently exploring every corner of Korea. I'm obsessed with ${rLikes} and love sharing my honest experiences. Follow along for my local tips!`;
-             document.getElementById('p-bio').value = bio;
-        };
-
         window.createPersona = async () => {
             const name = document.getElementById('p-name').value;
             const age = document.getElementById('p-age').value;
