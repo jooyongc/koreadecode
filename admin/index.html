@@ -437,7 +437,7 @@
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <h3>AI Writer Personas</h3>
-                        <button class="btn btn-ai" style="padding: 6px 12px; font-size:12px;" onclick="generateRandomPersona()">
+                        <button class="btn btn-ai" style="padding: 6px 12px; font-size:12px;" id="btn-generate-persona">
                             <i class="ph ph-magic-wand"></i> AI Generate
                         </button>
                     </div>
@@ -572,6 +572,7 @@
             });
             document.getElementById('btn-login').addEventListener('click', doLogin);
             document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+            document.getElementById('btn-generate-persona').addEventListener('click', generateRandomPersona);
 
             const savedKey = localStorage.getItem('openai_key');
             if(savedKey) document.getElementById('setting-openai-key').value = savedKey;
@@ -642,7 +643,7 @@
             } catch(e) { console.error(e); }
         }
 
-        window.generateRandomPersona = () => {
+        function generateRandomPersona() {
              const names = ["Emma", "Liam", "Sophia", "Noah", "Olivia", "James", "Ava", "William"];
              const jobs = ["Travel Blogger", "K-Beauty Editor", "Food Critic", "K-Pop Stan", "Digital Nomad", "Student"];
              const countries = ["USA", "UK", "Canada", "Australia", "France", "Germany", "Singapore"];
