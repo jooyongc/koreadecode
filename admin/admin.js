@@ -1,16 +1,110 @@
-const { app } = firebase;
-const { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } = firebase.auth;
-const { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, where } = firebase.firestore;
-const { getStorage, ref, uploadBytes, getDownloadURL } = firebase.storage;
+// Firebase services (app, auth, db, storage) are initialized globally in firebase-config.js
 
-// Note: firebase-config.js should be loaded before this script.
-// It provides the `firebaseConfig` global variable.
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+// Destructure necessary functions from the global firebase object
+const {
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+} = firebase.auth;
+const {
+    collection,
+    addDoc,
+    getDocs,
+    doc,
+    getDoc,
+    updateDoc,
+    deleteDoc,
+    serverTimestamp,
+    query,
+    orderBy,
+    where
+} = firebase.firestore;
+const {
+    ref,
+    uploadBytes,
+    getDownloadURL
+} = firebase.storage;
+
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
+let quill;
+let activeImage = '';
+let currentUser = null;
+let editingPostId = null;
+let editingPersonaId = null;
+let availablePersonas = [];
+
+function init() {
+    quill = new Quill('#editor-container', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{
+                    'header': [1, 2, 3, false]
+                }],
+                ['bold', 'italic', 'underline', 'blockquote'],
+                [{
+                    'list': 'ordered'
+                }, {
+                    'list': 'bullet'
+                }],
+                ['link', 'clean']
+            ]
+        }
+    });
+    quill.on('text-change', calculateSEOScore);
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('login-section').style.display = 'none';
+            loadDashboard();
+            loadPersonas();
+        } else {
+            document.getElementById('login-section').style.display = 'flex';
+        }
+    });
+
+    document.querySelectorAll('.nav-item[data-view]').forEach(el => {
+        el.addEventListener('click', () => switchView(el.dataset.view));
+    });
+    document.getElementById('btn-login').addEventListener('click', doLogin);
+    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+    document.getElementById('btn-generate-persona').addEventListener('click', generateRandomPersona);
+
+    const savedKey = localStorage.getItem('openai_key');
+    if (savedKey) document.getElementById('setting-openai-key').value = savedKey;
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('auto-start-date').value = now.toISOString().slice(0, 16);
+}
+
+window.switchView = (viewName) => {
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    document.getElementById(`view-${viewName}`).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.nav-item[data-view="${viewName}"]`).classList.add('active');
+
+    if (viewName === 'posts') loadPosts();
+    if (viewName === 'dashboard') loadDashboard();
+    if (viewName === 'automation') loadQueue();
+    if (viewName === 'settings') loadPersonas();
+    if (viewName === 'ai-writer') {
+        if (!editingPostId) resetAI();
+        refreshPersonaSelect();
+    }
+};
+
+async function doLogin() {
+    const e = document.getElementById('login-email').value;
+    const p = document.getElementById('login-password').value;
+    try {
+        await signInWithEmailAndPassword(auth, e, p);
+    } catch (err) {
+        document.getElementById('login-error').innerText = err.message;
+    }
+}const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 let quill;
 let activeImage = '';
 let currentUser = null;

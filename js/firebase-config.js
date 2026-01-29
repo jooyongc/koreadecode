@@ -1,18 +1,20 @@
+// Declare global variables for Firebase services
+var app, auth, db, storage;
+
 // Firebase Configuration
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY", // Replace with your actual API key
+    apiKey: "AIzaSyAcDLX8xujdFUOo8vVhxqE4URygfZDuCkY",
     authDomain: "koreadecode.firebaseapp.com",
     projectId: "koreadecode",
     storageBucket: "koreadecode.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    messagingSenderId: "525928843461",
+    appId: "1:525928843461:web:c20f7822818404d30e88ac"
 };
 
 // Initialize Firebase for global scope
-// This allows scripts loaded after this one to use the firebase objects
 if (typeof firebase !== 'undefined') {
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+    app = firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    storage = firebase.storage();
 }
