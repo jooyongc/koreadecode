@@ -473,10 +473,9 @@
                     const doc = parser.parseFromString(html, 'text/html');
                     
                     // 1. Extract Title
-                    // Yoast JSON-LD or H1
                     let title = doc.querySelector('title')?.innerText.split(' - ')[0] || "Untitled";
                     
-                    // 2. Extract Category (from URL or breadcrumb)
+                    // 2. Extract Category
                     let category = 'News';
                     if(path.includes('/food/')) category = 'Food';
                     else if(path.includes('/travel/')) category = 'Travel';
@@ -487,28 +486,20 @@
                     let image = '';
                     const ogImage = doc.querySelector('meta[property="og:image"]');
                     if (ogImage) {
-                        // Fix broken domain
-                        image = ogImage.content.replace('http://koreadecode.mycafe24.com', '');
-                        image = image.replace('https://koreadecode.mycafe24.com', '');
+                        image = ogImage.content.replace('http://koreadecode.mycafe24.com', '').replace('https://koreadecode.mycafe24.com', '');
                     }
 
-                    // 4. Extract Content (This is tricky with static HTML)
-                    // We look for common content containers
+                    // 4. Extract Content
                     let contentEl = doc.querySelector('.elementor-widget-theme-post-content') || doc.querySelector('article') || doc.body;
                     let content = contentEl.innerHTML;
                     
                     // FIX: Broken images in content
-                    content = content.replace(/http:
-/koreadecode.mycafe24.com/g, '');
-                    content = content.replace(/https:
-/koreadecode.mycafe24.com/g, '');
+                    content = content.replace(/http:\/\/koreadecode.mycafe24.com/g, '');
+                    content = content.replace(/https:\/\/koreadecode.mycafe24.com/g, '');
 
                     // 5. Clean up content (remove scripts, styles)
-                    // Simple cleanup - removing script tags
-                    content = content.replace(/<script[^>]*>([
-	 ]*?)<n	 ]*?script>/gm, "");
-                    content = content.replace(/<style[^>]*>([
-	 ]*?)<n	 ]*?style>/gm, "");
+                    content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "");
+                    content = content.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
 
                     // 6. Save to Firebase
                     await addDoc(collection(db, "posts"), {
@@ -516,19 +507,17 @@
                         category: category,
                         content: content,
                         image: image,
-                        views: Math.floor(Math.random() * 100), // Fake views for migrated content
+                        views: Math.floor(Math.random() * 100),
                         createdAt: serverTimestamp(),
                         status: 'published'
                     });
 
-                    logBox.innerHTML += `  [SUCCESS] Imported: ${title}
-`;
+                    logBox.innerHTML += `  [SUCCESS] Imported: ${title}\n`;
                     count++;
                     logBox.scrollTop = logBox.scrollHeight;
 
                 } catch (e) {
-                    logBox.innerHTML += `  [ERROR] Failed ${path}: ${e.message}
-`;
+                    logBox.innerHTML += `  [ERROR] Failed ${path}: ${e.message}\n`;
                 }
             }
             
