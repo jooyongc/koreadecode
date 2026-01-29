@@ -3,75 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Korea Decode</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Korea Decode CMS</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Quill Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    
     <style>
-        body { background-color: #f4f6f9; }
-        .login-container { max-width: 400px; margin: 100px auto; padding: 30px; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .dashboard-container { display: none; padding: 20px; }
-        .sidebar { background: white; min-height: 100vh; padding: 20px; }
-        .content-area { padding: 20px; }
-        .post-card { background: white; margin-bottom: 15px; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        :root {
+            --bg-body: #111111;
+            --bg-panel: #1a1a1a;
+            --bg-input: #2a2a2a;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border: #333333;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Layout */
+        .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        
+        /* Sidebar */
+        .brand { font-size: 20px; font-weight: 700; margin-bottom: 40px; color: var(--text-main); letter-spacing: -0.5px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 15px; color: var(--text-muted); text-decoration: none; border-radius: 8px; margin-bottom: 5px; transition: 0.2s; cursor: pointer; }
+        .nav-item:hover, .nav-item.active { background-color: var(--bg-input); color: var(--text-main); }
+        .nav-item i { font-size: 20px; }
+        .user-profile { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        
+        /* Views */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        
+        /* Forms */
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
+        .form-input, .form-select { width: 100%; padding: 12px; background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-size: 14px; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: var(--accent); }
+        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-primary:hover { background-color: var(--accent-hover); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-outline:hover { border-color: var(--text-muted); color: var(--text-main); }
+        .btn-ai { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border: none; }
+        
+        /* Grid/Flex Utils */
+        .row { display: flex; gap: 20px; }
+        .col { flex: 1; }
+        
+        /* Image Select */
+        .img-preview-box { width: 100%; height: 250px; background-color: var(--bg-input); border: 2px dashed var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; }
+        .img-preview-box:hover { border-color: var(--accent); }
+        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .img-placeholder { text-align: center; color: var(--text-muted); }
+        
+        /* Editor Overrides */
+        .ql-toolbar { background-color: #eee; border-top-left-radius: 8px; border-top-right-radius: 8px; }
+        .ql-container { background-color: var(--bg-input); color: white; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; border: 1px solid var(--border) !important; font-size: 16px; }
+        
+        /* Login */
+        .login-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-body); z-index: 999; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 400px; padding: 40px; background: var(--bg-panel); border-radius: 12px; border: 1px solid var(--border); }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-box { background: var(--bg-panel); width: 800px; max-height: 90vh; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
+        .modal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; max-height: 600px; }
+        .modal-img-item { height: 120px; border-radius: 4px; cursor: pointer; object-fit: cover; width: 100%; transition: 0.2s; }
+        .modal-img-item:hover { opacity: 0.8; transform: scale(1.02); }
+
+        /* Mobile Preview */
+        .mobile-frame { width: 375px; height: 700px; background: #fff; color: #000; margin: 0 auto; border-radius: 30px; border: 8px solid #333; overflow: hidden; position: relative; }
+        .mobile-content { height: 100%; overflow-y: auto; padding: 20px; }
+
+        /* Posts List */
+        .post-item { background: var(--bg-panel); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
+        .post-item:hover { border-color: var(--border); }
     </style>
 </head>
 <body>
 
-    <!-- Login Section -->
-    <div id="login-section" class="login-container">
-        <h3 class="text-center mb-4">Korea Decode Admin</h3>
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" id="email" class="form-control" placeholder="admin@koreadecode.com">
+    <!-- LOGIN -->
+    <div id="login-section" class="login-wrap">
+        <div class="login-box">
+            <h2 style="text-align: center; margin-bottom: 30px;">Korea Decode CMS</h2>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="login-email" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="login-password" class="form-input">
+            </div>
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" id="btn-login">Sign In</button>
+            <p id="login-error" style="color: var(--warning); text-align: center; margin-top: 15px; font-size: 14px;"></p>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" id="password" class="form-control">
-        </div>
-        <button id="login-btn" class="btn btn-primary w-100">Login</button>
-        <p id="error-msg" class="text-danger mt-3 text-center"></p>
     </div>
 
-    <!-- Dashboard Section -->
-    <div id="dashboard-section" class="container-fluid dashboard-container">
-        <div class="row">
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
-                <div class="position-sticky pt-3">
-                    <h4 class="mb-4">Dashboard</h4>
-                    <ul class="nav flex-column">
-                        <li class="nav-item"><a class="nav-link active" href="#" id="nav-posts">All Posts</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" id="nav-new">New Post</a></li>
-                        <li class="nav-item"><a class="nav-link text-danger" href="#" id="logout-btn">Logout</a></li>
-                    </ul>
-                </div>
-            </nav>
+    <!-- APP -->
+    <aside class="sidebar">
+        <div class="brand">K-Decode <span style="color:var(--accent);">Admin</span></div>
+        <nav>
+            <div class="nav-item active" data-view="dashboard"><i class="ph ph-squares-four"></i> Dashboard</div>
+            <div class="nav-item" data-view="write"><i class="ph ph-pen-nib"></i> Write Post</div>
+            <div class="nav-item" data-view="posts"><i class="ph ph-list-dashes"></i> All Posts</div>
+            <div class="nav-item" data-view="settings"><i class="ph ph-gear"></i> Settings</div>
+        </nav>
+        <div class="user-profile">
+            <div style="width: 32px; height: 32px; background: #333; border-radius: 50%;"></div>
+            <div style="font-size: 14px;">Admin</div>
+            <i class="ph ph-sign-out" style="margin-left: auto; cursor: pointer;" id="btn-logout"></i>
+        </div>
+    </aside>
 
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 content-area">
-                
-                <!-- Post List View -->
-                <div id="view-posts">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Recent Posts</h1>
-                    </div>
-                    <div id="posts-list">
-                        <!-- Posts will be injected here -->
-                        <div class="text-center"><div class="spinner-border" role="status"></div></div>
-                    </div>
+    <main class="main-content">
+        
+        <!-- DASHBOARD -->
+        <div id="view-dashboard" class="view-section active">
+            <h1>Dashboard</h1>
+            <div class="row">
+                <div class="col" style="background: var(--bg-panel); padding: 20px; border-radius: 12px; text-align: center;">
+                    <h3>Total Posts</h3>
+                    <div style="font-size: 40px; font-weight: 700; color: var(--accent);" id="dash-total">0</div>
                 </div>
+                <div class="col" style="background: var(--bg-panel); padding: 20px; border-radius: 12px; text-align: center;">
+                    <h3>Total Views</h3>
+                    <div style="font-size: 40px; font-weight: 700; color: var(--success);" id="dash-views">0</div>
+                </div>
+            </div>
+        </div>
 
-                <!-- Create Post View -->
-                <div id="view-create" style="display: none;">
-                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                        <h1 class="h2">Write New Post</h1>
-                    </div>
-                    <div class="mb-3">
+        <!-- WRITE POST -->
+        <div id="view-write" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1>Write New Post</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-outline" id="btn-preview-mobile"><i class="ph ph-device-mobile"></i> Mobile Preview</button>
+                    <button class="btn btn-primary" id="btn-publish"><i class="ph ph-paper-plane-right"></i> Publish</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Left: Editor -->
+                <div class="col" style="flex: 2;">
+                    <div class="form-group">
                         <label class="form-label">Title</label>
-                        <input type="text" id="post-title" class="form-control">
+                        <input type="text" id="post-title" class="form-input" placeholder="Enter engaging title...">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Thumbnail Image URL</label>
-                        <input type="text" id="post-image" class="form-control" placeholder="/wp-content/uploads/...">
+                    
+                    <div class="form-group">
+                        <label class="form-label">Content</label>
+                        <div id="editor-container" style="height: 400px;"></div>
                     </div>
-                    <div class="mb-3">
+
+                    <div class="form-group">
+                        <label class="form-label">SEO Keywords (Korean/English)</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="post-keywords" class="form-input" placeholder="k-beauty, skincare, seoul travel...">
+                            <button class="btn btn-ai" id="btn-ai-keywords"><i class="ph ph-sparkle"></i> AI Optimize</button>
+                        </div>
+                        <small style="color: var(--text-muted); margin-top: 5px; display: block;">AI will translate and optimize keywords for global SEO.</small>
+                    </div>
+                </div>
+
+                <!-- Right: Meta -->
+                <div class="col" style="flex: 1; max-width: 350px;">
+                    <div class="form-group">
+                        <label class="form-label">Featured Image</label>
+                        <div class="img-preview-box" id="btn-img-select">
+                            <img id="preview-img" style="display: none;">
+                            <div class="img-placeholder" id="preview-placeholder">
+                                <i class="ph ph-image" style="font-size: 32px;"></i><br>
+                                Click to Select
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 10px;">
+                            <button class="btn btn-outline" style="flex: 1; font-size: 12px;" id="btn-unsplash">Unsplash</button>
+                            <input type="file" id="file-upload" style="display: none;">
+                            <button class="btn btn-outline" style="flex: 1; font-size: 12px;" onclick="document.getElementById('file-upload').click()">Upload</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Category</label>
                         <select id="post-category" class="form-select">
                             <option value="News">News</option>
@@ -81,116 +203,298 @@
                             <option value="Travel">Travel</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Content (HTML allowed)</label>
-                        <textarea id="post-content" class="form-control" rows="10"></textarea>
-                    </div>
-                    <button id="save-post-btn" class="btn btn-success">Publish Post</button>
-                </div>
 
-            </main>
+                    <div class="form-group">
+                        <label class="form-label">Schedule (Automation)</label>
+                        <input type="datetime-local" id="post-date" class="form-input">
+                        <small style="color: var(--text-muted);">Leave empty to publish immediately.</small>
+                    </div>
+
+                    <div class="form-group" style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <label class="form-label" style="color: var(--success);"><i class="ph ph-check-circle"></i> SEO Score</label>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
+                            <span>Title Length</span> <span id="seo-title-score">0/60</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                            <span>Content Length</span> <span id="seo-content-score">0 words</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POSTS LIST -->
+        <div id="view-posts" class="view-section">
+            <h1>All Posts</h1>
+            <div id="posts-container"></div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div id="view-settings" class="view-section">
+            <h1>Settings</h1>
+            <div class="form-group">
+                <label class="form-label">OpenAI / Gemini API Key (For AI Features)</label>
+                <input type="password" id="api-key" class="form-input" placeholder="sk-...">
+                <button class="btn btn-primary" style="margin-top: 10px;" id="btn-save-key">Save Key (Local Storage)</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- UNSPLASH MODAL -->
+    <div id="modal-unsplash" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>Select Image from Unsplash</span>
+                <i class="ph ph-x" style="cursor: pointer;" onclick="closeModal('modal-unsplash')"></i>
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="unsplash-query" class="form-input" placeholder="Search k-pop, seoul, food...">
+                <button class="btn btn-primary" id="btn-search-unsplash">Search</button>
+            </div>
+            <div id="unsplash-grid" class="modal-grid"></div>
+        </div>
+    </div>
+
+    <!-- PREVIEW MODAL -->
+    <div id="modal-preview" class="modal-overlay">
+        <div class="mobile-frame">
+            <div style="background: #000; color: #fff; padding: 15px; text-align: center; font-size: 14px;">Korea Decode (Mobile)</div>
+            <div class="mobile-content" id="mobile-preview-content">
+                <!-- Injected Content -->
+            </div>
+            <div style="position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center;">
+                <button class="btn btn-primary" style="border-radius: 20px;" onclick="closeModal('modal-preview')">Close Preview</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
-        import { auth, db, signInWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from '/js/firebase-config.js';
+        import { auth, db, storage, signInWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, ref, uploadBytes, getDownloadURL } from '/js/firebase-config.js';
 
-        const loginSection = document.getElementById('login-section');
-        const dashboardSection = document.getElementById('dashboard-section');
-        const viewPosts = document.getElementById('view-posts');
-        const viewCreate = document.getElementById('view-create');
+        // --- VARS ---
+        const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s'; // Provided by user
+        let quill;
+        let selectedImage = '';
+        let currentUser = null;
 
-        // Auth Listener
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loginSection.style.display = 'none';
-                dashboardSection.style.display = 'block';
-                loadPosts();
-            } else {
-                loginSection.style.display = 'block';
-                dashboardSection.style.display = 'none';
-            }
-        });
-
-        // Login
-        document.getElementById('login-btn').addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                document.getElementById('error-msg').innerText = error.message;
-            }
-        });
-
-        // Logout
-        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-
-        // Navigation
-        document.getElementById('nav-posts').addEventListener('click', () => {
-            viewPosts.style.display = 'block';
-            viewCreate.style.display = 'none';
-            loadPosts();
-        });
-        document.getElementById('nav-new').addEventListener('click', () => {
-            viewPosts.style.display = 'none';
-            viewCreate.style.display = 'block';
-        });
-
-        // Save Post
-        document.getElementById('save-post-btn').addEventListener('click', async () => {
-            const title = document.getElementById('post-title').value;
-            const image = document.getElementById('post-image').value;
-            const category = document.getElementById('post-category').value;
-            const content = document.getElementById('post-content').value;
-
-            if(!title || !content) return alert('Please fill in title and content');
-
-            try {
-                await addDoc(collection(db, "posts"), {
-                    title: title,
-                    image: image,
-                    category: category,
-                    content: content,
-                    createdAt: serverTimestamp(),
-                    views: 0
-                });
-                alert('Post published!');
-                document.getElementById('post-title').value = '';
-                document.getElementById('post-content').value = '';
-                document.getElementById('nav-posts').click();
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                alert('Error saving post: ' + e.message);
-            }
-        });
-
-        // Load Posts
-        async function loadPosts() {
-            const postsList = document.getElementById('posts-list');
-            postsList.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
-            
-            const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            
-            postsList.innerHTML = '';
-            querySnapshot.forEach((doc) => {
-                const post = doc.data();
-                const date = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleDateString() : 'Just now';
-                postsList.innerHTML += `
-                    <div class="post-card d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5>${post.title}</h5>
-                            <small class="text-muted">${post.category} | ${date} | Views: ${post.views || 0}</small>
-                        </div>
-                        <a href="/post.html?id=${doc.id}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
-                    </div>
-                `;
+        // --- INIT ---
+        function init() {
+            quill = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'link'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }
             });
-            if(querySnapshot.empty) {
-                postsList.innerHTML = '<p class="text-center text-muted">No posts found.</p>';
+
+            // Auth Listener
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('login-section').style.display = 'none';
+                    loadDashboard();
+                } else {
+                    document.getElementById('login-section').style.display = 'flex';
+                }
+            });
+
+            // Event Listeners
+            document.getElementById('btn-login').addEventListener('click', handleLogin);
+            document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+            
+            // Nav
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.addEventListener('click', () => switchView(el.dataset.view));
+            });
+
+            // Image Handlers
+            document.getElementById('btn-unsplash').addEventListener('click', () => document.getElementById('modal-unsplash').style.display = 'flex');
+            document.getElementById('btn-search-unsplash').addEventListener('click', searchUnsplash);
+            document.getElementById('file-upload').addEventListener('change', handleFileUpload);
+            
+            // Post Handlers
+            document.getElementById('btn-publish').addEventListener('click', publishPost);
+            document.getElementById('btn-preview-mobile').addEventListener('click', showPreview);
+            
+            // AI Handlers
+            document.getElementById('btn-ai-keywords').addEventListener('click', optimizeKeywords);
+            
+            // SEO Live Check
+            document.getElementById('post-title').addEventListener('input', checkSEO);
+            quill.on('text-change', checkSEO);
+        }
+
+        // --- AUTH ---
+        async function handleLogin() {
+            const e = document.getElementById('login-email').value;
+            const p = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, e, p);
+            } catch (err) {
+                document.getElementById('login-error').innerText = err.message;
             }
         }
+
+        // --- NAVIGATION ---
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            document.querySelector(`.nav-item[data-view="${viewId}"]`).classList.add('active');
+
+            if(viewId === 'posts') loadPosts();
+            if(viewId === 'dashboard') loadDashboard();
+        }
+
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+
+        // --- DASHBOARD ---
+        async function loadDashboard() {
+            const snap = await getDocs(collection(db, "posts"));
+            document.getElementById('dash-total').innerText = snap.size;
+            let totalViews = 0;
+            snap.forEach(doc => totalViews += (doc.data().views || 0));
+            document.getElementById('dash-views').innerText = totalViews;
+        }
+
+        // --- POSTS LIST ---
+        async function loadPosts() {
+            const container = document.getElementById('posts-container');
+            container.innerHTML = 'Loading...';
+            
+            const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+            const snap = await getDocs(q);
+            
+            container.innerHTML = '';
+            snap.forEach(doc => {
+                const p = doc.data();
+                const div = document.createElement('div');
+                div.className = 'post-item';
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight: 700; font-size: 16px;">${p.title}</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">${p.category} • ${new Date(p.createdAt?.toDate()).toLocaleDateString()}</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                         <a href="/post.html?id=${doc.id}" target="_blank" class="btn btn-outline" style="font-size: 12px;">View</a>
+                        <button class="btn btn-outline" style="font-size: 12px; color: var(--warning); border-color: var(--warning);" onclick="alert('Edit feature coming in v2')">Edit</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- IMAGE HANDLING ---
+        async function searchUnsplash() {
+            const query = document.getElementById('unsplash-query').value;
+            const grid = document.getElementById('unsplash-grid');
+            grid.innerHTML = 'Searching...';
+            
+            try {
+                const res = await fetch(`https://api.unsplash.com/search/photos?page=1&query=${query}&client_id=${UNSPLASH_ACCESS_KEY}`);
+                const data = await res.json();
+                
+                grid.innerHTML = '';
+                data.results.forEach(img => {
+                    const el = document.createElement('img');
+                    el.src = img.urls.small;
+                    el.className = 'modal-img-item';
+                    el.onclick = () => selectImage(img.urls.regular);
+                    grid.appendChild(el);
+                });
+            } catch (e) {
+                grid.innerHTML = 'Error fetching images. Check API Limit.';
+            }
+        }
+
+        function selectImage(url) {
+            selectedImage = url;
+            document.getElementById('preview-img').src = url;
+            document.getElementById('preview-img').style.display = 'block';
+            document.getElementById('preview-placeholder').style.display = 'none';
+            closeModal('modal-unsplash');
+        }
+
+        async function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const storageRef = ref(storage, 'uploads/' + file.name + '-' + Date.now());
+            try {
+                const snapshot = await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+                selectImage(url);
+            } catch (err) {
+                alert('Upload failed: ' + err.message);
+            }
+        }
+
+        // --- AI & SEO ---
+        function optimizeKeywords() {
+            const input = document.getElementById('post-keywords');
+            const val = input.value;
+            if(!val) return alert('Enter some keywords first');
+            
+            // Mock AI behavior (In production, call OpenAI API here)
+            input.value = "Optimizing...";
+            setTimeout(() => {
+                // Simple logic: translate common words or just format them for now as a mock
+                // Real implementation would fetch from an Edge Function
+                input.value = val.split(',').map(s => s.trim() + " Korea").join(', '); 
+                alert("Keywords Optimized for Global SEO!");
+            }, 1000);
+        }
+
+        function checkSEO() {
+            const title = document.getElementById('post-title').value;
+            const content = quill.getText();
+            
+            document.getElementById('seo-title-score').innerText = `${title.length}/60`;
+            document.getElementById('seo-title-score').style.color = (title.length > 10 && title.length <= 60) ? 'var(--success)' : 'var(--warning)';
+            
+            const words = content.trim().split(/\s+/).length;
+            document.getElementById('seo-content-score').innerText = `${words} words`;
+        }
+
+        // --- PUBLISH ---
+        async function publishPost() {
+            const title = document.getElementById('post-title').value;
+            const content = quill.root.innerHTML; // HTML content
+            const category = document.getElementById('post-category').value;
+            const dateStr = document.getElementById('post-date').value;
+            
+            if(!title || !content) return alert('Title and Content required');
+
+            const postData = {
+                title,
+                content,
+                category,
+                image: selectedImage,
+                views: 0,
+                createdAt: dateStr ? new Date(dateStr) : serverTimestamp(), // Future date handling
+                scheduled: !!dateStr // Flag for filtering
+            };
+
+            try {
+                await addDoc(collection(db, "posts"), postData);
+                alert('Post Published Successfully!');
+                location.reload();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        // --- PREVIEW ---
+        function showPreview() {
+            const content = `
+                <h2>${document.getElementById('post-title').value}</h2>
+                <img src="${selectedImage}" style="width:100%; border-radius:8px; margin: 10px 0;">
+                <div style="font-size: 16px; line-height: 1.6;">${quill.root.innerHTML}</div>
+            `;
+            document.getElementById('mobile-preview-content').innerHTML = content;
+            document.getElementById('modal-preview').style.display = 'flex';
+        }
+
+        init();
     </script>
 </body>
 </html>

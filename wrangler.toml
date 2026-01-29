@@ -1,0 +1,6 @@
+name = "koreadecode-web"
+pages_build_output_dir = "."
+compatibility_date = "2024-01-29"
+
+[vars]
+# 환경 변수는 Cloudflare 대시보드에서 설정하는 것을 권장합니다.
