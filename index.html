@@ -102,32 +102,42 @@ gtag("config", "GT-5R3VFV25");
         </div>
     </div>
     <script type="module">
-        import { db, collection, getDocs, query, orderBy, limit } from '/js/firebase-config.js';
+        import { db, collection, getDocs, query, orderBy, limit, where } from '/js/firebase-config.js';
         
         async function loadDynamicPosts() {
             const container = document.getElementById('firebase-recent-posts');
             const grid = document.getElementById('dynamic-posts-grid');
+            const now = new Date();
             
             try {
-                const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(6));
+                // Fetch posts (Filtering happens on client side for simplicity with basic index)
+                const q = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(20));
                 const querySnapshot = await getDocs(q);
                 
+                let count = 0;
                 if (!querySnapshot.empty) {
-                    container.style.display = 'block';
+                    
                     querySnapshot.forEach((doc) => {
                         const post = doc.data();
-                        const card = document.createElement('div');
-                        card.style.cssText = "border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fff;";
-                        card.innerHTML = `
-                            <a href="/post.html?id=${doc.id}" style="text-decoration: none; color: inherit;">
-                                ${post.image ? `<img src="${post.image}" style="width: 100%; height: 200px; object-fit: cover;" alt="${post.title}">` : ''}
-                                <div style="padding: 15px;">
-                                    <span style="font-size: 12px; color: #888; text-transform: uppercase;">${post.category || 'News'}</span>
-                                    <h3 style="margin: 10px 0; font-size: 18px; line-height: 1.4;">${post.title}</h3>
-                                </div>
-                            </a>
-                        `;
-                        grid.appendChild(card);
+                        const postDate = post.createdAt ? post.createdAt.toDate() : new Date();
+                        
+                        // Client-side filtering for Scheduled Posts
+                        if (postDate <= now && count < 6) { 
+                            container.style.display = 'block';
+                            const card = document.createElement('div');
+                            card.style.cssText = "border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fff;";
+                            card.innerHTML = `
+                                <a href="/post.html?id=${doc.id}" style="text-decoration: none; color: inherit;">
+                                    ${post.image ? `<img src="${post.image}" style="width: 100%; height: 200px; object-fit: cover;" alt="${post.title}">` : ''}
+                                    <div style="padding: 15px;">
+                                        <span style="font-size: 12px; color: #888; text-transform: uppercase;">${post.category || 'News'}</span>
+                                        <h3 style="margin: 10px 0; font-size: 18px; line-height: 1.4;">${post.title}</h3>
+                                    </div>
+                                </a>
+                            `;
+                            grid.appendChild(card);
+                            count++;
+                        }
                     });
                 }
             } catch (e) {

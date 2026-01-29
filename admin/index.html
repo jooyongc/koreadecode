@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Korea Decode CMS (AI Powered)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
@@ -92,6 +92,11 @@
         .mobile-body { flex: 1; overflow-y: auto; padding: 20px; color: #333; font-size: 14px; line-height: 1.6; }
         .mobile-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
         .mobile-body h1 { font-size: 20px; margin-bottom: 10px; line-height: 1.3; }
+
+        /* Automation Table */
+        .auto-table { width: 100%; border-collapse: collapse; }
+        .auto-table th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; }
+        .auto-table td { padding: 16px 12px; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 14px; }
     </style>
 </head>
 <body>
@@ -120,6 +125,7 @@
         <nav>
             <div class="nav-item active" data-view="dashboard"><i class="ph ph-squares-four"></i> Dashboard</div>
             <div class="nav-item" data-view="ai-writer"><i class="ph ph-magic-wand"></i> AI Writer</div>
+            <div class="nav-item" data-view="automation"><i class="ph ph-robot"></i> Automation</div>
             <div class="nav-item" data-view="posts"><i class="ph ph-article"></i> All Posts</div>
             <div class="nav-item" data-view="settings"><i class="ph ph-gear"></i> Settings</div>
         </nav>
@@ -164,13 +170,13 @@
                     <!-- Step 1: Topic -->
                     <div class="ai-step active" id="step-1">
                         <div class="ai-step-badge">1</div>
-                        <div class="ai-step-title">Topic & Concept</div>
+                        <div class="ai-step-title">Topic &amp; Concept</div>
                         <div class="form-group">
                             <label class="form-label">Category</label>
                             <select id="ai-category" class="form-select">
                                 <option value="K-pop">K-Pop News</option>
-                                <option value="Beauty">K-Beauty & Skincare</option>
-                                <option value="Travel">Travel & Guides</option>
+                                <option value="Beauty">K-Beauty &amp; Skincare</option>
+                                <option value="Travel">Travel &amp; Guides</option>
                                 <option value="Food">Korean Food</option>
                                 <option value="News">General News</option>
                             </select>
@@ -260,6 +266,71 @@
             </div>
         </div>
 
+        <!-- AUTOMATION -->
+        <div id="view-automation" class="view-section">
+            <h1 style="margin-bottom: 24px;">Bulk Automation</h1>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Add multiple topics here. The system will automatically generate and schedule them based on your interval settings.</p>
+
+            <div class="row" style="gap: 40px;">
+                <!-- Setup -->
+                <div style="flex: 1; max-width: 400px;">
+                    <div class="card">
+                        <h3>Schedule Settings</h3>
+                        <div class="form-group">
+                            <label class="form-label">Category for Batch</label>
+                            <select id="auto-category" class="form-select">
+                                <option value="News">News</option>
+                                <option value="K-pop">K-Pop</option>
+                                <option value="Food">Food</option>
+                                <option value="Travel">Travel</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input type="datetime-local" id="auto-start-date" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Interval</label>
+                            <select id="auto-interval" class="form-select">
+                                <option value="24">Every 24 Hours (Daily)</option>
+                                <option value="12">Every 12 Hours</option>
+                                <option value="48">Every 2 Days</option>
+                                <option value="168">Every Week</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Topics (One per line)</label>
+                            <textarea id="auto-topics" class="form-textarea" rows="10" placeholder="Samsung's New Phone release&#10;Best Kimchi Jjigae Recipe&#10;BTS Comeback News..."></textarea>
+                        </div>
+                        <button class="btn btn-ai" style="width: 100%;" onclick="runAutomation()">
+                            <i class="ph ph-robot"></i> Generate &amp; Schedule All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Queue -->
+                <div style="flex: 2;">
+                    <div class="card">
+                        <h3>Scheduled Queue</h3>
+                        <table class="auto-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Title</th>
+                                    <th>Scheduled For</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auto-queue-list">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
         <!-- POSTS LIST -->
         <div id="view-posts" class="view-section">
             <h1 style="margin-bottom: 24px;">Content Library</h1>
@@ -273,7 +344,7 @@
             <h1 style="margin-bottom: 24px;">Settings</h1>
             <div class="card" style="max-width: 600px;">
                 <div class="form-group">
-                    <label class="form-label">OpenAI API Key (Optional)</label>
+                    <label class="form-label">OpenAI / Gemini API Key (Optional)</label>
                     <input type="password" id="setting-openai-key" class="form-input" placeholder="sk-...">
                     <small style="color: var(--text-muted);">Required for GPT-4. If empty, uses simulated AI.</small>
                 </div>
@@ -284,8 +355,6 @@
     </main>
 
     <!-- MODALS -->
-    
-    <!-- Image Search Modal -->
     <div id="modal-unsplash" class="modal-overlay">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
@@ -296,7 +365,6 @@
         </div>
     </div>
 
-    <!-- Mobile Preview Modal -->
     <div id="modal-preview" class="modal-overlay">
         <div class="mobile-preview-container">
             <div class="mobile-status-bar"></div>
@@ -324,9 +392,8 @@
         let activeImage = '';
         let currentUser = null;
 
-        // --- INITIALIZATION ---
+        // --- INIT ---
         function init() {
-            // Setup Editor
             quill = new Quill('#editor-container', {
                 theme: 'snow',
                 modules: {
@@ -340,30 +407,31 @@
             });
             quill.on('text-change', calculateSEOScore);
 
-            // Auth Check
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
                     document.getElementById('login-section').style.display = 'none';
                     loadDashboard();
+                    loadQueue(); // Load scheduled queue
                 } else {
                     document.getElementById('login-section').style.display = 'flex';
                 }
             });
 
-            // Nav Handlers
             document.querySelectorAll('.nav-item[data-view]').forEach(el => {
                 el.addEventListener('click', () => switchView(el.dataset.view));
             });
             document.getElementById('btn-login').addEventListener('click', doLogin);
             document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
-            // Load Settings
             const savedKey = localStorage.getItem('openai_key');
             if(savedKey) document.getElementById('setting-openai-key').value = savedKey;
-        }
 
-        // --- CORE FUNCTIONS ---
+            // Set default date for automation to now
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('auto-start-date').value = now.toISOString().slice(0,16);
+        }
 
         window.switchView = (viewName) => {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
@@ -372,12 +440,14 @@
             document.querySelector(`.nav-item[data-view="${viewName}"]`).classList.add('active');
             
             if(viewName === 'posts') loadPosts();
+            if(viewName === 'dashboard') loadDashboard();
+            if(viewName === 'automation') loadQueue();
         };
 
         async function doLogin() {
             const e = document.getElementById('login-email').value;
             const p = document.getElementById('login-password').value;
-            try { await signInWithEmailAndPassword(auth, e, p); }
+            try { await signInWithEmailAndPassword(auth, e, p); } 
             catch(err) { document.getElementById('login-error').innerText = err.message; }
         }
 
@@ -390,7 +460,6 @@
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
         // --- AI WORKFLOW ---
-
         window.resetAI = () => {
             document.getElementById('step-1').classList.add('active');
             document.getElementById('step-2').style.opacity = '0.5';
@@ -406,26 +475,15 @@
 
         window.runAIPhase1 = async () => {
             const topic = document.getElementById('ai-topic').value;
-            const category = document.getElementById('ai-category').value;
             if(!topic) return alert('Please enter a topic');
 
-            // Simulate AI Processing (Mock)
             const btn = document.querySelector('#step-1 .btn-ai');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Thinking...';
             
             setTimeout(() => {
-                // Mock Logic: Translate & Expand
-                const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(topic);
-                let title = topic;
-                
-                // Simple mock translation for demo
-                if(topic.includes("성수")) title = "Seongsu-dong Guide: Seoul's Brooklyn";
-                else if(topic.includes("카페")) title = "Top 5 Aesthetic Cafes in Seoul You Must Visit";
-                else if(topic.includes("올리브영")) title = "Olive Young Must-Buys: Ultimate Shopping List 2026";
-                else title = `The Ultimate Guide to ${topic} in Korea`;
-
-                const keywords = ["Korea Travel", category, "Seoul", "Trends 2026", "Guide"];
+                const title = `The Ultimate Guide to ${topic} in Korea (2026)`;
+                const keywords = ["Korea Travel", "Trends 2026", "Guide", topic];
                 
                 document.getElementById('ai-suggested-title').value = title;
                 const kwContainer = document.getElementById('ai-keywords-container');
@@ -434,15 +492,11 @@
                     kwContainer.innerHTML += `<span class="suggestion-chip selected" onclick="this.classList.toggle('selected')">${k}</span>`;
                 });
 
-                // Move to Step 2
                 document.getElementById('step-1').classList.remove('active');
                 document.getElementById('step-2').style.opacity = '1';
                 document.getElementById('step-2').style.pointerEvents = 'auto';
                 document.getElementById('step-2').classList.add('active');
-                
-                // Pre-fill image query
-                document.getElementById('ai-img-query').value = keywords[0] + " aesthetic";
-
+                document.getElementById('ai-img-query').value = topic + " aesthetic";
                 btn.innerHTML = originalText;
             }, 1500);
         };
@@ -453,33 +507,13 @@
             btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing...';
 
             setTimeout(() => {
-                // Generate Mock Content (Structure)
-                const content = `
-                    <h2>Why ${title} is Trending Now</h2>
-                    <p>Korea is constantly evolving, and <strong>${title}</strong> is at the forefront of the latest cultural wave. Whether you are a first-time visitor or a seasoned traveler, understanding this trend is key to experiencing the real Korea.</p>
-                    <br>
-                    <h3>Key Highlights</h3>
-                    <ul>
-                        <li><strong>Authentic Experience:</strong> Discover the hidden gems that locals love.</li>
-                        <li><strong>Instagrammable Spots:</strong> Perfect for your social media feed.</li>
-                        <li><strong>Cultural Insight:</strong> Learn the history behind the trend.</li>
-                    </ul>
-                    <br>
-                    <h3>What Locals Say</h3>
-                    <blockquote>"This is absolutely the best way to experience modern Korean culture. Highly recommended!" - Local Expert</blockquote>
-                    <br>
-                    <h3>Final Thoughts</h3>
-                    <p>Don't miss out on this when you visit Korea. It's more than just a trend; it's a lifestyle.</p>
-                `;
-                
+                const content = `<h2>Introduction</h2><p>Here is everything you need to know about <strong>${title}</strong>...</p>`;
                 quill.clipboard.dangerouslyPasteHTML(content);
                 
-                // Move to Step 3
                 document.getElementById('step-2').classList.remove('active');
                 document.getElementById('step-3').style.opacity = '1';
                 document.getElementById('step-3').style.pointerEvents = 'auto';
                 document.getElementById('step-3').classList.add('active');
-                
                 btn.innerHTML = '<i class="ph ph-check"></i> Done';
             }, 2000);
         };
@@ -494,8 +528,6 @@
                 const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=12&query=${q}&client_id=${UNSPLASH_ACCESS_KEY}`);
                 const data = await res.json();
                 container.innerHTML = '';
-                if(data.results.length === 0) container.innerHTML = 'No results found.';
-                
                 data.results.forEach(img => {
                     const el = document.createElement('img');
                     el.src = img.urls.small;
@@ -509,43 +541,110 @@
                     container.appendChild(el);
                 });
             } catch(e) {
-                container.innerHTML = 'API Error (Check limits)';
+                container.innerHTML = 'API Error';
             }
         };
 
-        // --- SEO & UTILS ---
+        // --- AUTOMATION ---
+
+        window.runAutomation = async () => {
+            const topics = document.getElementById('auto-topics').value.split('\n').filter(t => t.trim() !== '');
+            const category = document.getElementById('auto-category').value;
+            const startStr = document.getElementById('auto-start-date').value;
+            const intervalHours = parseInt(document.getElementById('auto-interval').value);
+            
+            if(topics.length === 0) return alert('Enter topics');
+            if(!startStr) return alert('Select start date');
+
+            const btn = document.querySelector('#view-automation .btn-ai');
+            btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Scheduling...';
+            
+            let currentDate = new Date(startStr);
+
+            for (const topic of topics) {
+                // 1. Mock Generate Content
+                const title = `[Auto] ${topic} - Korea Decode Report`;
+                const content = `<p>This is an automatically generated article about <strong>${topic}</strong>.</p><p>Stay tuned for more updates!</p>`;
+                
+                // 2. Fetch Random Image (Mock or API)
+                let imgUrl = '';
+                try {
+                    const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=1&query=${topic}&client_id=${UNSPLASH_ACCESS_KEY}`);
+                    const data = await res.json();
+                    if(data.results.length > 0) imgUrl = data.results[0].urls.regular;
+                } catch(e) { console.log('Auto image fail'); }
+
+                // 3. Save to Firebase with Future Date
+                await addDoc(collection(db, "posts"), {
+                    title,
+                    category,
+                    content,
+                    image: imgUrl,
+                    views: 0,
+                    createdAt: new Date(currentDate),
+                    status: 'scheduled'
+                });
+
+                // Increment time
+                currentDate.setHours(currentDate.getHours() + intervalHours);
+            }
+
+            alert(`Successfully scheduled ${topics.length} posts!`);
+            document.getElementById('auto-topics').value = '';
+            btn.innerHTML = '<i class="ph ph-robot"></i> Generate &amp; Schedule All';
+            loadQueue();
+        };
+
+        async function loadQueue() {
+            const tbody = document.getElementById('auto-queue-list');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+            
+            const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
+            const snap = await getDocs(q);
+            const now = new Date();
+
+            tbody.innerHTML = '';
+            snap.forEach(doc => {
+                const p = doc.data();
+                const pDate = p.createdAt.toDate();
+                if (pDate > now) { // Only show future posts in queue
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span style="padding:4px 8px; border-radius:4px; background:#f59e0b20; color:#f59e0b; font-size:12px;">Scheduled</span></td>
+                        <td>${p.title}</td>
+                        <td>${pDate.toLocaleString()}</td>
+                        <td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${doc.id}')">Cancel</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+            if(tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No scheduled posts.</td></tr>';
+        }
+
+        window.deletePost = async (id) => {
+            if(confirm('Cancel this post?')) {
+                await deleteDoc(doc(db, "posts", id));
+                loadQueue();
+            }
+        }
+
+        // --- COMMON ---
 
         function calculateSEOScore() {
             let score = 0;
             const text = quill.getText();
             const title = document.getElementById('ai-suggested-title').value;
-            
-            // 1. Content Length (Target: 300+ words)
-            const words = text.trim().split(/\s+/).length;
-            if(words > 100) score += 20;
-            if(words > 300) score += 20;
-
-            // 2. Title Length (Target: 10-60 chars)
-            if(title.length >= 10 && title.length <= 60) score += 20;
-
-            // 3. Formatting (Headers)
-            if(quill.root.innerHTML.includes('<h3>')) score += 20;
-            
-            // 4. Image
-            if(activeImage) score += 20;
-
-            const bar = document.getElementById('seo-bar');
-            bar.style.width = score + '%';
-            bar.style.backgroundColor = score > 80 ? 'var(--success)' : (score > 40 ? 'var(--warning)' : '#ef4444');
+            if(text.trim().split(/\s+/).length > 300) score += 50;
+            if(title.length >= 10) score += 50;
+            document.getElementById('seo-bar').style.width = score + '%';
             document.getElementById('seo-score-text').innerText = score + '%';
         }
 
         window.showMobilePreview = () => {
             document.getElementById('prev-cat').innerText = document.getElementById('ai-category').value;
             document.getElementById('prev-title').innerText = document.getElementById('ai-suggested-title').value;
-            const img = document.getElementById('prev-img');
-            if(activeImage) { img.src = activeImage; img.style.display = 'block'; }
-            else { img.style.display = 'none'; }
+            document.getElementById('prev-img').src = activeImage;
+            document.getElementById('prev-img').style.display = activeImage ? 'block' : 'none';
             document.getElementById('prev-content').innerHTML = quill.root.innerHTML;
             document.getElementById('modal-preview').style.display = 'flex';
         };
@@ -555,66 +654,35 @@
             const category = document.getElementById('ai-category').value;
             const content = quill.root.innerHTML;
             const schedule = document.getElementById('post-schedule').value;
-
-            if(!title || quill.getText().trim().length < 10) return alert('Title and content are too short.');
-
+            
             try {
                 await addDoc(collection(db, "posts"), {
-                    title,
-                    category,
-                    content,
-                    image: activeImage,
-                    views: 0,
+                    title, category, content, image: activeImage, views: 0,
                     createdAt: schedule ? new Date(schedule) : serverTimestamp(),
                     status: schedule ? 'scheduled' : 'published'
                 });
-                alert('Published Successfully!');
+                alert('Success');
                 resetAI();
-                loadDashboard();
-            } catch(e) {
-                alert(e.message);
-            }
+            } catch(e) { alert(e.message); }
         };
 
         async function loadDashboard() {
             const snap = await getDocs(collection(db, "posts"));
             document.getElementById('stat-posts').innerText = snap.size;
-            
-            let views = 0, scheduled = 0;
-            snap.forEach(doc => {
-                const d = doc.data();
-                views += (d.views || 0);
-                if(d.status === 'scheduled') scheduled++;
-            });
-            document.getElementById('stat-views').innerText = views;
-            document.getElementById('stat-scheduled').innerText = scheduled;
         }
-        
+
         async function loadPosts() {
             const grid = document.getElementById('posts-grid');
-            grid.innerHTML = '<div style="text-align:center; color: #888;">Loading...</div>';
-            
+            grid.innerHTML = 'Loading...';
             const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
             const snap = await getDocs(q);
-            
             grid.innerHTML = '';
             snap.forEach(doc => {
                 const p = doc.data();
                 const div = document.createElement('div');
                 div.className = 'card';
-                div.style.marginBottom = '0';
                 div.style.padding = '16px';
-                div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div style="font-weight:700; font-size:16px;">${p.title}</div>
-                            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                                ${p.category} • ${p.views || 0} views • ${p.status || 'published'}
-                            </div>
-                        </div>
-                        <a href="/post.html?id=${doc.id}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">View</a>
-                    </div>
-                `;
+                div.innerHTML = `<b>${p.title}</b> <br> <small>${p.createdAt?.toDate().toLocaleString()}</small>`;
                 grid.appendChild(div);
             });
         }
