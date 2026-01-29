@@ -3,25 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Korea Decode CMS</title>
-    <!-- Google Fonts -->
+    <title>Korea Decode CMS (AI Powered)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Quill Rich Text Editor -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
         :root {
-            --bg-body: #111111;
-            --bg-panel: #1a1a1a;
-            --bg-input: #2a2a2a;
-            --text-main: #ffffff;
-            --text-muted: #888888;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --border: #333333;
+            --bg-body: #0f172a; /* Slate 900 */
+            --bg-panel: #1e293b; /* Slate 800 */
+            --bg-input: #334155; /* Slate 700 */
+            --text-main: #f8fafc; /* Slate 50 */
+            --text-muted: #94a3b8; /* Slate 400 */
+            --accent: #6366f1; /* Indigo 500 */
+            --accent-hover: #4f46e5; /* Indigo 600 */
+            --border: #334155;
             --success: #10b981;
             --warning: #f59e0b;
         }
@@ -29,194 +27,233 @@
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
         /* Layout */
-        .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; position: relative; }
+        .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px; }
+        .main-content { flex: 1; padding: 32px; overflow-y: auto; position: relative; }
         
-        /* Sidebar */
-        .brand { font-size: 20px; font-weight: 700; margin-bottom: 40px; color: var(--text-main); letter-spacing: -0.5px; }
-        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 15px; color: var(--text-muted); text-decoration: none; border-radius: 8px; margin-bottom: 5px; transition: 0.2s; cursor: pointer; }
+        /* Components */
+        .brand { font-size: 22px; font-weight: 800; margin-bottom: 40px; color: var(--text-main); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text-muted); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: 0.2s; cursor: pointer; font-weight: 500; }
         .nav-item:hover, .nav-item.active { background-color: var(--bg-input); color: var(--text-main); }
         .nav-item i { font-size: 20px; }
-        .user-profile { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
         
-        /* Views */
-        .view-section { display: none; }
-        .view-section.active { display: block; }
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
         
-        /* Forms */
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
-        .form-input, .form-select { width: 100%; padding: 12px; background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; color: var(--text-main); font-size: 14px; outline: none; transition: border-color 0.2s; }
-        .form-input:focus { border-color: var(--accent); }
-        .btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 15px; outline: none; transition: 0.2s; font-family: inherit; }
+        .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+        
+        .btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
         .btn-primary { background-color: var(--accent); color: white; }
         .btn-primary:hover { background-color: var(--accent-hover); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-        .btn-outline:hover { border-color: var(--text-muted); color: var(--text-main); }
-        .btn-ai { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; border: none; }
-        
-        /* Grid/Flex Utils */
-        .row { display: flex; gap: 20px; }
-        .col { flex: 1; }
-        
-        /* Image Select */
-        .img-preview-box { width: 100%; height: 250px; background-color: var(--bg-input); border: 2px dashed var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; }
-        .img-preview-box:hover { border-color: var(--accent); }
-        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        .img-placeholder { text-align: center; color: var(--text-muted); }
-        
-        /* Editor Overrides */
-        .ql-toolbar { background-color: #eee; border-top-left-radius: 8px; border-top-right-radius: 8px; }
-        .ql-container { background-color: var(--bg-input); color: white; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; border: 1px solid var(--border) !important; font-size: 16px; }
-        
-        /* Login */
-        .login-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-body); z-index: 999; display: flex; align-items: center; justify-content: center; }
-        .login-box { width: 400px; padding: 40px; background: var(--bg-panel); border-radius: 12px; border: 1px solid var(--border); }
+        .btn-outline:hover { border-color: var(--text-muted); color: var(--text-main); background: var(--bg-input); }
+        .btn-ai { background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+        .btn-ai:hover { box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5); transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        /* Modal */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-box { background: var(--bg-panel); width: 800px; max-height: 90vh; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
-        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
-        .modal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; max-height: 600px; }
-        .modal-img-item { height: 120px; border-radius: 4px; cursor: pointer; object-fit: cover; width: 100%; transition: 0.2s; }
-        .modal-img-item:hover { opacity: 0.8; transform: scale(1.02); }
+        /* AI Process Steps */
+        .ai-step { border-left: 2px solid var(--border); padding-left: 20px; margin-bottom: 30px; position: relative; }
+        .ai-step.active { border-left-color: var(--accent); }
+        .ai-step-badge { position: absolute; left: -11px; top: 0; width: 20px; height: 20px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 50%; color: var(--text-muted); font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .ai-step.active .ai-step-badge { border-color: var(--accent); background: var(--accent); color: white; }
+        .ai-step-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+
+        /* Generated Options */
+        .suggestion-chip { display: inline-block; padding: 6px 12px; background: var(--bg-input); border-radius: 20px; font-size: 13px; margin: 0 5px 5px 0; cursor: pointer; border: 1px solid transparent; }
+        .suggestion-chip:hover { background: var(--border); }
+        .suggestion-chip.selected { background: rgba(99, 102, 241, 0.2); border-color: var(--accent); color: var(--accent); }
+
+        /* Editor Overrides */
+        .ql-toolbar { background-color: var(--bg-input); border: 1px solid var(--border) !important; border-radius: 8px 8px 0 0; }
+        .ql-container { background-color: rgba(0,0,0,0.2); color: var(--text-main); border: 1px solid var(--border) !important; border-top: none; border-radius: 0 0 8px 8px; font-size: 16px; height: 500px; }
+        .ql-stroke { stroke: var(--text-muted) !important; }
+        .ql-fill { fill: var(--text-muted) !important; }
+        .ql-picker { color: var(--text-muted) !important; }
+
+        /* Modals & Utils */
+        .login-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-body); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-box { background: var(--bg-panel); width: 800px; max-height: 90vh; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .modal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; overflow-y: auto; padding: 4px; }
+        .modal-img-item { height: 140px; border-radius: 8px; cursor: pointer; object-fit: cover; width: 100%; transition: 0.2s; border: 2px solid transparent; }
+        .modal-img-item:hover { border-color: var(--accent); transform: scale(1.02); }
+
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .view-section { display: none; }
+        .view-section.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Mobile Preview */
-        .mobile-frame { width: 375px; height: 700px; background: #fff; color: #000; margin: 0 auto; border-radius: 30px; border: 8px solid #333; overflow: hidden; position: relative; }
-        .mobile-content { height: 100%; overflow-y: auto; padding: 20px; }
-
-        /* Posts List */
-        .post-item { background: var(--bg-panel); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
-        .post-item:hover { border-color: var(--border); }
+        .mobile-preview-container { width: 375px; height: 667px; border: 10px solid #111; border-radius: 30px; background: #fff; margin: 0 auto; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+        .mobile-status-bar { height: 20px; background: #111; width: 100%; }
+        .mobile-body { flex: 1; overflow-y: auto; padding: 20px; color: #333; font-size: 14px; line-height: 1.6; }
+        .mobile-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
+        .mobile-body h1 { font-size: 20px; margin-bottom: 10px; line-height: 1.3; }
     </style>
 </head>
 <body>
 
     <!-- LOGIN -->
     <div id="login-section" class="login-wrap">
-        <div class="login-box">
-            <h2 style="text-align: center; margin-bottom: 30px;">Korea Decode CMS</h2>
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" id="login-email" class="form-input">
+        <div class="card" style="width: 400px; border: 1px solid var(--border);">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div class="brand" style="justify-content: center;"><i class="ph ph-command"></i> K-Decode Admin</div>
+                <p style="color: var(--text-muted);">Sign in to manage content</p>
             </div>
             <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="login-password" class="form-input">
+                <input type="email" id="login-email" class="form-input" placeholder="Email address">
             </div>
-            <button class="btn btn-primary" style="width: 100%; justify-content: center;" id="btn-login">Sign In</button>
-            <p id="login-error" style="color: var(--warning); text-align: center; margin-top: 15px; font-size: 14px;"></p>
+            <div class="form-group">
+                <input type="password" id="login-password" class="form-input" placeholder="Password">
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" id="btn-login">Sign In</button>
+            <p id="login-error" style="color: var(--warning); text-align: center; margin-top: 16px; font-size: 13px;"></p>
         </div>
     </div>
 
-    <!-- APP -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-        <div class="brand">K-Decode <span style="color:var(--accent);">Admin</span></div>
+        <div class="brand"><i class="ph ph-command" style="color: var(--accent);"></i> K-Decode</div>
         <nav>
             <div class="nav-item active" data-view="dashboard"><i class="ph ph-squares-four"></i> Dashboard</div>
-            <div class="nav-item" data-view="write"><i class="ph ph-pen-nib"></i> Write Post</div>
-            <div class="nav-item" data-view="posts"><i class="ph ph-list-dashes"></i> All Posts</div>
+            <div class="nav-item" data-view="ai-writer"><i class="ph ph-magic-wand"></i> AI Writer</div>
+            <div class="nav-item" data-view="posts"><i class="ph ph-article"></i> All Posts</div>
             <div class="nav-item" data-view="settings"><i class="ph ph-gear"></i> Settings</div>
         </nav>
-        <div class="user-profile">
-            <div style="width: 32px; height: 32px; background: #333; border-radius: 50%;"></div>
-            <div style="font-size: 14px;">Admin</div>
-            <i class="ph ph-sign-out" style="margin-left: auto; cursor: pointer;" id="btn-logout"></i>
+        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
+            <div class="nav-item" id="btn-logout" style="color: #ef4444;"><i class="ph ph-sign-out"></i> Sign Out</div>
         </div>
     </aside>
 
+    <!-- MAIN -->
     <main class="main-content">
-        
+
         <!-- DASHBOARD -->
         <div id="view-dashboard" class="view-section active">
-            <h1>Dashboard</h1>
-            <div class="row">
-                <div class="col" style="background: var(--bg-panel); padding: 20px; border-radius: 12px; text-align: center;">
-                    <h3>Total Posts</h3>
-                    <div style="font-size: 40px; font-weight: 700; color: var(--accent);" id="dash-total">0</div>
+            <h1 style="margin-bottom: 24px;">Overview</h1>
+            <div class="row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+                <div class="card">
+                    <div style="color: var(--text-muted); font-size: 14px;">Total Posts</div>
+                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px;" id="stat-posts">0</div>
                 </div>
-                <div class="col" style="background: var(--bg-panel); padding: 20px; border-radius: 12px; text-align: center;">
-                    <h3>Total Views</h3>
-                    <div style="font-size: 40px; font-weight: 700; color: var(--success);" id="dash-views">0</div>
+                <div class="card">
+                    <div style="color: var(--text-muted); font-size: 14px;">Total Views</div>
+                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--success);" id="stat-views">0</div>
+                </div>
+                <div class="card">
+                    <div style="color: var(--text-muted); font-size: 14px;">Scheduled</div>
+                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--warning);" id="stat-scheduled">0</div>
                 </div>
             </div>
         </div>
 
-        <!-- WRITE POST -->
-        <div id="view-write" class="view-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h1>Write New Post</h1>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-outline" id="btn-preview-mobile"><i class="ph ph-device-mobile"></i> Mobile Preview</button>
-                    <button class="btn btn-primary" id="btn-publish"><i class="ph ph-paper-plane-right"></i> Publish</button>
-                </div>
+        <!-- AI WRITER -->
+        <div id="view-ai-writer" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h1>AI Content Creator</h1>
+                <button class="btn btn-outline" onclick="resetAI()"><i class="ph ph-arrow-counter-clockwise"></i> Reset</button>
             </div>
 
-            <div class="row">
-                <!-- Left: Editor -->
-                <div class="col" style="flex: 2;">
-                    <div class="form-group">
-                        <label class="form-label">Title</label>
-                        <input type="text" id="post-title" class="form-input" placeholder="Enter engaging title...">
-                    </div>
+            <div class="row" style="display: flex; gap: 40px;">
+                <!-- Left: AI Controls -->
+                <div style="flex: 1; max-width: 400px;">
                     
-                    <div class="form-group">
-                        <label class="form-label">Content</label>
-                        <div id="editor-container" style="height: 400px;"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">SEO Keywords (Korean/English)</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="post-keywords" class="form-input" placeholder="k-beauty, skincare, seoul travel...">
-                            <button class="btn btn-ai" id="btn-ai-keywords"><i class="ph ph-sparkle"></i> AI Optimize</button>
+                    <!-- Step 1: Topic -->
+                    <div class="ai-step active" id="step-1">
+                        <div class="ai-step-badge">1</div>
+                        <div class="ai-step-title">Topic & Concept</div>
+                        <div class="form-group">
+                            <label class="form-label">Category</label>
+                            <select id="ai-category" class="form-select">
+                                <option value="K-pop">K-Pop News</option>
+                                <option value="Beauty">K-Beauty & Skincare</option>
+                                <option value="Travel">Travel & Guides</option>
+                                <option value="Food">Korean Food</option>
+                                <option value="News">General News</option>
+                            </select>
                         </div>
-                        <small style="color: var(--text-muted); margin-top: 5px; display: block;">AI will translate and optimize keywords for global SEO.</small>
+                        <div class="form-group">
+                            <label class="form-label">Topic Idea (Korean or English)</label>
+                            <textarea id="ai-topic" class="form-textarea" rows="3" placeholder="예: 성수동 팝업스토어 투어 가이드"></textarea>
+                        </div>
+                        <button class="btn btn-ai" style="width: 100%;" onclick="runAIPhase1()">
+                            <i class="ph ph-brain"></i> Generate Plan
+                        </button>
                     </div>
-                </div>
 
-                <!-- Right: Meta -->
-                <div class="col" style="flex: 1; max-width: 350px;">
-                    <div class="form-group">
-                        <label class="form-label">Featured Image</label>
-                        <div class="img-preview-box" id="btn-img-select">
-                            <img id="preview-img" style="display: none;">
-                            <div class="img-placeholder" id="preview-placeholder">
-                                <i class="ph ph-image" style="font-size: 32px;"></i><br>
-                                Click to Select
+                    <!-- Step 2: Plan -->
+                    <div class="ai-step" id="step-2" style="opacity: 0.5; pointer-events: none;">
+                        <div class="ai-step-badge">2</div>
+                        <div class="ai-step-title">SEO Strategy</div>
+                        <div class="form-group">
+                            <label class="form-label">Suggested Title (English)</label>
+                            <input type="text" id="ai-suggested-title" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Keywords</label>
+                            <div id="ai-keywords-container"></div>
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%;" onclick="runAIPhase2()">
+                            <i class="ph ph-pen-nib"></i> Write Full Article
+                        </button>
+                    </div>
+
+                    <!-- Step 3: Media -->
+                    <div class="ai-step" id="step-3" style="opacity: 0.5; pointer-events: none;">
+                        <div class="ai-step-badge">3</div>
+                        <div class="ai-step-title">Visuals</div>
+                        <div class="form-group">
+                            <label class="form-label">Recommended Image Search</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="ai-img-query" class="form-input">
+                                <button class="btn btn-outline" onclick="searchUnsplashAI()">Search</button>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 5px; margin-top: 10px;">
-                            <button class="btn btn-outline" style="flex: 1; font-size: 12px;" id="btn-unsplash">Unsplash</button>
-                            <input type="file" id="file-upload" style="display: none;">
-                            <button class="btn btn-outline" style="flex: 1; font-size: 12px;" onclick="document.getElementById('file-upload').click()">Upload</button>
+                        <div id="ai-img-preview" style="margin-top: 10px; border-radius: 8px; overflow: hidden; height: 150px; background: #333; display: none;">
+                            <img id="selected-ai-img" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Category</label>
-                        <select id="post-category" class="form-select">
-                            <option value="News">News</option>
-                            <option value="K-pop">K-pop</option>
-                            <option value="Food">Food</option>
-                            <option value="Beauty">Beauty</option>
-                            <option value="Travel">Travel</option>
-                        </select>
-                    </div>
+                </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Schedule (Automation)</label>
-                        <input type="datetime-local" id="post-date" class="form-input">
-                        <small style="color: var(--text-muted);">Leave empty to publish immediately.</small>
-                    </div>
-
-                    <div class="form-group" style="background: #222; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-                        <label class="form-label" style="color: var(--success);"><i class="ph ph-check-circle"></i> SEO Score</label>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
-                            <span>Title Length</span> <span id="seo-title-score">0/60</span>
+                <!-- Right: Editor & Output -->
+                <div style="flex: 2; display: flex; flex-direction: column;">
+                    <div class="card" style="flex: 1; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+                        <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--bg-input); display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600;">Editor</span>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;" onclick="showMobilePreview()">
+                                    <i class="ph ph-device-mobile"></i> Preview
+                                </button>
+                                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="publishPost()">
+                                    <i class="ph ph-paper-plane-right"></i> Publish
+                                </button>
+                            </div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 13px;">
-                            <span>Content Length</span> <span id="seo-content-score">0 words</span>
+                        
+                        <!-- Quill Editor -->
+                        <div id="editor-container"></div>
+                    </div>
+
+                    <!-- Scheduling -->
+                    <div class="card" style="padding: 16px;">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div style="flex: 1;">
+                                <label class="form-label">Schedule Publish (Optional)</label>
+                                <input type="datetime-local" id="post-schedule" class="form-input">
+                            </div>
+                            <div style="flex: 1;">
+                                <label class="form-label">SEO Score</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="flex: 1; height: 8px; background: var(--bg-input); border-radius: 4px; overflow: hidden;">
+                                        <div id="seo-bar" style="width: 0%; height: 100%; background: var(--warning); transition: 0.5s;"></div>
+                                    </div>
+                                    <span id="seo-score-text" style="font-size: 14px; font-weight: bold;">0%</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -225,46 +262,55 @@
 
         <!-- POSTS LIST -->
         <div id="view-posts" class="view-section">
-            <h1>All Posts</h1>
-            <div id="posts-container"></div>
+            <h1 style="margin-bottom: 24px;">Content Library</h1>
+            <div id="posts-grid" style="display: grid; gap: 16px;">
+                <!-- Populated by JS -->
+            </div>
         </div>
 
         <!-- SETTINGS -->
         <div id="view-settings" class="view-section">
-            <h1>Settings</h1>
-            <div class="form-group">
-                <label class="form-label">OpenAI / Gemini API Key (For AI Features)</label>
-                <input type="password" id="api-key" class="form-input" placeholder="sk-...">
-                <button class="btn btn-primary" style="margin-top: 10px;" id="btn-save-key">Save Key (Local Storage)</button>
+            <h1 style="margin-bottom: 24px;">Settings</h1>
+            <div class="card" style="max-width: 600px;">
+                <div class="form-group">
+                    <label class="form-label">OpenAI API Key (Optional)</label>
+                    <input type="password" id="setting-openai-key" class="form-input" placeholder="sk-...">
+                    <small style="color: var(--text-muted);">Required for GPT-4. If empty, uses simulated AI.</small>
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
             </div>
         </div>
 
     </main>
 
-    <!-- UNSPLASH MODAL -->
+    <!-- MODALS -->
+    
+    <!-- Image Search Modal -->
     <div id="modal-unsplash" class="modal-overlay">
         <div class="modal-box">
-            <div class="modal-header">
-                <span>Select Image from Unsplash</span>
-                <i class="ph ph-x" style="cursor: pointer;" onclick="closeModal('modal-unsplash')"></i>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <h3 style="margin: 0;">Unsplash Images</h3>
+                <button class="btn btn-outline" style="padding: 4px 10px;" onclick="closeModal('modal-unsplash')"><i class="ph ph-x"></i></button>
             </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <input type="text" id="unsplash-query" class="form-input" placeholder="Search k-pop, seoul, food...">
-                <button class="btn btn-primary" id="btn-search-unsplash">Search</button>
-            </div>
-            <div id="unsplash-grid" class="modal-grid"></div>
+            <div id="unsplash-results" class="modal-grid"></div>
         </div>
     </div>
 
-    <!-- PREVIEW MODAL -->
+    <!-- Mobile Preview Modal -->
     <div id="modal-preview" class="modal-overlay">
-        <div class="mobile-frame">
-            <div style="background: #000; color: #fff; padding: 15px; text-align: center; font-size: 14px;">Korea Decode (Mobile)</div>
-            <div class="mobile-content" id="mobile-preview-content">
-                <!-- Injected Content -->
+        <div class="mobile-preview-container">
+            <div class="mobile-status-bar"></div>
+            <div class="mobile-body">
+                <div style="position: sticky; top: 0; background: #fff; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 15px;">
+                    <span style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: 700;" id="prev-cat">CATEGORY</span>
+                </div>
+                <h1 id="prev-title">Post Title Goes Here</h1>
+                <div style="font-size: 12px; color: #999; margin-bottom: 20px;">By Korea Decode • Just now</div>
+                <img id="prev-img" src="" style="display: none;">
+                <div id="prev-content"></div>
             </div>
-            <div style="position: absolute; bottom: 20px; left: 0; width: 100%; text-align: center;">
-                <button class="btn btn-primary" style="border-radius: 20px;" onclick="closeModal('modal-preview')">Close Preview</button>
+            <div style="padding: 15px; background: #f9f9f9; text-align: center;">
+                <button class="btn btn-primary" onclick="closeModal('modal-preview')" style="width: 100%;">Close Preview</button>
             </div>
         </div>
     </div>
@@ -273,19 +319,28 @@
         import { auth, db, storage, signInWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, ref, uploadBytes, getDownloadURL } from '/js/firebase-config.js';
 
         // --- VARS ---
-        const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s'; // Provided by user
+        const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
         let quill;
-        let selectedImage = '';
+        let activeImage = '';
         let currentUser = null;
 
-        // --- INIT ---
+        // --- INITIALIZATION ---
         function init() {
+            // Setup Editor
             quill = new Quill('#editor-container', {
                 theme: 'snow',
-                modules: { toolbar: [[{ 'header': [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'link'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'blockquote'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link', 'clean']
+                    ]
+                }
             });
+            quill.on('text-change', calculateSEOScore);
 
-            // Auth Listener
+            // Auth Check
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
@@ -296,202 +351,272 @@
                 }
             });
 
-            // Event Listeners
-            document.getElementById('btn-login').addEventListener('click', handleLogin);
-            document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-            
-            // Nav
-            document.querySelectorAll('.nav-item').forEach(el => {
+            // Nav Handlers
+            document.querySelectorAll('.nav-item[data-view]').forEach(el => {
                 el.addEventListener('click', () => switchView(el.dataset.view));
             });
+            document.getElementById('btn-login').addEventListener('click', doLogin);
+            document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
-            // Image Handlers
-            document.getElementById('btn-unsplash').addEventListener('click', () => document.getElementById('modal-unsplash').style.display = 'flex');
-            document.getElementById('btn-search-unsplash').addEventListener('click', searchUnsplash);
-            document.getElementById('file-upload').addEventListener('change', handleFileUpload);
-            
-            // Post Handlers
-            document.getElementById('btn-publish').addEventListener('click', publishPost);
-            document.getElementById('btn-preview-mobile').addEventListener('click', showPreview);
-            
-            // AI Handlers
-            document.getElementById('btn-ai-keywords').addEventListener('click', optimizeKeywords);
-            
-            // SEO Live Check
-            document.getElementById('post-title').addEventListener('input', checkSEO);
-            quill.on('text-change', checkSEO);
+            // Load Settings
+            const savedKey = localStorage.getItem('openai_key');
+            if(savedKey) document.getElementById('setting-openai-key').value = savedKey;
         }
 
-        // --- AUTH ---
-        async function handleLogin() {
+        // --- CORE FUNCTIONS ---
+
+        window.switchView = (viewName) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.nav-item[data-view="${viewName}"]`).classList.add('active');
+            
+            if(viewName === 'posts') loadPosts();
+        };
+
+        async function doLogin() {
             const e = document.getElementById('login-email').value;
             const p = document.getElementById('login-password').value;
-            try {
-                await signInWithEmailAndPassword(auth, e, p);
-            } catch (err) {
-                document.getElementById('login-error').innerText = err.message;
-            }
+            try { await signInWithEmailAndPassword(auth, e, p); }
+            catch(err) { document.getElementById('login-error').innerText = err.message; }
         }
 
-        // --- NAVIGATION ---
-        function switchView(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(`view-${viewId}`).classList.add('active');
-            document.querySelector(`.nav-item[data-view="${viewId}"]`).classList.add('active');
-
-            if(viewId === 'posts') loadPosts();
-            if(viewId === 'dashboard') loadDashboard();
-        }
+        window.saveSettings = () => {
+            const k = document.getElementById('setting-openai-key').value;
+            localStorage.setItem('openai_key', k);
+            alert('Settings Saved');
+        };
 
         window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
-        // --- DASHBOARD ---
-        async function loadDashboard() {
-            const snap = await getDocs(collection(db, "posts"));
-            document.getElementById('dash-total').innerText = snap.size;
-            let totalViews = 0;
-            snap.forEach(doc => totalViews += (doc.data().views || 0));
-            document.getElementById('dash-views').innerText = totalViews;
-        }
+        // --- AI WORKFLOW ---
 
-        // --- POSTS LIST ---
-        async function loadPosts() {
-            const container = document.getElementById('posts-container');
-            container.innerHTML = 'Loading...';
-            
-            const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-            const snap = await getDocs(q);
-            
-            container.innerHTML = '';
-            snap.forEach(doc => {
-                const p = doc.data();
-                const div = document.createElement('div');
-                div.className = 'post-item';
-                div.innerHTML = `
-                    <div>
-                        <div style="font-weight: 700; font-size: 16px;">${p.title}</div>
-                        <div style="font-size: 12px; color: var(--text-muted);">${p.category} • ${new Date(p.createdAt?.toDate()).toLocaleDateString()}</div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                         <a href="/post.html?id=${doc.id}" target="_blank" class="btn btn-outline" style="font-size: 12px;">View</a>
-                        <button class="btn btn-outline" style="font-size: 12px; color: var(--warning); border-color: var(--warning);" onclick="alert('Edit feature coming in v2')">Edit</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
+        window.resetAI = () => {
+            document.getElementById('step-1').classList.add('active');
+            document.getElementById('step-2').style.opacity = '0.5';
+            document.getElementById('step-2').style.pointerEvents = 'none';
+            document.getElementById('step-3').style.opacity = '0.5';
+            document.getElementById('ai-topic').value = '';
+            document.getElementById('ai-suggested-title').value = '';
+            document.getElementById('ai-keywords-container').innerHTML = '';
+            quill.setText('');
+            activeImage = '';
+            document.getElementById('ai-img-preview').style.display = 'none';
+        };
 
-        // --- IMAGE HANDLING ---
-        async function searchUnsplash() {
-            const query = document.getElementById('unsplash-query').value;
-            const grid = document.getElementById('unsplash-grid');
-            grid.innerHTML = 'Searching...';
+        window.runAIPhase1 = async () => {
+            const topic = document.getElementById('ai-topic').value;
+            const category = document.getElementById('ai-category').value;
+            if(!topic) return alert('Please enter a topic');
+
+            // Simulate AI Processing (Mock)
+            const btn = document.querySelector('#step-1 .btn-ai');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Thinking...';
             
-            try {
-                const res = await fetch(`https://api.unsplash.com/search/photos?page=1&query=${query}&client_id=${UNSPLASH_ACCESS_KEY}`);
-                const data = await res.json();
+            setTimeout(() => {
+                // Mock Logic: Translate & Expand
+                const isKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(topic);
+                let title = topic;
                 
-                grid.innerHTML = '';
+                // Simple mock translation for demo
+                if(topic.includes("성수")) title = "Seongsu-dong Guide: Seoul's Brooklyn";
+                else if(topic.includes("카페")) title = "Top 5 Aesthetic Cafes in Seoul You Must Visit";
+                else if(topic.includes("올리브영")) title = "Olive Young Must-Buys: Ultimate Shopping List 2026";
+                else title = `The Ultimate Guide to ${topic} in Korea`;
+
+                const keywords = ["Korea Travel", category, "Seoul", "Trends 2026", "Guide"];
+                
+                document.getElementById('ai-suggested-title').value = title;
+                const kwContainer = document.getElementById('ai-keywords-container');
+                kwContainer.innerHTML = '';
+                keywords.forEach(k => {
+                    kwContainer.innerHTML += `<span class="suggestion-chip selected" onclick="this.classList.toggle('selected')">${k}</span>`;
+                });
+
+                // Move to Step 2
+                document.getElementById('step-1').classList.remove('active');
+                document.getElementById('step-2').style.opacity = '1';
+                document.getElementById('step-2').style.pointerEvents = 'auto';
+                document.getElementById('step-2').classList.add('active');
+                
+                // Pre-fill image query
+                document.getElementById('ai-img-query').value = keywords[0] + " aesthetic";
+
+                btn.innerHTML = originalText;
+            }, 1500);
+        };
+
+        window.runAIPhase2 = async () => {
+            const title = document.getElementById('ai-suggested-title').value;
+            const btn = document.querySelector('#step-2 .btn-primary');
+            btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing...';
+
+            setTimeout(() => {
+                // Generate Mock Content (Structure)
+                const content = `
+                    <h2>Why ${title} is Trending Now</h2>
+                    <p>Korea is constantly evolving, and <strong>${title}</strong> is at the forefront of the latest cultural wave. Whether you are a first-time visitor or a seasoned traveler, understanding this trend is key to experiencing the real Korea.</p>
+                    <br>
+                    <h3>Key Highlights</h3>
+                    <ul>
+                        <li><strong>Authentic Experience:</strong> Discover the hidden gems that locals love.</li>
+                        <li><strong>Instagrammable Spots:</strong> Perfect for your social media feed.</li>
+                        <li><strong>Cultural Insight:</strong> Learn the history behind the trend.</li>
+                    </ul>
+                    <br>
+                    <h3>What Locals Say</h3>
+                    <blockquote>"This is absolutely the best way to experience modern Korean culture. Highly recommended!" - Local Expert</blockquote>
+                    <br>
+                    <h3>Final Thoughts</h3>
+                    <p>Don't miss out on this when you visit Korea. It's more than just a trend; it's a lifestyle.</p>
+                `;
+                
+                quill.clipboard.dangerouslyPasteHTML(content);
+                
+                // Move to Step 3
+                document.getElementById('step-2').classList.remove('active');
+                document.getElementById('step-3').style.opacity = '1';
+                document.getElementById('step-3').style.pointerEvents = 'auto';
+                document.getElementById('step-3').classList.add('active');
+                
+                btn.innerHTML = '<i class="ph ph-check"></i> Done';
+            }, 2000);
+        };
+
+        window.searchUnsplashAI = async () => {
+            const q = document.getElementById('ai-img-query').value;
+            const container = document.getElementById('unsplash-results');
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Searching...</div>';
+            document.getElementById('modal-unsplash').style.display = 'flex';
+
+            try {
+                const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=12&query=${q}&client_id=${UNSPLASH_ACCESS_KEY}`);
+                const data = await res.json();
+                container.innerHTML = '';
+                if(data.results.length === 0) container.innerHTML = 'No results found.';
+                
                 data.results.forEach(img => {
                     const el = document.createElement('img');
                     el.src = img.urls.small;
                     el.className = 'modal-img-item';
-                    el.onclick = () => selectImage(img.urls.regular);
-                    grid.appendChild(el);
+                    el.onclick = () => {
+                        activeImage = img.urls.regular;
+                        document.getElementById('selected-ai-img').src = activeImage;
+                        document.getElementById('ai-img-preview').style.display = 'block';
+                        document.getElementById('modal-unsplash').style.display = 'none';
+                    };
+                    container.appendChild(el);
                 });
-            } catch (e) {
-                grid.innerHTML = 'Error fetching images. Check API Limit.';
+            } catch(e) {
+                container.innerHTML = 'API Error (Check limits)';
             }
-        }
+        };
 
-        function selectImage(url) {
-            selectedImage = url;
-            document.getElementById('preview-img').src = url;
-            document.getElementById('preview-img').style.display = 'block';
-            document.getElementById('preview-placeholder').style.display = 'none';
-            closeModal('modal-unsplash');
-        }
+        // --- SEO & UTILS ---
 
-        async function handleFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        function calculateSEOScore() {
+            let score = 0;
+            const text = quill.getText();
+            const title = document.getElementById('ai-suggested-title').value;
             
-            const storageRef = ref(storage, 'uploads/' + file.name + '-' + Date.now());
-            try {
-                const snapshot = await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(snapshot.ref);
-                selectImage(url);
-            } catch (err) {
-                alert('Upload failed: ' + err.message);
-            }
+            // 1. Content Length (Target: 300+ words)
+            const words = text.trim().split(/\s+/).length;
+            if(words > 100) score += 20;
+            if(words > 300) score += 20;
+
+            // 2. Title Length (Target: 10-60 chars)
+            if(title.length >= 10 && title.length <= 60) score += 20;
+
+            // 3. Formatting (Headers)
+            if(quill.root.innerHTML.includes('<h3>')) score += 20;
+            
+            // 4. Image
+            if(activeImage) score += 20;
+
+            const bar = document.getElementById('seo-bar');
+            bar.style.width = score + '%';
+            bar.style.backgroundColor = score > 80 ? 'var(--success)' : (score > 40 ? 'var(--warning)' : '#ef4444');
+            document.getElementById('seo-score-text').innerText = score + '%';
         }
 
-        // --- AI & SEO ---
-        function optimizeKeywords() {
-            const input = document.getElementById('post-keywords');
-            const val = input.value;
-            if(!val) return alert('Enter some keywords first');
-            
-            // Mock AI behavior (In production, call OpenAI API here)
-            input.value = "Optimizing...";
-            setTimeout(() => {
-                // Simple logic: translate common words or just format them for now as a mock
-                // Real implementation would fetch from an Edge Function
-                input.value = val.split(',').map(s => s.trim() + " Korea").join(', '); 
-                alert("Keywords Optimized for Global SEO!");
-            }, 1000);
-        }
-
-        function checkSEO() {
-            const title = document.getElementById('post-title').value;
-            const content = quill.getText();
-            
-            document.getElementById('seo-title-score').innerText = `${title.length}/60`;
-            document.getElementById('seo-title-score').style.color = (title.length > 10 && title.length <= 60) ? 'var(--success)' : 'var(--warning)';
-            
-            const words = content.trim().split(/\s+/).length;
-            document.getElementById('seo-content-score').innerText = `${words} words`;
-        }
-
-        // --- PUBLISH ---
-        async function publishPost() {
-            const title = document.getElementById('post-title').value;
-            const content = quill.root.innerHTML; // HTML content
-            const category = document.getElementById('post-category').value;
-            const dateStr = document.getElementById('post-date').value;
-            
-            if(!title || !content) return alert('Title and Content required');
-
-            const postData = {
-                title,
-                content,
-                category,
-                image: selectedImage,
-                views: 0,
-                createdAt: dateStr ? new Date(dateStr) : serverTimestamp(), // Future date handling
-                scheduled: !!dateStr // Flag for filtering
-            };
-
-            try {
-                await addDoc(collection(db, "posts"), postData);
-                alert('Post Published Successfully!');
-                location.reload();
-            } catch (e) {
-                alert('Error: ' + e.message);
-            }
-        }
-
-        // --- PREVIEW ---
-        function showPreview() {
-            const content = `
-                <h2>${document.getElementById('post-title').value}</h2>
-                <img src="${selectedImage}" style="width:100%; border-radius:8px; margin: 10px 0;">
-                <div style="font-size: 16px; line-height: 1.6;">${quill.root.innerHTML}</div>
-            `;
-            document.getElementById('mobile-preview-content').innerHTML = content;
+        window.showMobilePreview = () => {
+            document.getElementById('prev-cat').innerText = document.getElementById('ai-category').value;
+            document.getElementById('prev-title').innerText = document.getElementById('ai-suggested-title').value;
+            const img = document.getElementById('prev-img');
+            if(activeImage) { img.src = activeImage; img.style.display = 'block'; }
+            else { img.style.display = 'none'; }
+            document.getElementById('prev-content').innerHTML = quill.root.innerHTML;
             document.getElementById('modal-preview').style.display = 'flex';
+        };
+
+        window.publishPost = async () => {
+            const title = document.getElementById('ai-suggested-title').value;
+            const category = document.getElementById('ai-category').value;
+            const content = quill.root.innerHTML;
+            const schedule = document.getElementById('post-schedule').value;
+
+            if(!title || quill.getText().trim().length < 10) return alert('Title and content are too short.');
+
+            try {
+                await addDoc(collection(db, "posts"), {
+                    title,
+                    category,
+                    content,
+                    image: activeImage,
+                    views: 0,
+                    createdAt: schedule ? new Date(schedule) : serverTimestamp(),
+                    status: schedule ? 'scheduled' : 'published'
+                });
+                alert('Published Successfully!');
+                resetAI();
+                loadDashboard();
+            } catch(e) {
+                alert(e.message);
+            }
+        };
+
+        async function loadDashboard() {
+            const snap = await getDocs(collection(db, "posts"));
+            document.getElementById('stat-posts').innerText = snap.size;
+            
+            let views = 0, scheduled = 0;
+            snap.forEach(doc => {
+                const d = doc.data();
+                views += (d.views || 0);
+                if(d.status === 'scheduled') scheduled++;
+            });
+            document.getElementById('stat-views').innerText = views;
+            document.getElementById('stat-scheduled').innerText = scheduled;
+        }
+        
+        async function loadPosts() {
+            const grid = document.getElementById('posts-grid');
+            grid.innerHTML = '<div style="text-align:center; color: #888;">Loading...</div>';
+            
+            const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+            const snap = await getDocs(q);
+            
+            grid.innerHTML = '';
+            snap.forEach(doc => {
+                const p = doc.data();
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.marginBottom = '0';
+                div.style.padding = '16px';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:700; font-size:16px;">${p.title}</div>
+                            <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                                ${p.category} • ${p.views || 0} views • ${p.status || 'published'}
+                            </div>
+                        </div>
+                        <a href="/post.html?id=${doc.id}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">View</a>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
         }
 
         init();
