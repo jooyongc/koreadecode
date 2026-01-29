@@ -1,7 +1,18 @@
-// Declare global variables for Firebase services
-var app, auth, db, storage;
+// Import the functions you need from the SDKs you need
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+    getAuth
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+    getFirestore
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+    getStorage
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// Firebase Configuration
+// Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAcDLX8xujdFUOo8vVhxqE4URygfZDuCkY",
     authDomain: "koreadecode.firebaseapp.com",
@@ -11,10 +22,16 @@ const firebaseConfig = {
     appId: "1:525928843461:web:c20f7822818404d30e88ac"
 };
 
-// Initialize Firebase for global scope
-if (typeof firebase !== 'undefined') {
-    app = firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.firestore();
-    storage = firebase.storage();
-}
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// Export the initialized services
+export {
+    app,
+    auth,
+    db,
+    storage
+};
