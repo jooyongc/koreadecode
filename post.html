@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading... - Korea Decode</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/wp-content/themes/hello-biz/assets/css/theme.css">
+    <style>
+        .post-container { max-width: 800px; margin: 40px auto; padding: 20px; }
+        .post-header { text-align: center; margin-bottom: 40px; }
+        .post-title { font-size: 2.5rem; font-weight: bold; margin-bottom: 15px; }
+        .post-meta { color: #666; font-size: 0.9rem; }
+        .post-image { width: 100%; height: auto; border-radius: 8px; margin-bottom: 30px; object-fit: cover; max-height: 500px;}
+        .post-content { font-size: 1.1rem; line-height: 1.8; }
+        .post-content img { max-width: 100%; height: auto; border-radius: 4px; }
+        .loading { text-align: center; padding: 50px; }
+    </style>
+</head>
+<body class="page-template-default">
+    
+    <!-- Simple Navigation (Mimicking existing site) -->
+    <header style="padding: 20px; border-bottom: 1px solid #eee; text-align: center;">
+        <a href="/"><img src="/wp-content/uploads/2026/01/KOD_vertical-logo.png" alt="Korea Decode" style="height: 50px;"></a>
+    </header>
+
+    <div id="app" class="post-container">
+        <div class="loading">Loading content...</div>
+    </div>
+
+    <script type="module">
+        import { db, doc, getDoc, updateDoc } from '/js/firebase-config.js';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('id');
+
+        async function loadPost() {
+            if (!postId) {
+                document.getElementById('app').innerHTML = '<p class="text-center">Post not found.</p>';
+                return;
+            }
+
+            const docRef = doc(db, "posts", postId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const post = docSnap.data();
+                document.title = `${post.title} - Korea Decode`;
+                
+                // Increment View Count
+                updateDoc(docRef, { views: (post.views || 0) + 1 });
+
+                const date = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleDateString() : '';
+                
+                let html = ""
+                    + "<article>"
+                    + "    <header class=\"post-header\">"
+                    + "        <h1 class=\"post-title\">${post.title}</h1>"
+                    + "        <div class=\"post-meta\">"
+                    + "            <span>${post.category}</span> | <span>${date}</span>"
+                    + "        </div>"
+                    + "    </header>"
+                    + ` ${post.image ? `<img src="${post.image}" alt="${post.title}" class="post-image">` : ''}`
+                    + "    <div class=\"post-content\">"
+                    + ` ${post.content.replace(/\n/g, '<br>')}`
+                    + "    </div>"
+                    + "</article>";
+                document.getElementById('app').innerHTML = html;
+            } else {
+                document.getElementById('app').innerHTML = '<p class="text-center">Post not found.</p>';
+            }
+        }
+
+        loadPost();
+    </script>
+</body>
+</html>
