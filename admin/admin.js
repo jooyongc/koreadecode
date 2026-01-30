@@ -124,8 +124,8 @@ function init() {
     });
 
     // --- INITIAL DATA LOAD ---
-    const savedKey = localStorage.getItem('openai_key');
-    if (savedKey) document.getElementById('setting-openai-key').value = savedKey;
+    const savedKey = localStorage.getItem('gemini_key');
+    if (savedKey) document.getElementById('setting-gemini-key').value = savedKey;
 
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -163,8 +163,8 @@ async function doLogin() {
 
 // --- SETTINGS ---
 const saveSettings = () => {
-    const k = document.getElementById('setting-openai-key').value;
-    localStorage.setItem('openai_key', k);
+    const k = document.getElementById('setting-gemini-key').value;
+    localStorage.setItem('gemini_key', k);
     alert('Settings Saved');
 };
 
@@ -415,10 +415,10 @@ window.resetAI = () => {
 
 window.runAIPhase1 = async () => {
     const topic = document.getElementById('ai-topic').value;
-    const openAiKey = localStorage.getItem('openai_key');
+    const geminiKey = localStorage.getItem('gemini_key');
     if (!topic) return alert('Please enter a topic');
-    if (!openAiKey || !openAiKey.startsWith('sk-')) {
-        return alert("No valid OpenAI API Key found in settings. Please add it to proceed.");
+    if (!geminiKey) {
+        return alert("No valid Gemini API Key found in settings. Please add it to proceed.");
     }
 
     const btn = document.querySelector('#step-1 .btn-ai');
@@ -451,20 +451,19 @@ window.runAIPhase1 = async () => {
                 Ensure the titles are captivating and the keywords are highly relevant for ranking on Google.
                 `;
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${openAiKey}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini",
-                messages: [{
-                    role: "user",
-                    content: prompt
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
                 }],
-                response_format: {
-                    type: "json_object"
+                generationConfig: {
+                    responseMimeType: "application/json"
                 }
             })
         });
@@ -472,7 +471,7 @@ window.runAIPhase1 = async () => {
         const json = await response.json();
         if (json.error) throw new Error(json.error.message);
 
-        const data = JSON.parse(json.choices[0].message.content);
+        const data = JSON.parse(json.candidates[0].content.parts[0].text);
 
         document.getElementById('ai-suggested-title').value = data.suggested_titles[0] || `Guide to ${topic}`;
         const kwContainer = document.getElementById('ai-keywords-container');
@@ -518,7 +517,7 @@ window.runAIPhase2 = async () => {
     const topic = document.getElementById('ai-topic').value;
     const keywords = Array.from(document.querySelectorAll('#ai-keywords-container .suggestion-chip')).map(el => el.innerText);
     const personaId = document.getElementById('ai-persona-select').value;
-    const openAiKey = localStorage.getItem('openai_key');
+    const geminiKey = localStorage.getItem('gemini_key');
 
     if (!title) return alert('Please generate or select a title first.');
 
@@ -563,7 +562,7 @@ window.runAIPhase2 = async () => {
     // 2. Generate Content with AI
     let content = '';
 
-    if (openAiKey && openAiKey.startsWith('sk-')) {
+    if (geminiKey) {
         try {
             const prompt = `
                     **Act as an expert content creator for the 'Korea Decode' blog.**
@@ -613,26 +612,24 @@ window.runAIPhase2 = async () => {
                     **Final Output:** Produce only the HTML content for the article body.
                     `;
 
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${openAiKey}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: "gpt-4o-mini",
-                    messages: [{
-                        role: "user",
-                        content: prompt
-                    }],
-                    temperature: 0.75
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }]
                 })
             });
 
             const json = await response.json();
             if (json.error) throw new Error(json.error.message);
 
-            let rawContent = json.choices[0].message.content;
+            let rawContent = json.candidates[0].content.parts[0].text;
 
             // Inject images into placeholders
             contentImages.forEach(img => {
@@ -646,7 +643,7 @@ window.runAIPhase2 = async () => {
             content = generateTemplateContent(persona, topic, title, '');
         }
     } else {
-        alert("No valid OpenAI API Key found in settings. Using template mode.");
+        alert("No valid Gemini API Key found in settings. Using template mode.");
         content = generateTemplateContent(persona, topic, title, '');
     }
 
