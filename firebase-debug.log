@@ -1,0 +1,82 @@
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-30T02:05:55.948Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:05:55.964Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:06:21.257Z] Running auto auth
+[debug] [2026-01-30T02:06:21.261Z] Running auto auth
+[debug] [2026-01-30T02:06:21.332Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:21.341Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo [none]
+[debug] [2026-01-30T02:06:21.419Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:21.419Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo [none]
+[debug] [2026-01-30T02:06:21.706Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo 200
+[debug] [2026-01-30T02:06:21.707Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo {"name":"projects/koreadecode/billingInfo","projectId":"koreadecode","billingAccountName":"billingAccounts/01F80D-2B425D-7DFFAA","billingEnabled":true}
+[debug] [2026-01-30T02:06:21.717Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:21.740Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:21.741Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:21.741Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-01-30T02:06:21.741Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com  x-goog-user-project=koreadecode
+[debug] [2026-01-30T02:06:21.744Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-01-30T02:06:21.744Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com  x-goog-user-project=koreadecode
+[debug] [2026-01-30T02:06:21.745Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com [none]
+[debug] [2026-01-30T02:06:21.746Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com  x-goog-user-project=koreadecode
+[debug] [2026-01-30T02:06:22.533Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo 200
+[debug] [2026-01-30T02:06:22.534Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo {"name":"projects/koreadecode/billingInfo","projectId":"koreadecode","billingAccountName":"billingAccounts/01F80D-2B425D-7DFFAA","billingEnabled":true}
+[debug] [2026-01-30T02:06:22.535Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:22.551Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:22.553Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:22.557Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com [none]
+[debug] [2026-01-30T02:06:22.558Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com  x-goog-user-project=koreadecode
+[debug] [2026-01-30T02:06:22.563Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-01-30T02:06:22.563Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com  x-goog-user-project=koreadecode
+[debug] [2026-01-30T02:06:22.565Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com [none]
+[debug] [2026-01-30T02:06:22.565Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com  x-goog-user-project=koreadecode
+[debug] [2026-01-30T02:06:22.945Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com 200
+[debug] [2026-01-30T02:06:22.947Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-01-30T02:06:23.010Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com 403
+[debug] [2026-01-30T02:06:23.011Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com [omitted]
+[debug] [2026-01-30T02:06:23.095Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-01-30T02:06:23.095Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com [omitted]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-30T02:06:23.108Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:06:23.108Z] > authorizing via signed-in user (localmaster@localcontentslab.com)
+[debug] [2026-01-30T02:06:23.108Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:23.109Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo [none]
+[debug] [2026-01-30T02:06:23.352Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo 200
+[debug] [2026-01-30T02:06:23.353Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo {"name":"projects/koreadecode/billingInfo","projectId":"koreadecode","billingAccountName":"billingAccounts/01F80D-2B425D-7DFFAA","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-30T02:06:23.355Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:06:23.355Z] > authorizing via signed-in user (localmaster@localcontentslab.com)
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-30T02:06:23.372Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:06:23.372Z] > authorizing via signed-in user (localmaster@localcontentslab.com)
+[debug] [2026-01-30T02:06:23.372Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:23.373Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo [none]
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-30T02:06:23.379Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:06:23.379Z] > authorizing via signed-in user (localmaster@localcontentslab.com)
+[debug] [2026-01-30T02:06:23.379Z] No OAuth tokens found
+[debug] [2026-01-30T02:06:23.379Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo [none]
+[debug] [2026-01-30T02:06:23.602Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo 200
+[debug] [2026-01-30T02:06:23.602Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo {"name":"projects/koreadecode/billingInfo","projectId":"koreadecode","billingAccountName":"billingAccounts/01F80D-2B425D-7DFFAA","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-30T02:06:23.603Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:06:23.604Z] > authorizing via signed-in user (localmaster@localcontentslab.com)
+[debug] [2026-01-30T02:06:23.722Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com 200
+[debug] [2026-01-30T02:06:23.723Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2026-01-30T02:06:23.754Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-01-30T02:06:23.754Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-01-30T02:06:23.879Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com 403
+[debug] [2026-01-30T02:06:23.879Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/koreadecode/services/firebaseio.com [omitted]
+[debug] [2026-01-30T02:06:24.387Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo 200
+[debug] [2026-01-30T02:06:24.387Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/koreadecode/billingInfo {"name":"projects/koreadecode/billingInfo","projectId":"koreadecode","billingAccountName":"billingAccounts/01F80D-2B425D-7DFFAA","billingEnabled":true}
+[error] Failed to fetch Firebase Project from Studio Workspace because WORKSPACE_SLUG environment variable is empty
+[debug] [2026-01-30T02:06:24.392Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/userinfo.email"]
+[debug] [2026-01-30T02:06:24.392Z] > authorizing via signed-in user (localmaster@localcontentslab.com)
