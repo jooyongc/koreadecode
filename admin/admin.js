@@ -46,6 +46,13 @@ async function callAI(prompt, geminiKey, openaiKey, openrouterKey) {
             })
         });
 
+        // Handle HTML error pages (like 404 or 500 from Cloudflare)
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const text = await response.text();
+            throw new Error(`Server Error (${response.status}): ${text.substring(0, 100)}...`);
+        }
+
         const json = await response.json();
 
         if (!response.ok || json.error) {

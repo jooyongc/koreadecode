@@ -1,6 +1,17 @@
 export async function onRequest(context) {
   const { request } = context;
 
+  // Handle CORS preflight requests
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
+  }
+
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
@@ -8,6 +19,12 @@ export async function onRequest(context) {
   try {
     const body = await request.json();
     const { prompt, geminiKey, openaiKey, openrouterKey } = body;
+
+    // Response Headers for CORS
+    const corsHeaders = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*", 
+    };
 
     const GEMINI_MODELS = [
         "gemini-2.0-flash-exp",
@@ -25,7 +42,6 @@ export async function onRequest(context) {
         "meta-llama/llama-3-8b-instruct:free"
     ];
 
-    let lastError = null;
     let errors = [];
 
     // 1. Gemini
@@ -41,7 +57,7 @@ export async function onRequest(context) {
                 });
                 const data = await resp.json();
                 if (data.error) throw new Error(data.error.message);
-                return new Response(JSON.stringify({ text: data.candidates[0].content.parts[0].text }), { headers: { 'Content-Type': 'application/json' } });
+                return new Response(JSON.stringify({ text: data.candidates[0].content.parts[0].text }), { headers: corsHeaders });
             } catch (e) {
                 errors.push(`Gemini(${model}): ${e.message}`);
                 if (e.message.includes("API key")) break;
@@ -66,7 +82,7 @@ export async function onRequest(context) {
                 });
                 const data = await resp.json();
                 if (data.error) throw new Error(data.error.message);
-                return new Response(JSON.stringify({ text: data.choices[0].message.content }), { headers: { 'Content-Type': 'application/json' } });
+                return new Response(JSON.stringify({ text: data.choices[0].message.content }), { headers: corsHeaders });
             } catch (e) {
                 errors.push(`OpenAI(${model}): ${e.message}`);
             }
@@ -92,16 +108,16 @@ export async function onRequest(context) {
                 });
                 const data = await resp.json();
                 if (data.error) throw new Error(data.error.message);
-                return new Response(JSON.stringify({ text: data.choices[0].message.content }), { headers: { 'Content-Type': 'application/json' } });
+                return new Response(JSON.stringify({ text: data.choices[0].message.content }), { headers: corsHeaders });
             } catch (e) {
                 errors.push(`OpenRouter(${model}): ${e.message}`);
             }
         }
     }
 
-    return new Response(JSON.stringify({ error: "All models failed", details: errors }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: "All models failed", details: errors }), { status: 500, headers: corsHeaders });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Internal Server Error: " + err.message }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
   }
 }
