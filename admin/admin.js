@@ -41,55 +41,80 @@ const GEMINI_MODELS = [
     "gemini-1.5-pro-001"
 ];
 
-// --- HELPER: ROBUST GEMINI CALL ---
-async function callGeminiAPI(prompt, geminiKey) {
+const OPENAI_MODELS = [
+    "gpt-4o-mini",
+    "gpt-3.5-turbo"
+];
+
+// --- HELPER: UNIFIED AI CALL (Gemini -> OpenAI Fallback) ---
+async function callAI(prompt, geminiKey, openaiKey) {
     let lastError = null;
 
-    for (const model of GEMINI_MODELS) {
-        try {
-            console.log(`Attempting AI generation with model: ${model}`);
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: prompt
-                        }]
-                    }],
-                    generationConfig: {
-                        responseMimeType: "application/json"
+    // 1. Try Gemini Models first
+    if (geminiKey) {
+        for (const model of GEMINI_MODELS) {
+            try {
+                console.log(`Attempting AI generation with Gemini model: ${model}`);
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                const json = await response.json();
+                
+                if (json.error) {
+                    if (json.error.message.includes("not found") || json.error.message.includes("not supported")) {
+                        console.warn(`Gemini Model ${model} failed: ${json.error.message}. Trying next...`);
+                        lastError = new Error(`Gemini Model ${model} not found.`);
+                        continue; 
                     }
-                })
-            });
-
-            const json = await response.json();
-            
-            // Check for API-level errors
-            if (json.error) {
-                // If "Not Found" or "Not Supported", treat as soft error and try next model
-                if (json.error.message.includes("not found") || json.error.message.includes("not supported")) {
-                    console.warn(`Model ${model} failed: ${json.error.message}. Trying next...`);
-                    lastError = new Error(`Model ${model} not found.`);
-                    continue; 
+                    throw new Error(json.error.message);
                 }
-                // Other errors (like auth, quota) should fail immediately
-                throw new Error(json.error.message);
+                return json.candidates[0].content.parts[0].text; // Return raw text directly
+
+            } catch (e) {
+                lastError = e;
+                if (e.message.includes("API key")) break; // Don't retry Gemini if key is invalid
             }
-
-            // Success! Return the candidates
-            return json;
-
-        } catch (e) {
-            // Network errors or explicit throws
-            lastError = e;
-            if (e.message.includes("API key")) throw e; // Don't retry if key is wrong
         }
     }
 
-    throw new Error(`All AI models failed. Last error: ${lastError?.message}`);
+    // 2. Fallback to OpenAI if Gemini failed or key missing
+    if (openaiKey) {
+        console.log("Switching to OpenAI fallback...");
+        for (const model of OPENAI_MODELS) {
+            try {
+                console.log(`Attempting AI generation with OpenAI model: ${model}`);
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${openaiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{ role: "user", content: prompt }],
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                const json = await response.json();
+                if (json.error) throw new Error(json.error.message);
+                
+                return json.choices[0].message.content; // Return raw text directly
+
+            } catch (e) {
+                lastError = e;
+                console.warn(`OpenAI Model ${model} failed: ${e.message}`);
+            }
+        }
+    }
+
+    throw new Error(`All AI models failed. Last error: ${lastError?.message || "Check API Keys"}`);
 }
 
 let quill;
@@ -187,6 +212,9 @@ function init() {
     // --- INITIAL DATA LOAD ---
     const savedKey = localStorage.getItem('gemini_key');
     if (savedKey) document.getElementById('setting-gemini-key').value = savedKey;
+    
+    const savedOpenAIKey = localStorage.getItem('openai_key');
+    if (savedOpenAIKey) document.getElementById('setting-openai-key').value = savedOpenAIKey;
 
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -225,7 +253,9 @@ async function doLogin() {
 // --- SETTINGS ---
 const saveSettings = () => {
     const k = document.getElementById('setting-gemini-key').value;
+    const o = document.getElementById('setting-openai-key').value;
     localStorage.setItem('gemini_key', k);
+    localStorage.setItem('openai_key', o);
     alert('Settings Saved');
 };
 
@@ -477,9 +507,11 @@ window.resetAI = () => {
 window.runAIPhase1 = async () => {
     const topic = document.getElementById('ai-topic').value;
     const geminiKey = localStorage.getItem('gemini_key');
+    const openaiKey = localStorage.getItem('openai_key');
+    
     if (!topic) return alert('Please enter a topic');
-    if (!geminiKey) {
-        return alert("No valid Gemini API Key found in settings. Please add it to proceed.");
+    if (!geminiKey && !openaiKey) {
+        return alert("No valid AI API Key found in settings. Please add Gemini or OpenAI key.");
     }
 
     const btn = document.querySelector('#step-1 .btn-ai');
@@ -512,10 +544,9 @@ window.runAIPhase1 = async () => {
                 Ensure the titles are captivating and the keywords are highly relevant for ranking on Google.
                 `;
 
-        // USE NEW ROBUST CALL
-        const json = await callGeminiAPI(prompt, geminiKey);
-
-        const data = JSON.parse(json.candidates[0].content.parts[0].text);
+        // USE NEW UNIFIED AI CALL
+        const rawText = await callAI(prompt, geminiKey, openaiKey);
+        const data = JSON.parse(rawText);
 
         document.getElementById('ai-suggested-title').value = data.suggested_titles[0] || `Guide to ${topic}`;
         const kwContainer = document.getElementById('ai-keywords-container');
@@ -562,6 +593,7 @@ window.runAIPhase2 = async () => {
     const keywords = Array.from(document.querySelectorAll('#ai-keywords-container .suggestion-chip')).map(el => el.innerText);
     const personaId = document.getElementById('ai-persona-select').value;
     const geminiKey = localStorage.getItem('gemini_key');
+    const openaiKey = localStorage.getItem('openai_key');
 
     if (!title) return alert('Please generate or select a title first.');
 
@@ -606,7 +638,7 @@ window.runAIPhase2 = async () => {
     // 2. Generate Content with AI
     let content = '';
 
-    if (geminiKey) {
+    if (geminiKey || openaiKey) {
         try {
             const prompt = `
                     **Act as an expert content creator for the 'Korea Decode' blog.**
@@ -656,10 +688,8 @@ window.runAIPhase2 = async () => {
                     **Final Output:** Produce only the HTML content for the article body.
                     `;
 
-            // USE NEW ROBUST CALL
-            const json = await callGeminiAPI(prompt, geminiKey);
-
-            let rawContent = json.candidates[0].content.parts[0].text;
+            // USE NEW UNIFIED AI CALL
+            let rawContent = await callAI(prompt, geminiKey, openaiKey);
 
             // Inject images into placeholders
             contentImages.forEach(img => {
@@ -673,7 +703,7 @@ window.runAIPhase2 = async () => {
             content = generateTemplateContent(persona, topic, title, '');
         }
     } else {
-        alert("No valid Gemini API Key found in settings. Using template mode.");
+        alert("No valid AI API Key found in settings. Using template mode.");
         content = generateTemplateContent(persona, topic, title, '');
     }
 
