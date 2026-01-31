@@ -47,8 +47,15 @@ const OPENAI_MODELS = [
     "gpt-3.5-turbo"
 ];
 
-// --- HELPER: UNIFIED AI CALL (Gemini -> OpenAI Fallback) ---
-async function callAI(prompt, geminiKey, openaiKey) {
+const OPENROUTER_MODELS = [
+    "google/gemini-2.0-flash-exp:free",
+    "google/gemini-exp-1206:free",
+    "meta-llama/llama-3-8b-instruct:free",
+    "microsoft/phi-3-medium-128k-instruct:free"
+];
+
+// --- HELPER: UNIFIED AI CALL (Gemini -> OpenAI -> OpenRouter) ---
+async function callAI(prompt, geminiKey, openaiKey, openrouterKey) {
     let errors = [];
 
     // 1. Try Gemini Models first
@@ -71,9 +78,6 @@ async function callAI(prompt, geminiKey, openaiKey) {
                     const msg = `Gemini(${model}): ${json.error.message}`;
                     console.warn(msg);
                     errors.push(msg);
-                    
-                    // If "Not Found" or "Not Supported" or "Overloaded", try next model
-                    // If Auth error, break immediately
                     if (json.error.message.includes("API key")) {
                         errors.push("Gemini API Key Invalid.");
                         break; 
@@ -83,9 +87,7 @@ async function callAI(prompt, geminiKey, openaiKey) {
                 return json.candidates[0].content.parts[0].text;
 
             } catch (e) {
-                const msg = `Gemini(${model}) Network Error: ${e.message}`;
-                console.warn(msg);
-                errors.push(msg);
+                errors.push(`Gemini(${model}) Error: ${e.message}`);
             }
         }
     } else {
@@ -122,12 +124,50 @@ async function callAI(prompt, geminiKey, openaiKey) {
                 return json.choices[0].message.content;
 
             } catch (e) {
-                const msg = `OpenAI(${model}) Error: ${e.message}`;
-                errors.push(msg);
+                errors.push(`OpenAI(${model}) Error: ${e.message}`);
             }
         }
     } else {
         errors.push("OpenAI Skipped: No API Key.");
+    }
+
+    // 3. Fallback to OpenRouter (Free Models)
+    if (openrouterKey) {
+        console.log("Switching to OpenRouter fallback...");
+        for (const model of OPENROUTER_MODELS) {
+            try {
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${openrouterKey}`,
+                        'HTTP-Referer': window.location.origin,
+                        'X-Title': 'Korea Decode Admin'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [{ role: "user", content: prompt }],
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                const json = await response.json();
+                if (json.error) {
+                    const msg = `OpenRouter(${model}): ${json.error.message}`;
+                    console.warn(msg);
+                    errors.push(msg);
+                    continue;
+                }
+                
+                // OpenRouter standard response
+                return json.choices[0].message.content;
+
+            } catch (e) {
+                errors.push(`OpenRouter(${model}) Error: ${e.message}`);
+            }
+        }
+    } else {
+        errors.push("OpenRouter Skipped: No API Key.");
     }
 
     throw new Error(`ALL FAILED:\n${errors.join('\n')}`);
@@ -232,6 +272,9 @@ function init() {
     const savedOpenAIKey = localStorage.getItem('openai_key');
     if (savedOpenAIKey) document.getElementById('setting-openai-key').value = savedOpenAIKey;
 
+    const savedOpenRouterKey = localStorage.getItem('openrouter_key');
+    if (savedOpenRouterKey) document.getElementById('setting-openrouter-key').value = savedOpenRouterKey;
+
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('auto-start-date').value = now.toISOString().slice(0, 16);
@@ -270,8 +313,10 @@ async function doLogin() {
 const saveSettings = () => {
     const k = document.getElementById('setting-gemini-key').value;
     const o = document.getElementById('setting-openai-key').value;
+    const or = document.getElementById('setting-openrouter-key').value;
     localStorage.setItem('gemini_key', k);
     localStorage.setItem('openai_key', o);
+    localStorage.setItem('openrouter_key', or);
     alert('Settings Saved');
 };
 
@@ -524,10 +569,11 @@ window.runAIPhase1 = async () => {
     const topic = document.getElementById('ai-topic').value;
     const geminiKey = localStorage.getItem('gemini_key');
     const openaiKey = localStorage.getItem('openai_key');
+    const openrouterKey = localStorage.getItem('openrouter_key');
     
     if (!topic) return alert('Please enter a topic');
-    if (!geminiKey && !openaiKey) {
-        return alert("No valid AI API Key found in settings. Please add Gemini or OpenAI key.");
+    if (!geminiKey && !openaiKey && !openrouterKey) {
+        return alert("No valid AI API Key found in settings. Please add Gemini, OpenAI, or OpenRouter key.");
     }
 
     const btn = document.querySelector('#step-1 .btn-ai');
@@ -561,7 +607,7 @@ window.runAIPhase1 = async () => {
                 `;
 
         // USE NEW UNIFIED AI CALL
-        const rawText = await callAI(prompt, geminiKey, openaiKey);
+        const rawText = await callAI(prompt, geminiKey, openaiKey, openrouterKey);
         const data = JSON.parse(rawText);
 
         document.getElementById('ai-suggested-title').value = data.suggested_titles[0] || `Guide to ${topic}`;
@@ -610,6 +656,7 @@ window.runAIPhase2 = async () => {
     const personaId = document.getElementById('ai-persona-select').value;
     const geminiKey = localStorage.getItem('gemini_key');
     const openaiKey = localStorage.getItem('openai_key');
+    const openrouterKey = localStorage.getItem('openrouter_key');
 
     if (!title) return alert('Please generate or select a title first.');
 
@@ -654,7 +701,7 @@ window.runAIPhase2 = async () => {
     // 2. Generate Content with AI
     let content = '';
 
-    if (geminiKey || openaiKey) {
+    if (geminiKey || openaiKey || openrouterKey) {
         try {
             const prompt = `
                     **Act as an expert content creator for the 'Korea Decode' blog.**
@@ -705,7 +752,7 @@ window.runAIPhase2 = async () => {
                     `;
 
             // USE NEW UNIFIED AI CALL
-            let rawContent = await callAI(prompt, geminiKey, openaiKey);
+            let rawContent = await callAI(prompt, geminiKey, openaiKey, openrouterKey);
 
             // Inject images into placeholders
             contentImages.forEach(img => {

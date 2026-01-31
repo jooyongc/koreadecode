@@ -440,6 +440,11 @@
                         <label class="form-label">OpenAI API Key (Optional Fallback)</label>
                         <input type="password" id="setting-openai-key" class="form-input" placeholder="sk-...">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">OpenRouter Key (Recommended for Free AI)</label>
+                        <input type="password" id="setting-openrouter-key" class="form-input" placeholder="sk-or-...">
+                        <small style="color:var(--text-muted); display:block; margin-top:4px;">Get a free key at <a href="https://openrouter.ai/" target="_blank" style="color:var(--accent);">openrouter.ai</a></small>
+                    </div>
                     <button id="btn-save-settings" class="btn btn-primary">Save</button>
                     <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
                     <h3 style="margin-bottom: 10px; color: var(--warning);">Maintenance</h3>
@@ -553,6 +558,6 @@
     </div>
 
     <!-- All scripts are now loaded as modules from within admin.js -->
-    <script type="module" src="/admin/admin.js?v=5"></script>
+    <script type="module" src="/admin/admin.js?v=6"></script>
 </body>
 </html>
