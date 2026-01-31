@@ -34,6 +34,7 @@ const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
 // Fallback models in order of preference
 const GEMINI_MODELS = [
+    "gemini-2.0-flash-exp",
     "gemini-1.5-flash",
     "gemini-1.5-flash-001",
     "gemini-1.5-flash-002",
@@ -48,7 +49,7 @@ const OPENAI_MODELS = [
 
 // --- HELPER: UNIFIED AI CALL (Gemini -> OpenAI Fallback) ---
 async function callAI(prompt, geminiKey, openaiKey) {
-    let lastError = null;
+    let errors = [];
 
     // 1. Try Gemini Models first
     if (geminiKey) {
@@ -67,28 +68,35 @@ async function callAI(prompt, geminiKey, openaiKey) {
                 const json = await response.json();
                 
                 if (json.error) {
-                    if (json.error.message.includes("not found") || json.error.message.includes("not supported")) {
-                        console.warn(`Gemini Model ${model} failed: ${json.error.message}. Trying next...`);
-                        lastError = new Error(`Gemini Model ${model} not found.`);
-                        continue; 
+                    const msg = `Gemini(${model}): ${json.error.message}`;
+                    console.warn(msg);
+                    errors.push(msg);
+                    
+                    // If "Not Found" or "Not Supported" or "Overloaded", try next model
+                    // If Auth error, break immediately
+                    if (json.error.message.includes("API key")) {
+                        errors.push("Gemini API Key Invalid.");
+                        break; 
                     }
-                    throw new Error(json.error.message);
+                    continue;
                 }
-                return json.candidates[0].content.parts[0].text; // Return raw text directly
+                return json.candidates[0].content.parts[0].text;
 
             } catch (e) {
-                lastError = e;
-                if (e.message.includes("API key")) break; // Don't retry Gemini if key is invalid
+                const msg = `Gemini(${model}) Network Error: ${e.message}`;
+                console.warn(msg);
+                errors.push(msg);
             }
         }
+    } else {
+        errors.push("Gemini Skipped: No API Key.");
     }
 
-    // 2. Fallback to OpenAI if Gemini failed or key missing
+    // 2. Fallback to OpenAI
     if (openaiKey) {
         console.log("Switching to OpenAI fallback...");
         for (const model of OPENAI_MODELS) {
             try {
-                console.log(`Attempting AI generation with OpenAI model: ${model}`);
                 const response = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
                     headers: {
@@ -103,18 +111,26 @@ async function callAI(prompt, geminiKey, openaiKey) {
                 });
 
                 const json = await response.json();
-                if (json.error) throw new Error(json.error.message);
+                if (json.error) {
+                    const msg = `OpenAI(${model}): ${json.error.message}`;
+                    console.warn(msg);
+                    errors.push(msg);
+                    if (json.error.code === 'invalid_api_key') break;
+                    continue;
+                }
                 
-                return json.choices[0].message.content; // Return raw text directly
+                return json.choices[0].message.content;
 
             } catch (e) {
-                lastError = e;
-                console.warn(`OpenAI Model ${model} failed: ${e.message}`);
+                const msg = `OpenAI(${model}) Error: ${e.message}`;
+                errors.push(msg);
             }
         }
+    } else {
+        errors.push("OpenAI Skipped: No API Key.");
     }
 
-    throw new Error(`All AI models failed. Last error: ${lastError?.message || "Check API Keys"}`);
+    throw new Error(`ALL FAILED:\n${errors.join('\n')}`);
 }
 
 let quill;
