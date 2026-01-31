@@ -66,6 +66,18 @@ async function callAI(prompt, geminiKey, openaiKey, openrouterKey) {
     }
 }
 
+function cleanJSONResponse(text) {
+    // Remove markdown code blocks if present
+    text = text.trim();
+    if (text.startsWith("```json")) {
+        text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+    } else if (text.startsWith("```")) {
+        text = text.replace(/^```\s*/, "").replace(/\s*```$/, "");
+    }
+    return text;
+}
+
+
 
 let quill;
 let activeImage = '';
@@ -501,7 +513,8 @@ window.runAIPhase1 = async () => {
                 `;
 
         // USE NEW UNIFIED AI CALL
-        const rawText = await callAI(prompt, geminiKey, openaiKey, openrouterKey);
+        let rawText = await callAI(prompt, geminiKey, openaiKey, openrouterKey);
+        rawText = cleanJSONResponse(rawText);
         const data = JSON.parse(rawText);
 
         document.getElementById('ai-suggested-title').value = data.suggested_titles[0] || `Guide to ${topic}`;
