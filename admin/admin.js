@@ -451,7 +451,7 @@ window.runAIPhase1 = async () => {
                 Ensure the titles are captivating and the keywords are highly relevant for ranking on Google.
                 `;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -612,7 +612,7 @@ window.runAIPhase2 = async () => {
                     **Final Output:** Produce only the HTML content for the article body.
                     `;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${geminiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
