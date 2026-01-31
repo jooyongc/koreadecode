@@ -32,35 +32,60 @@ import {
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
-// --- HELPER: UNIFIED AI CALL (Via Cloudflare Proxy) ---
+// --- HELPER: CLIENT-SIDE DIRECT OPENROUTER CALL (Bypasses Cloudflare IP Blocks) ---
 async function callAI(prompt) {
-    try {
-        const response = await fetch('/ai-proxy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt
-            })
-        });
+    const OPENROUTER_KEY = "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"; // User provided key
+    
+    // Reliable models list for 2025/2026
+    const MODELS = [
+        "google/gemini-2.0-flash-lite-preview-02-05:free",
+        "google/gemini-2.0-pro-exp-02-05:free",
+        "meta-llama/llama-3-8b-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
+        "openai/gpt-4o-mini", // Paid fallback
+        "google/gemini-1.5-flash" // Paid fallback
+    ];
 
-        // Handle HTML error pages (like 404 or 500 from Cloudflare)
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            const text = await response.text();
-            throw new Error(`Server Error (${response.status}): ${text.substring(0, 100)}...`);
+    let errors = [];
+
+    for (const model of MODELS) {
+        try {
+            console.log(`[Client-Side] Trying OpenRouter: ${model}`);
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                    'HTTP-Referer': window.location.origin, // Client Origin
+                    'X-Title': 'Korea Decode Admin Client'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [{ role: "user", content: prompt }]
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                console.warn(`Model ${model} failed:`, data.error);
+                errors.push(`${model}: ${data.error.message}`);
+                continue;
+            }
+
+            if (data.choices && data.choices.length > 0) {
+                return data.choices[0].message.content;
+            } else {
+                throw new Error("No content in response");
+            }
+
+        } catch (e) {
+            console.error(e);
+            errors.push(`${model} Net Error: ${e.message}`);
         }
-
-        const json = await response.json();
-
-        if (!response.ok || json.error) {
-            throw new Error(json.error + (json.details ? "\nDetails:\n" + json.details.join('\n') : ""));
-        }
-
-        return json.text;
-
-    } catch (e) {
-        throw new Error(`AI Proxy Error: ${e.message}`);
     }
+
+    throw new Error(`ALL CLIENT MODELS FAILED.\n${errors.join('\n')}`);
 }
 
 function cleanJSONResponse(text) {
