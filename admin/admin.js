@@ -140,9 +140,7 @@ async function callAI(prompt, geminiKey, openaiKey, openrouterKey) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${openrouterKey}`,
-                        'HTTP-Referer': window.location.origin,
-                        'X-Title': 'Korea Decode Admin'
+                        'Authorization': `Bearer ${openrouterKey}`
                     },
                     body: JSON.stringify({
                         model: model,
@@ -170,7 +168,7 @@ async function callAI(prompt, geminiKey, openaiKey, openrouterKey) {
         errors.push("OpenRouter Skipped: No API Key.");
     }
 
-    throw new Error(`ALL FAILED:\n${errors.join('\n')}`);
+    throw new Error(`ALL FAILED. Detailed logs:\n${errors.join('\n')}`);
 }
 
 let quill;
