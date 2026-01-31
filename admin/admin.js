@@ -32,144 +32,33 @@ import {
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
-// Fallback models in order of preference
-const GEMINI_MODELS = [
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-001",
-    "gemini-1.5-flash-002",
-    "gemini-1.5-pro",
-    "gemini-1.5-pro-001"
-];
-
-const OPENAI_MODELS = [
-    "gpt-4o-mini",
-    "gpt-3.5-turbo"
-];
-
-const OPENROUTER_MODELS = [
-    "google/gemini-2.0-flash-exp:free",
-    "google/gemini-exp-1206:free",
-    "meta-llama/llama-3-8b-instruct:free",
-    "microsoft/phi-3-medium-128k-instruct:free"
-];
-
-// --- HELPER: UNIFIED AI CALL (Gemini -> OpenAI -> OpenRouter) ---
+// --- HELPER: UNIFIED AI CALL (Via Cloudflare Proxy) ---
 async function callAI(prompt, geminiKey, openaiKey, openrouterKey) {
-    let errors = [];
+    try {
+        const response = await fetch('/ai-proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt,
+                geminiKey,
+                openaiKey,
+                openrouterKey
+            })
+        });
 
-    // 1. Try Gemini Models first
-    if (geminiKey) {
-        for (const model of GEMINI_MODELS) {
-            try {
-                console.log(`Attempting AI generation with Gemini model: ${model}`);
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { responseMimeType: "application/json" }
-                    })
-                });
+        const json = await response.json();
 
-                const json = await response.json();
-                
-                if (json.error) {
-                    const msg = `Gemini(${model}): ${json.error.message}`;
-                    console.warn(msg);
-                    errors.push(msg);
-                    if (json.error.message.includes("API key")) {
-                        errors.push("Gemini API Key Invalid.");
-                        break; 
-                    }
-                    continue;
-                }
-                return json.candidates[0].content.parts[0].text;
-
-            } catch (e) {
-                errors.push(`Gemini(${model}) Error: ${e.message}`);
-            }
+        if (!response.ok || json.error) {
+            throw new Error(json.error + (json.details ? "\nDetails:\n" + json.details.join('\n') : ""));
         }
-    } else {
-        errors.push("Gemini Skipped: No API Key.");
+
+        return json.text;
+
+    } catch (e) {
+        throw new Error(`AI Proxy Error: ${e.message}`);
     }
-
-    // 2. Fallback to OpenAI
-    if (openaiKey) {
-        console.log("Switching to OpenAI fallback...");
-        for (const model of OPENAI_MODELS) {
-            try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${openaiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [{ role: "user", content: prompt }],
-                        response_format: { type: "json_object" }
-                    })
-                });
-
-                const json = await response.json();
-                if (json.error) {
-                    const msg = `OpenAI(${model}): ${json.error.message}`;
-                    console.warn(msg);
-                    errors.push(msg);
-                    if (json.error.code === 'invalid_api_key') break;
-                    continue;
-                }
-                
-                return json.choices[0].message.content;
-
-            } catch (e) {
-                errors.push(`OpenAI(${model}) Error: ${e.message}`);
-            }
-        }
-    } else {
-        errors.push("OpenAI Skipped: No API Key.");
-    }
-
-    // 3. Fallback to OpenRouter (Free Models)
-    if (openrouterKey) {
-        console.log("Switching to OpenRouter fallback...");
-        for (const model of OPENROUTER_MODELS) {
-            try {
-                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${openrouterKey}`
-                    },
-                    body: JSON.stringify({
-                        model: model,
-                        messages: [{ role: "user", content: prompt }],
-                        response_format: { type: "json_object" }
-                    })
-                });
-
-                const json = await response.json();
-                if (json.error) {
-                    const msg = `OpenRouter(${model}): ${json.error.message}`;
-                    console.warn(msg);
-                    errors.push(msg);
-                    continue;
-                }
-                
-                // OpenRouter standard response
-                return json.choices[0].message.content;
-
-            } catch (e) {
-                errors.push(`OpenRouter(${model}) Error: ${e.message}`);
-            }
-        }
-    } else {
-        errors.push("OpenRouter Skipped: No API Key.");
-    }
-
-    throw new Error(`ALL FAILED. Detailed logs:\n${errors.join('\n')}`);
 }
+
 
 let quill;
 let activeImage = '';
