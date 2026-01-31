@@ -33,16 +33,13 @@ import {
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
 // --- HELPER: UNIFIED AI CALL (Via Cloudflare Proxy) ---
-async function callAI(prompt, geminiKey, openaiKey, openrouterKey) {
+async function callAI(prompt) {
     try {
         const response = await fetch('/ai-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                prompt,
-                geminiKey,
-                openaiKey,
-                openrouterKey
+                prompt
             })
         });
 
@@ -473,14 +470,8 @@ window.resetAI = () => {
 
 window.runAIPhase1 = async () => {
     const topic = document.getElementById('ai-topic').value;
-    const geminiKey = localStorage.getItem('gemini_key');
-    const openaiKey = localStorage.getItem('openai_key');
-    const openrouterKey = localStorage.getItem('openrouter_key');
     
     if (!topic) return alert('Please enter a topic');
-    if (!geminiKey && !openaiKey && !openrouterKey) {
-        return alert("No valid AI API Key found in settings. Please add Gemini, OpenAI, or OpenRouter key.");
-    }
 
     const btn = document.querySelector('#step-1 .btn-ai');
     const originalText = btn.innerHTML;
@@ -512,8 +503,8 @@ window.runAIPhase1 = async () => {
                 Ensure the titles are captivating and the keywords are highly relevant for ranking on Google.
                 `;
 
-        // USE NEW UNIFIED AI CALL
-        let rawText = await callAI(prompt, geminiKey, openaiKey, openrouterKey);
+        // USE NEW UNIFIED AI CALL (Keys are handled on server)
+        let rawText = await callAI(prompt);
         rawText = cleanJSONResponse(rawText);
         const data = JSON.parse(rawText);
 
@@ -561,9 +552,6 @@ window.runAIPhase2 = async () => {
     const topic = document.getElementById('ai-topic').value;
     const keywords = Array.from(document.querySelectorAll('#ai-keywords-container .suggestion-chip')).map(el => el.innerText);
     const personaId = document.getElementById('ai-persona-select').value;
-    const geminiKey = localStorage.getItem('gemini_key');
-    const openaiKey = localStorage.getItem('openai_key');
-    const openrouterKey = localStorage.getItem('openrouter_key');
 
     if (!title) return alert('Please generate or select a title first.');
 
@@ -608,28 +596,27 @@ window.runAIPhase2 = async () => {
     // 2. Generate Content with AI
     let content = '';
 
-    if (geminiKey || openaiKey || openrouterKey) {
-        try {
-            const prompt = `
-                    **Act as an expert content creator for the 'Korea Decode' blog.**
+    try {
+        const prompt = `
+                **Act as an expert content creator for the 'Korea Decode' blog.**
 
-                    **Your Persona:**
-                    - **Name:** ${persona.name}
-                    - **Identity:** You are a ${persona.age}, ${persona.gender}, ${persona.nationality} ${persona.job}.
-                    - **Expertise & Passion:** You are deeply passionate about ${persona.likes}.
-                    - **Bio:** "${persona.bio}"
+                **Your Persona:**
+                - **Name:** ${persona.name}
+                - **Identity:** You are a ${persona.age}, ${persona.gender}, ${persona.nationality} ${persona.job}.
+                - **Expertise & Passion:** You are deeply passionate about ${persona.likes}.
+                - **Bio:** "${persona.bio}"
 
-                    **Task:** Write a high-quality, engaging, and SEO-optimized blog post.
+                **Task:** Write a high-quality, engaging, and SEO-optimized blog post.
 
-                    **Topic:** "${title}"
-                    **Core Subject:** "${topic}"
-                    **Target Keywords:** ${keywords.join(', ')}
+                **Topic:** "${title}"
+                **Core Subject:** "${topic}"
+                **Target Keywords:** ${keywords.join(', ')}
 
-                    **Content & Style Guidelines (Strictly Follow):**
-                    1.  **Tone of Voice:** Write in a **conversational, authentic, and expert** human voice. Use "I," "we," and "you." Be relatable and engaging, sharing personal opinions and simulated experiences based on your persona. **AVOID** robotic, academic, or generic marketing language.
-                    2.  **Structure:**
-                        - **Hook Introduction:** Start with a compelling hook that grabs the reader's attention immediately. Do **NOT** introduce yourself (e.g., "Hello, I'm...").
-                        - **Main Body:** Divide the content into logical sections using 
+                **Content & Style Guidelines (Strictly Follow):**
+                1.  **Tone of Voice:** Write in a **conversational, authentic, and expert** human voice. Use "I," "we," and "you." Be relatable and engaging, sharing personal opinions and simulated experiences based on your persona. **AVOID** robotic, academic, or generic marketing language.
+                2.  **Structure:**
+                    - **Hook Introduction:** Start with a compelling hook that grabs the reader's attention immediately. Do **NOT** introduce yourself (e.g., "Hello, I'm...").
+                    - **Main Body:** Divide the content into logical sections using 
 <h2>
  and 
 <h3>
@@ -638,42 +625,38 @@ window.runAIPhase2 = async () => {
 ) for lists, and 
 <strong>
  for emphasis on key terms.
-                        - **Conclusion:** End with a strong summary and a call-to-action (e.g., asking a question, encouraging comments).
-                    3.  **Image Placeholder:** You have TWO images to place. To insert an image, use the placeholder **[INSERT_IMAGE_HERE]** on its own line where it would best fit visually and contextually within the article. Use both placeholders.
-                    4.  **Formatting:**
-                        - Use clean HTML. **DO NOT** include 
+                    - **Conclusion:** End with a strong summary and a call-to-action (e.g., asking a question, encouraging comments).
+                3.  **Image Placeholder:** You have TWO images to place. To insert an image, use the placeholder **[INSERT_IMAGE_HERE]** on its own line where it would best fit visually and contextually within the article. Use both placeholders.
+                4.  **Formatting:**
+                    - Use clean HTML. **DO NOT** include 
 <html>
 , 
 <body>
 , or 
 <h1>
  tags. The main title is handled separately.
-                        - Use 
+                    - Use 
 <p>
  for paragraphs.
-                        - Use 
+                    - Use 
 <blockquote>
  for highlighting quotes or important tips.
-                    
-                    **Final Output:** Produce only the HTML content for the article body.
-                    `;
+                
+                **Final Output:** Produce only the HTML content for the article body.
+                `;
 
-            // USE NEW UNIFIED AI CALL
-            let rawContent = await callAI(prompt, geminiKey, openaiKey, openrouterKey);
+        // USE NEW UNIFIED AI CALL (Keys handled on server)
+        let rawContent = await callAI(prompt);
 
-            // Inject images into placeholders
-            contentImages.forEach(img => {
-                const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}"><figcaption>Photo by <a href="${img.user_link}" target="_blank">${img.user}</a> on Unsplash</figcaption></figure>`;
-                rawContent = rawContent.replace('[INSERT_IMAGE_HERE]', imgHtml);
-            });
-            content = rawContent;
+        // Inject images into placeholders
+        contentImages.forEach(img => {
+            const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}"><figcaption>Photo by <a href="${img.user_link}" target="_blank">${img.user}</a> on Unsplash</figcaption></figure>`;
+            rawContent = rawContent.replace('[INSERT_IMAGE_HERE]', imgHtml);
+        });
+        content = rawContent;
 
-        } catch (e) {
-            alert("AI Error: " + e.message + "\nPlease check your API key in settings or the browser console for details. Falling back to template.");
-            content = generateTemplateContent(persona, topic, title, '');
-        }
-    } else {
-        alert("No valid AI API Key found in settings. Using template mode.");
+    } catch (e) {
+        alert("AI Error: " + e.message + "\nFalling back to template.");
         content = generateTemplateContent(persona, topic, title, '');
     }
 
