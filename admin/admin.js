@@ -31,6 +31,67 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
+
+// Fallback models in order of preference
+const GEMINI_MODELS = [
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-001",
+    "gemini-1.5-flash-002",
+    "gemini-1.5-pro",
+    "gemini-1.5-pro-001"
+];
+
+// --- HELPER: ROBUST GEMINI CALL ---
+async function callGeminiAPI(prompt, geminiKey) {
+    let lastError = null;
+
+    for (const model of GEMINI_MODELS) {
+        try {
+            console.log(`Attempting AI generation with model: ${model}`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json"
+                    }
+                })
+            });
+
+            const json = await response.json();
+            
+            // Check for API-level errors
+            if (json.error) {
+                // If "Not Found" or "Not Supported", treat as soft error and try next model
+                if (json.error.message.includes("not found") || json.error.message.includes("not supported")) {
+                    console.warn(`Model ${model} failed: ${json.error.message}. Trying next...`);
+                    lastError = new Error(`Model ${model} not found.`);
+                    continue; 
+                }
+                // Other errors (like auth, quota) should fail immediately
+                throw new Error(json.error.message);
+            }
+
+            // Success! Return the candidates
+            return json;
+
+        } catch (e) {
+            // Network errors or explicit throws
+            lastError = e;
+            if (e.message.includes("API key")) throw e; // Don't retry if key is wrong
+        }
+    }
+
+    throw new Error(`All AI models failed. Last error: ${lastError?.message}`);
+}
+
 let quill;
 let activeImage = '';
 let currentUser = null;
@@ -451,25 +512,8 @@ window.runAIPhase1 = async () => {
                 Ensure the titles are captivating and the keywords are highly relevant for ranking on Google.
                 `;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${geminiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json"
-                }
-            })
-        });
-
-        const json = await response.json();
-        if (json.error) throw new Error(json.error.message);
+        // USE NEW ROBUST CALL
+        const json = await callGeminiAPI(prompt, geminiKey);
 
         const data = JSON.parse(json.candidates[0].content.parts[0].text);
 
@@ -612,22 +656,8 @@ window.runAIPhase2 = async () => {
                     **Final Output:** Produce only the HTML content for the article body.
                     `;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${geminiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: prompt
-                        }]
-                    }]
-                })
-            });
-
-            const json = await response.json();
-            if (json.error) throw new Error(json.error.message);
+            // USE NEW ROBUST CALL
+            const json = await callGeminiAPI(prompt, geminiKey);
 
             let rawContent = json.candidates[0].content.parts[0].text;
 
