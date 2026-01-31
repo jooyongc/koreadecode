@@ -32,21 +32,23 @@ export async function onRequest(context) {
 
     let errors = [];
 
-    // --- STRATEGY: OpenRouter FIRST (Bypasses Region Blocks) ---
-    
-    // List of reliable OpenRouter models (Free & Paid fallback)
-    // We try them in order. If one is offline ("No endpoints"), we try the next.
+    // --- STRATEGY: OpenRouter Mass-Trial (Use extensive list to ensure hit) ---
+    // Includes :free models and cheap paid models as fallback
     const OR_MODELS = [
-        "google/gemini-2.0-flash-lite-preview-02-05:free", // Newest Free
-        "google/gemini-2.0-pro-exp-02-05:free", // High quality free
-        "meta-llama/llama-3.1-8b-instruct:free", // Standard free
-        "microsoft/phi-3-mini-128k-instruct:free", // Backup free
-        "google/gemini-flash-1.5" // Paid fallback (cheap)
+        "google/gemini-2.0-flash-exp:free",
+        "google/gemini-exp-1206:free",
+        "meta-llama/llama-3-8b-instruct:free",
+        "huggingfaceh4/zephyr-7b-beta:free",
+        "mistralai/mistral-7b-instruct:free",
+        // Paid/Standard models (Will use your OR credits if free fails)
+        "google/gemini-1.5-flash",
+        "openai/gpt-4o-mini",
+        "openai/gpt-3.5-turbo"
     ];
 
     console.log("Starting AI Proxy...");
 
-    // 1. OpenRouter (Primary)
+    // 1. OpenRouter (Primary & Most Robust)
     for (const model of OR_MODELS) {
         try {
             console.log(`Trying OpenRouter: ${model}`);
@@ -83,7 +85,7 @@ export async function onRequest(context) {
         }
     }
 
-    // 2. OpenAI (Secondary - might fail due to region)
+    // 2. OpenAI Direct (Fallback - likely to fail if region blocked)
     try {
         console.log("Trying OpenAI direct...");
         const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -107,7 +109,7 @@ export async function onRequest(context) {
         errors.push(`OpenAI Direct Error: ${e.message}`);
     }
 
-    // 3. Gemini (Tertiary - might fail due to region)
+    // 3. Gemini Direct (Fallback - likely to fail if region blocked)
     try {
         console.log("Trying Gemini direct...");
         const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, { 
