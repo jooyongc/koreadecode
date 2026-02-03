@@ -401,6 +401,7 @@ async function loadDashboard() {
     postsSnap.forEach(doc => {
         const d = doc.data();
         if (d.status === 'scheduled') scheduled++;
+        // Keep Firestore internal views as a backup/base
         totalViews += (d.views || 0);
         posts.push({
             title: d.title,
@@ -408,8 +409,27 @@ async function loadDashboard() {
         });
     });
 
+    // Fetch GA4 Data (via Proxy)
+    try {
+        const gaRes = await fetch('/functions/ga-proxy', { method: 'POST' });
+        if (gaRes.ok) {
+            const gaData = await gaRes.json();
+            // Use GA data if available, otherwise fall back to Firestore sum
+            if (gaData.pageViews) {
+                document.getElementById('stat-views').innerText = gaData.pageViews.toLocaleString();
+                // We could also update the "Active Users" or "Sources" UI if we had slots for them
+            } else {
+                document.getElementById('stat-views').innerText = totalViews.toLocaleString();
+            }
+        } else {
+             document.getElementById('stat-views').innerText = totalViews.toLocaleString();
+        }
+    } catch (e) {
+        console.warn("GA Fetch Failed, using Firestore stats:", e);
+        document.getElementById('stat-views').innerText = totalViews.toLocaleString();
+    }
+
     document.getElementById('stat-posts').innerText = postsSnap.size;
-    document.getElementById('stat-views').innerText = totalViews.toLocaleString();
     document.getElementById('stat-scheduled').innerText = scheduled;
 
     posts.sort((a, b) => b.views - a.views);
@@ -847,7 +867,9 @@ window.publishPost = async () => {
     const title = document.getElementById('ai-suggested-title').value;
     const category = document.getElementById('ai-category').value;
     const content = quill.root.innerHTML;
-    const schedule = document.getElementById('post-schedule').value;
+    const scheduleStr = document.getElementById('post-schedule').value;
+
+    if (!title) return alert("Title is required");
 
     // Get selected Persona info
     const personaId = document.getElementById('ai-persona-select').value;
@@ -864,7 +886,7 @@ window.publishPost = async () => {
         name: persona.name,
         job: persona.job,
         bio: persona.bio || "Writer at Korea Decode",
-        avatar: persona.name[0]
+        avatar: persona.name[0] || "E"
     };
 
     try {
@@ -873,26 +895,33 @@ window.publishPost = async () => {
                 title,
                 category,
                 content,
-                image: activeImage,
-                writer: writerData
+                image: activeImage || '',
+                writer: writerData,
+                // Only update status if explicitly scheduling
+                ...(scheduleStr ? { status: 'scheduled', createdAt: new Date(scheduleStr) } : {})
             });
             alert('Post Updated!');
         } else {
-            await addDoc(collection(db, "posts"), {
+            // New Post
+            const postData = {
                 title,
                 category,
                 content,
-                image: activeImage,
+                image: activeImage || '',
                 views: 0,
-                createdAt: schedule ? new Date(schedule) : serverTimestamp(),
-                status: schedule ? 'scheduled' : 'published',
-                writer: writerData
-            });
+                status: scheduleStr ? 'scheduled' : 'published',
+                writer: writerData,
+                createdAt: scheduleStr ? new Date(scheduleStr) : serverTimestamp()
+            };
+
+            await addDoc(collection(db, "posts"), postData);
             alert('Post Published!');
         }
         resetAI();
+        loadDashboard(); // Refresh stats
     } catch (e) {
-        alert(e.message);
+        console.error("Publish Error:", e);
+        alert("Error publishing post: " + e.message);
     }
 };
 
