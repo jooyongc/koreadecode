@@ -32,60 +32,34 @@ import {
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
-// --- HELPER: CLIENT-SIDE DIRECT OPENROUTER CALL (Bypasses Cloudflare IP Blocks) ---
+// --- HELPER: SERVER-SIDE AI PROXY CALL ---
 async function callAI(prompt) {
-    const OPENROUTER_KEY = "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"; // User provided key
-    
-    // Reliable models list for 2025/2026
-    const MODELS = [
-        "google/gemini-2.0-flash-lite-preview-02-05:free",
-        "google/gemini-2.0-pro-exp-02-05:free",
-        "meta-llama/llama-3-8b-instruct:free",
-        "mistralai/mistral-7b-instruct:free",
-        "openai/gpt-4o-mini", // Paid fallback
-        "google/gemini-1.5-flash" // Paid fallback
-    ];
+    try {
+        console.log(`[Client] Calling AI Proxy...`);
+        const response = await fetch('/functions/ai-proxy', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: prompt })
+        });
 
-    let errors = [];
+        const data = await response.json();
 
-    for (const model of MODELS) {
-        try {
-            console.log(`[Client-Side] Trying OpenRouter: ${model}`);
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
-                    'HTTP-Referer': window.location.origin, // Client Origin
-                    'X-Title': 'Korea Decode Admin Client'
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: [{ role: "user", content: prompt }]
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.error) {
-                console.warn(`Model ${model} failed:`, data.error);
-                errors.push(`${model}: ${data.error.message}`);
-                continue;
-            }
-
-            if (data.choices && data.choices.length > 0) {
-                return data.choices[0].message.content;
-            } else {
-                throw new Error("No content in response");
-            }
-
-        } catch (e) {
-            console.error(e);
-            errors.push(`${model} Net Error: ${e.message}`);
+        if (data.error) {
+            throw new Error(`AI Proxy Error: ${data.error} (Details: ${JSON.stringify(data.details)})`);
         }
-    }
 
-    throw new Error(`ALL CLIENT MODELS FAILED.\n${errors.join('\n')}`);
+        if (data.text) {
+            return data.text;
+        } else {
+            throw new Error("No content returned from AI Proxy");
+        }
+
+    } catch (e) {
+        console.error("AI Call Failed:", e);
+        throw e;
+    }
 }
 
 function cleanJSONResponse(text) {
