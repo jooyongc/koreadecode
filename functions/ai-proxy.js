@@ -18,12 +18,12 @@ export async function onRequest(context) {
 
   try {
     const body = await request.json();
-    const { prompt } = body; 
+    const { prompt, userOpenRouterKey, userOpenAIKey, userGeminiKey } = body; 
 
-    // --- HARDCODED KEYS ---
-    const OPENAI_KEY = "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";
-    const GEMINI_KEY = "AIzaSyCM14GVoAINRtX8fk5LdkWjtC_gVQfMBmw";
-    const OPENROUTER_KEY = "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";
+    // --- KEYS (User provided > Hardcoded) ---
+    const OPENAI_KEY = userOpenAIKey || "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";
+    const GEMINI_KEY = userGeminiKey || "AIzaSyCM14GVoAINRtX8fk5LdkWjtC_gVQfMBmw";
+    const OPENROUTER_KEY = userOpenRouterKey || "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";
 
     const corsHeaders = {
         "Content-Type": "application/json",

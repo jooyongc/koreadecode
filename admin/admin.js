@@ -36,12 +36,23 @@ const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 async function callAI(prompt) {
     try {
         console.log(`[Client] Calling AI Proxy...`);
+        
+        // Get keys from LocalStorage
+        const userOpenRouterKey = localStorage.getItem('openrouter_key');
+        const userOpenAIKey = localStorage.getItem('openai_key');
+        const userGeminiKey = localStorage.getItem('gemini_key');
+
         const response = await fetch('/functions/ai-proxy', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ prompt: prompt })
+            body: JSON.stringify({ 
+                prompt: prompt,
+                userOpenRouterKey: userOpenRouterKey,
+                userOpenAIKey: userOpenAIKey,
+                userGeminiKey: userGeminiKey
+            })
         });
 
         const data = await response.json();
