@@ -32,45 +32,83 @@ import {
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
-// --- HELPER: SERVER-SIDE AI PROXY CALL ---
+// --- HELPER: CLIENT-SIDE AI CALL (Direct) ---
 async function callAI(prompt) {
-    try {
-        console.log(`[Client] Calling AI Proxy...`);
-        
-        // Get keys from LocalStorage
-        const userOpenRouterKey = localStorage.getItem('openrouter_key');
-        const userOpenAIKey = localStorage.getItem('openai_key');
-        const userGeminiKey = localStorage.getItem('gemini_key');
+    const userOpenRouterKey = localStorage.getItem('openrouter_key');
+    const userOpenAIKey = localStorage.getItem('openai_key');
+    const userGeminiKey = localStorage.getItem('gemini_key');
 
-        const response = await fetch('/functions/ai-proxy', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                prompt: prompt,
-                userOpenRouterKey: userOpenRouterKey,
-                userOpenAIKey: userOpenAIKey,
-                userGeminiKey: userGeminiKey
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-            throw new Error(`AI Proxy Error: ${data.error} (Details: ${JSON.stringify(data.details)})`);
+    // 1. Try OpenRouter (Preferred)
+    if (userOpenRouterKey) {
+        try {
+            console.log("[Client] Using OpenRouter...");
+            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userOpenRouterKey}`,
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Korea Decode Admin'
+                },
+                body: JSON.stringify({
+                    model: "google/gemini-2.0-flash-exp:free", // Default to a free/cheap model
+                    messages: [{ role: "user", content: prompt }]
+                })
+            });
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+            return data.choices?.[0]?.message?.content || "";
+        } catch (e) {
+            console.warn("OpenRouter Failed:", e);
+            if (!userOpenAIKey && !userGeminiKey) throw e; // Fail if no other keys
         }
-
-        if (data.text) {
-            return data.text;
-        } else {
-            throw new Error("No content returned from AI Proxy");
-        }
-
-    } catch (e) {
-        console.error("AI Call Failed:", e);
-        throw e;
     }
+
+    // 2. Try OpenAI
+    if (userOpenAIKey) {
+        try {
+            console.log("[Client] Using OpenAI...");
+            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userOpenAIKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o-mini",
+                    messages: [{ role: "user", content: prompt }]
+                })
+            });
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.choices?.[0]?.message?.content || "";
+        } catch (e) {
+            console.warn("OpenAI Failed:", e);
+            if (!userGeminiKey) throw e;
+        }
+    }
+
+    // 3. Try Gemini
+    if (userGeminiKey) {
+        try {
+            console.log("[Client] Using Gemini...");
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userGeminiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error.message);
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        } catch (e) {
+            console.error("Gemini Failed:", e);
+            throw e;
+        }
+    }
+
+    throw new Error("Missing API Key. Please go to 'Settings' and save a Gemini, OpenAI, or OpenRouter API key.");
 }
 
 function cleanJSONResponse(text) {
