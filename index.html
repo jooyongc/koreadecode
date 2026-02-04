@@ -456,24 +456,6 @@
         </div>
     </div>
 
-    <!-- Detail Overlay -->
-    <div id="view-overlay">
-        <div class="close-btn" onclick="closePost()"><i class="ph ph-x"></i></div>
-        <div class="view-inner">
-            <div style="text-align:center; margin-bottom:60px;">
-                <span id="v-cat" style="color:var(--accent); border:1px solid var(--accent); padding:5px 15px; border-radius:50px; font-weight:700;">CAT</span>
-                <h1 id="v-title" style="font-size:3rem; margin-top:30px; font-weight:700; line-height:1.2;">Title</h1>
-                <div style="color:#666; margin-top:20px;" id="v-date">Date</div>
-            </div>
-            <img id="v-img" style="width:100%; border-radius:20px; margin-bottom:50px;" alt="Detail Image">
-            <div id="v-content" class="view-content"></div>
-            
-            <div class="ad-banner-wrapper">
-                <iframe class="responsive-iframe" src="https://www.trip.com/partners/ad/S9752059?Allianceid=4817513&amp;SID=76470416&amp;trip_sub1=" frameborder="0" scrolling="no" id="S9752059"></iframe>
-            </div>
-        </div>
-    </div>
-
     <script>
         const WP_URL = 'https://koreadecode.mycafe24.com';
         let allPosts = []; 
@@ -571,16 +553,17 @@
             const nextBatch = gridPosts.slice(currentGridIndex, currentGridIndex + LOAD_STEP);
             
             nextBatch.forEach((p, idx) => {
-                const div = document.createElement('div');
-                div.className = 'mag-card';
-                div.style.animationDelay = `${idx * 0.1}s`;
-                div.onclick = () => openPost(p.id);
-                div.innerHTML = `
+                const link = document.createElement('a');
+                link.href = `/posts/${p.slug}.html`;
+                link.className = 'mag-card';
+                link.style.display = 'block';
+                link.style.animationDelay = `${idx * 0.1}s`;
+                link.innerHTML = `
                     <div class="mag-meta">${getCat(p)}</div>
                     <img loading="lazy" src="${getImg(p)}" class="mag-img" alt="${p.title.rendered}">
                     <div class="mag-title">${p.title.rendered}</div>
                 `;
-                gridSlot.appendChild(div);
+                gridSlot.appendChild(link);
             });
 
             currentGridIndex += LOAD_STEP;
@@ -595,42 +578,15 @@
         function renderHero(p) {
             const img = getImg(p);
             document.getElementById('hero-slot').innerHTML = `
-                <div class="hero-box" onclick="openPost(${p.id})">
+                <a href="/posts/${p.slug}.html" class="hero-box" style="display:grid; text-decoration:none;">
                     <div class="hero-img-wrap"><img loading="lazy" src="${img}" class="hero-img" alt="${p.title.rendered}"></div>
                     <div class="hero-info">
                         <div class="label-accent">FEATURED STORY</div>
                         <div class="hero-title-txt">${p.title.rendered}</div>
                         <div class="cta-arrow"><i class="ph ph-arrow-right"></i></div>
                     </div>
-                </div>
+                </a>
             `;
-        }
-
-        function openPost(id) {
-            const p = allPosts.find(x => x.id === id);
-            document.getElementById('v-cat').innerText = getCat(p);
-            document.getElementById('v-title').innerHTML = p.title.rendered;
-            document.getElementById('v-date').innerText = new Date(p.date).toDateString();
-            document.getElementById('v-img').src = getImg(p);
-            document.getElementById('v-content').innerHTML = p.content.rendered;
-            
-            const overlay = document.getElementById('view-overlay');
-            overlay.style.display = 'block';
-            setTimeout(() => overlay.style.opacity = 1, 10);
-            document.body.style.overflow = 'hidden';
-            
-            // Push state for history (optional)
-            history.pushState({postId: id}, null, `?id=${id}`);
-        }
-
-        function closePost() {
-            const overlay = document.getElementById('view-overlay');
-            overlay.style.opacity = 0;
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }, 400);
-            history.pushState({}, null, '/');
         }
 
         function filter(cid, btn) {
@@ -648,13 +604,6 @@
         function getCat(p) { return (p.categories && p.categories.length) ? (catsMap[p.categories[0]] || 'NEWS') : 'NEWS'; }
 
         init();
-        
-        // Handle Back Button
-        window.onpopstate = function(event) {
-            if (document.getElementById('view-overlay').style.display === 'block') {
-                closePost();
-            }
-        };
     </script>
 </body>
 </html>
