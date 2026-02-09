@@ -32,95 +32,36 @@ import {
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
-// --- DEFAULT API KEYS (Used when user has not set custom keys in Settings) ---
-const DEFAULT_GEMINI_KEY = 'AIzaSyCM14GVoAINRtX8fk5LdkWjtC_gVQfMBmw';
-const DEFAULT_OPENAI_KEY = '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';
-const DEFAULT_OPENROUTER_KEY = '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';
-
-function getAPIKeys() {
-    return {
-        openrouter: localStorage.getItem('openrouter_key') || DEFAULT_OPENROUTER_KEY,
-        openai: localStorage.getItem('openai_key') || DEFAULT_OPENAI_KEY,
-        gemini: localStorage.getItem('gemini_key') || DEFAULT_GEMINI_KEY
-    };
-}
-
-// --- HELPER: CLIENT-SIDE AI CALL (Direct with built-in fallback) ---
+// --- AI CALL: Routes through server-side proxy to protect API keys ---
 async function callAI(prompt) {
-    const keys = getAPIKeys();
-    let errors = [];
+    // Pass any user-custom keys from Settings (proxy uses its own defaults if empty)
+    const userKeys = {
+        userOpenRouterKey: localStorage.getItem('openrouter_key') || '',
+        userOpenAIKey: localStorage.getItem('openai_key') || '',
+        userGeminiKey: localStorage.getItem('gemini_key') || ''
+    };
 
-    // 1. Try OpenRouter (Preferred - supports free models)
+    console.log("[AI] Calling server proxy...");
     try {
-        console.log("[AI] Trying OpenRouter...");
-        const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${keys.openrouter}`,
-                'HTTP-Referer': window.location.origin,
-                'X-Title': 'Korea Decode Admin'
-            },
-            body: JSON.stringify({
-                model: "google/gemini-2.0-flash-exp:free",
-                messages: [{ role: "user", content: prompt }]
-            })
-        });
-        const data = await resp.json();
-        if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-        const text = data.choices?.[0]?.message?.content;
-        if (text) { console.log("[AI] OpenRouter success"); return text; }
-        throw new Error("Empty response from OpenRouter");
-    } catch (e) {
-        console.warn("[AI] OpenRouter failed:", e.message);
-        errors.push(`OpenRouter: ${e.message}`);
-    }
-
-    // 2. Try Gemini (Fast and reliable)
-    try {
-        console.log("[AI] Trying Gemini...");
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keys.gemini}`, {
+        const resp = await fetch('/functions/ai-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
+            body: JSON.stringify({ prompt, ...userKeys })
         });
         const data = await resp.json();
-        if (data.error) throw new Error(data.error.message);
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) { console.log("[AI] Gemini success"); return text; }
-        throw new Error("Empty response from Gemini");
-    } catch (e) {
-        console.warn("[AI] Gemini failed:", e.message);
-        errors.push(`Gemini: ${e.message}`);
-    }
 
-    // 3. Try OpenAI (Final fallback)
-    try {
-        console.log("[AI] Trying OpenAI...");
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${keys.openai}`
-            },
-            body: JSON.stringify({
-                model: "gpt-4o-mini",
-                messages: [{ role: "user", content: prompt }]
-            })
-        });
-        const data = await resp.json();
-        if (data.error) throw new Error(data.error.message);
-        const text = data.choices?.[0]?.message?.content;
-        if (text) { console.log("[AI] OpenAI success"); return text; }
-        throw new Error("Empty response from OpenAI");
-    } catch (e) {
-        console.warn("[AI] OpenAI failed:", e.message);
-        errors.push(`OpenAI: ${e.message}`);
-    }
+        if (data.error) {
+            const details = data.details ? '\n' + data.details.join('\n') : '';
+            throw new Error(data.error + details);
+        }
 
-    throw new Error("All AI providers failed.\n" + errors.join("\n"));
+        if (!data.text) throw new Error("Empty response from AI proxy");
+        console.log("[AI] Proxy success");
+        return data.text;
+    } catch (e) {
+        console.error("[AI] Proxy failed:", e);
+        throw new Error("AI Generation Failed: " + e.message);
+    }
 }
 
 function cleanJSONResponse(text) {
