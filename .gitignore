@@ -1,0 +1,19 @@
+# Debug logs
+firebase-debug.log
+
+# Backup files
+*.bak
+
+# Temporary images
+image.png
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Environment
+.env
+.env.local
