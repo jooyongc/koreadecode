@@ -172,17 +172,21 @@
 
         <!-- DASHBOARD -->
         <div id="view-dashboard" class="view-section active">
-            <h1 style="margin-bottom: 24px;">Analytics Overview</h1>
-            
+            <h1 style="margin-bottom: 24px;">Analytics Overview <span id="ga-period" style="font-size: 14px; color: var(--text-muted); font-weight: 400;">(Last 28 days)</span></h1>
+
             <!-- Key Stats -->
-            <div class="row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px;">
+            <div class="row" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 24px;">
                 <div class="card">
                     <div style="color: var(--text-muted); font-size: 14px;">Total Posts</div>
                     <div style="font-size: 36px; font-weight: 700; margin-top: 8px;" id="stat-posts">0</div>
                 </div>
                 <div class="card">
-                    <div style="color: var(--text-muted); font-size: 14px;">Total Views (Real-time)</div>
+                    <div style="color: var(--text-muted); font-size: 14px;">Page Views (GA4)</div>
                     <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--success);" id="stat-views">0</div>
+                </div>
+                <div class="card">
+                    <div style="color: var(--text-muted); font-size: 14px;">Users</div>
+                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--accent);" id="stat-users">0</div>
                 </div>
                 <div class="card">
                     <div style="color: var(--text-muted); font-size: 14px;">Scheduled</div>
@@ -190,39 +194,36 @@
                 </div>
             </div>
 
+            <!-- Daily Trend -->
+            <div class="card" style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 16px;">Daily Trend (Last 7 days)</h3>
+                <div id="daily-trend-chart" style="display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 0 10px;"></div>
+                <div id="daily-trend-labels" style="display: flex; gap: 8px; padding: 8px 10px 0; font-size: 11px; color: var(--text-muted);"></div>
+            </div>
+
             <!-- Detailed Stats -->
             <div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                
-                <!-- Traffic Source -->
+
+                <!-- Traffic Source (Real GA4 Data) -->
                 <div class="card">
-                    <h3 style="margin-bottom: 20px;">Traffic Sources</h3>
-                    <div>
-                        <div class="stat-row"><span>Google Search (Organic)</span> <span>45%</span></div>
-                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 45%;"></div></div>
-                        
-                        <div class="stat-row"><span>Social Media (Insta/TikTok)</span> <span>30%</span></div>
-                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 30%; background-color: #E1306C;"></div></div>
-
-                        <div class="stat-row"><span>Direct / Bookmark</span> <span>15%</span></div>
-                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 15%; background-color: #f59e0b;"></div></div>
-
-                        <div class="stat-row"><span>Referral</span> <span>10%</span></div>
-                        <div class="stat-bar"><div class="stat-bar-fill" style="width: 10%; background-color: var(--text-muted);"></div></div>
+                    <h3 style="margin-bottom: 20px;">Traffic Sources (GA4)</h3>
+                    <div id="traffic-sources-container">
+                        <div style="color: var(--text-muted); padding: 10px;">Loading GA4 data...</div>
                     </div>
                 </div>
 
-                <!-- Top Posts -->
+                <!-- Top Pages (Real GA4 Data) -->
                 <div class="card">
-                    <h3 style="margin-bottom: 20px;">Top Performing Posts</h3>
+                    <h3 style="margin-bottom: 20px;">Top Pages (GA4)</h3>
                     <table class="auto-table" id="dashboard-top-posts">
                         <thead>
                             <tr>
-                                <th>Title</th>
+                                <th>Page</th>
                                 <th style="text-align: right;">Views</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="2">Loading...</td></tr>
+                            <tr><td colspan="2">Loading GA4 data...</td></tr>
                         </tbody>
                     </table>
                 </div>

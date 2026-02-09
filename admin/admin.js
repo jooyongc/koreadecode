@@ -311,47 +311,108 @@ function refreshPersonaSelect() {
 
 
 // --- DASHBOARD ANALYTICS ---
+const SOURCE_COLORS = ['var(--accent)', '#E1306C', '#f59e0b', '#10b981', '#8b5cf6', 'var(--text-muted)'];
+
 async function loadDashboard() {
+    // 1. Supabase stats (posts count, scheduled)
     const { data: posts, error } = await supabase.from('posts').select('title, views, status');
     if (error) { console.error(error); return; }
 
-    let totalViews = 0;
     let scheduled = 0;
-    let postList = [];
-
-    (posts || []).forEach(d => {
-        if (d.status === 'scheduled') scheduled++;
-        totalViews += (d.views || 0);
-        postList.push({ title: d.title, views: d.views || 0 });
-    });
-
-    // Fetch GA4 Data (via Proxy)
-    try {
-        const gaRes = await fetch('/ga-proxy', { method: 'POST' });
-        if (gaRes.ok) {
-            const gaData = await gaRes.json();
-            if (gaData.pageViews) {
-                document.getElementById('stat-views').innerText = gaData.pageViews.toLocaleString();
-            } else {
-                document.getElementById('stat-views').innerText = totalViews.toLocaleString();
-            }
-        } else {
-            document.getElementById('stat-views').innerText = totalViews.toLocaleString();
-        }
-    } catch (e) {
-        console.warn("GA Fetch Failed, using DB stats:", e);
-        document.getElementById('stat-views').innerText = totalViews.toLocaleString();
-    }
+    (posts || []).forEach(d => { if (d.status === 'scheduled') scheduled++; });
 
     document.getElementById('stat-posts').innerText = (posts || []).length;
     document.getElementById('stat-scheduled').innerText = scheduled;
 
-    postList.sort((a, b) => b.views - a.views);
-    const top5 = postList.slice(0, 5);
+    // 2. Fetch real GA4 data
+    try {
+        const gaRes = await fetch('/ga-proxy', { method: 'POST' });
+        if (!gaRes.ok) throw new Error('GA proxy returned ' + gaRes.status);
+        const ga = await gaRes.json();
+        if (ga.error) throw new Error(ga.error);
+
+        // Overview stats
+        document.getElementById('stat-views').innerText = (ga.pageViews || 0).toLocaleString();
+        document.getElementById('stat-users').innerText = (ga.totalUsers || 0).toLocaleString();
+
+        // Traffic sources
+        renderTrafficSources(ga.sources || []);
+
+        // Top pages
+        renderTopPages(ga.topPages || []);
+
+        // Daily trend chart
+        renderDailyTrend(ga.dailyTrend || []);
+
+    } catch (e) {
+        console.warn("GA4 Fetch Failed:", e);
+        // Fallback to Supabase views
+        let totalViews = 0;
+        (posts || []).forEach(d => { totalViews += (d.views || 0); });
+        document.getElementById('stat-views').innerText = totalViews.toLocaleString();
+        document.getElementById('stat-users').innerText = '-';
+        document.getElementById('traffic-sources-container').innerHTML = '<div style="color:var(--text-muted); padding:10px;">GA4 연결 실패 — Supabase 조회수 표시 중</div>';
+
+        // Fallback top posts from Supabase
+        const postList = (posts || []).map(d => ({ title: d.title, views: d.views || 0 }));
+        postList.sort((a, b) => b.views - a.views);
+        const tbody = document.querySelector('#dashboard-top-posts tbody');
+        tbody.innerHTML = '';
+        postList.slice(0, 10).forEach(p => {
+            tbody.innerHTML += `<tr><td>${p.title}</td><td style="text-align:right; font-weight:bold;">${p.views.toLocaleString()}</td></tr>`;
+        });
+    }
+}
+
+function renderTrafficSources(sources) {
+    const container = document.getElementById('traffic-sources-container');
+    if (!sources.length) {
+        container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No traffic data yet</div>';
+        return;
+    }
+    container.innerHTML = '';
+    sources.forEach((s, i) => {
+        const color = SOURCE_COLORS[i % SOURCE_COLORS.length];
+        container.innerHTML += `
+            <div class="stat-row"><span>${s.name}</span> <span>${s.percent}% (${s.sessions.toLocaleString()})</span></div>
+            <div class="stat-bar"><div class="stat-bar-fill" style="width: ${s.percent}%; background-color: ${color};"></div></div>
+        `;
+    });
+}
+
+function renderTopPages(pages) {
     const tbody = document.querySelector('#dashboard-top-posts tbody');
     tbody.innerHTML = '';
-    top5.forEach(p => {
-        tbody.innerHTML += `<tr><td>${p.title}</td><td style="text-align:right; font-weight:bold;">${p.views.toLocaleString()}</td></tr>`;
+    if (!pages.length) {
+        tbody.innerHTML = '<tr><td colspan="2" style="color:var(--text-muted);">No page data yet</td></tr>';
+        return;
+    }
+    pages.forEach(p => {
+        const displayPath = p.path === '/' ? 'Homepage' : decodeURIComponent(p.path);
+        tbody.innerHTML += `<tr><td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${displayPath}</td><td style="text-align:right; font-weight:bold;">${p.views.toLocaleString()}</td></tr>`;
+    });
+}
+
+function renderDailyTrend(trend) {
+    const chart = document.getElementById('daily-trend-chart');
+    const labels = document.getElementById('daily-trend-labels');
+    if (!trend.length) {
+        chart.innerHTML = '<div style="color:var(--text-muted);">No trend data</div>';
+        return;
+    }
+    const maxViews = Math.max(...trend.map(d => d.views), 1);
+    chart.innerHTML = '';
+    labels.innerHTML = '';
+    trend.forEach(d => {
+        const height = Math.max((d.views / maxViews) * 100, 4);
+        const dateStr = d.date.substring(4, 6) + '/' + d.date.substring(6, 8);
+        chart.innerHTML += `
+            <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;">
+                <span style="font-size:11px; color:var(--text-muted);">${d.views}</span>
+                <div style="width:100%; height:${height}px; background:var(--accent); border-radius:4px 4px 0 0; min-height:4px;" title="${d.views} views, ${d.users} users"></div>
+            </div>
+        `;
+        labels.innerHTML += `<div style="flex:1; text-align:center;">${dateStr}</div>`;
     });
 }
 

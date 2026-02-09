@@ -15,50 +15,215 @@ export async function onRequest(context) {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
-  // --- GOOGLE ANALYTICS 4 CONFIG ---
-  const PROPERTY_ID = '521499132'; // Provided by user
-  // NOTE: For a real secure implementation, you need a Service Account Key.
-  // Since we are in a limited environment without the ability to upload a JSON key file safely to Cloudflare Workers secrets right now,
-  // we will simulate the data fetching structure or use a public measurement protocol if applicable (but that's for sending data).
-  //
-  // REALITY CHECK: Fetching GA4 reports REQUIRES OAuth2 or a Service Account with the Google Analytics Data API.
-  // It CANNOT be done with just a Property ID and an API Key.
-  //
-  // Because we cannot easily set up Google Cloud Service Account authentication in this specific text-based CLI environment 
-  // without the user providing the full JSON key file content (which is sensitive), 
-  // I will implement a placeholder that returns a structured response mimicking the GA4 API.
-  // This allows the frontend code to be ready once the backend auth is properly configured.
-  
-  // However, I will add the logic that *would* be used if the token was available.
-  
-  try {
-    // Mock Data for demonstration since we lack Service Account Credentials
-    // In a real production environment, you would:
-    // 1. Store your Service Account JSON in Cloudflare Secrets.
-    // 2. Generate a JWT from it.
-    // 3. Exchange JWT for an Access Token via https://oauth2.googleapis.com/token.
-    // 4. Call https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport
+  const PROPERTY_ID = '521499132';
 
-    const mockData = {
-        totalUsers: Math.floor(Math.random() * 5000) + 1000,
-        activeUsers: Math.floor(Math.random() * 500) + 50,
-        pageViews: Math.floor(Math.random() * 15000) + 5000,
-        sources: [
-            { name: 'Google Search', value: 45 },
-            { name: 'Direct', value: 25 },
-            { name: 'Social (Insta/TikTok)', value: 20 },
-            { name: 'Referral', value: 10 }
-        ]
+  try {
+    // Get Service Account JSON from Cloudflare environment secret
+    const saJson = env.GA_SERVICE_ACCOUNT;
+    if (!saJson) throw new Error("GA_SERVICE_ACCOUNT secret not configured");
+
+    const sa = typeof saJson === 'string' ? JSON.parse(saJson) : saJson;
+
+    // 1. Create JWT
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: "RS256", typ: "JWT" };
+    const payload = {
+      iss: sa.client_email,
+      scope: "https://www.googleapis.com/auth/analytics.readonly",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
     };
 
-    return new Response(JSON.stringify(mockData), {
+    const encodedHeader = base64url(JSON.stringify(header));
+    const encodedPayload = base64url(JSON.stringify(payload));
+    const signingInput = `${encodedHeader}.${encodedPayload}`;
+
+    // Import private key and sign
+    const privateKey = await importPrivateKey(sa.private_key);
+    const signature = await crypto.subtle.sign(
+      { name: "RSASSA-PKCS1-v1_5" },
+      privateKey,
+      new TextEncoder().encode(signingInput)
+    );
+    const encodedSignature = base64url(signature);
+    const jwt = `${signingInput}.${encodedSignature}`;
+
+    // 2. Exchange JWT for access token
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error("Token exchange failed: " + JSON.stringify(tokenData));
+    const accessToken = tokenData.access_token;
+
+    // 3. Fetch GA4 reports (last 28 days)
+    const reportRes = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
+          metrics: [
+            { name: "screenPageViews" },
+            { name: "totalUsers" },
+            { name: "activeUsers" },
+            { name: "sessions" },
+          ],
+        }),
+      }
+    );
+    const reportData = await reportRes.json();
+
+    // 4. Fetch top pages
+    const pagesRes = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
+          dimensions: [{ name: "pagePath" }],
+          metrics: [{ name: "screenPageViews" }],
+          orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+          limit: 10,
+        }),
+      }
+    );
+    const pagesData = await pagesRes.json();
+
+    // 5. Fetch traffic sources
+    const sourcesRes = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
+          dimensions: [{ name: "sessionDefaultChannelGroup" }],
+          metrics: [{ name: "sessions" }],
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+          limit: 6,
+        }),
+      }
+    );
+    const sourcesData = await sourcesRes.json();
+
+    // 6. Fetch daily page views (last 7 days for trend)
+    const trendRes = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          dateRanges: [{ startDate: "7daysAgo", endDate: "today" }],
+          dimensions: [{ name: "date" }],
+          metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+          orderBys: [{ dimension: { dimensionName: "date" }, desc: false }],
+        }),
+      }
+    );
+    const trendData = await trendRes.json();
+
+    // Parse overview metrics
+    const overviewRow = reportData.rows?.[0]?.metricValues || [];
+    const pageViews = parseInt(overviewRow[0]?.value || '0');
+    const totalUsers = parseInt(overviewRow[1]?.value || '0');
+    const activeUsers = parseInt(overviewRow[2]?.value || '0');
+    const sessions = parseInt(overviewRow[3]?.value || '0');
+
+    // Parse top pages
+    const topPages = (pagesData.rows || []).map(r => ({
+      path: r.dimensionValues[0].value,
+      views: parseInt(r.metricValues[0].value),
+    }));
+
+    // Parse sources
+    const totalSessions = (sourcesData.rows || []).reduce((sum, r) => sum + parseInt(r.metricValues[0].value), 0);
+    const sources = (sourcesData.rows || []).map(r => ({
+      name: r.dimensionValues[0].value,
+      sessions: parseInt(r.metricValues[0].value),
+      percent: totalSessions > 0 ? Math.round((parseInt(r.metricValues[0].value) / totalSessions) * 100) : 0,
+    }));
+
+    // Parse daily trend
+    const dailyTrend = (trendData.rows || []).map(r => ({
+      date: r.dimensionValues[0].value,
+      views: parseInt(r.metricValues[0].value),
+      users: parseInt(r.metricValues[1].value),
+    }));
+
+    const result = {
+      pageViews,
+      totalUsers,
+      activeUsers,
+      sessions,
+      topPages,
+      sources,
+      dailyTrend,
+    };
+
+    return new Response(JSON.stringify(result), {
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*", 
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "max-age=300",
       },
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    console.error("GA Proxy Error:", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    });
   }
+}
+
+// --- Utility Functions ---
+
+function base64url(input) {
+  let str;
+  if (typeof input === 'string') {
+    str = btoa(input);
+  } else {
+    // ArrayBuffer
+    const bytes = new Uint8Array(input);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    str = btoa(binary);
+  }
+  return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function importPrivateKey(pem) {
+  const pemContents = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\n/g, '');
+  const binaryDer = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+  return crypto.subtle.importKey(
+    "pkcs8",
+    binaryDer.buffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
 }
