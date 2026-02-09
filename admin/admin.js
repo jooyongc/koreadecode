@@ -32,35 +32,31 @@ import {
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
-// --- AI CALL: Routes through server-side proxy to protect API keys ---
+// --- AI CALL: Direct Gemini API from browser (bypasses server region restriction) ---
 async function callAI(prompt) {
-    // Pass any user-custom keys from Settings (proxy uses its own defaults if empty)
-    const userKeys = {
-        userOpenRouterKey: localStorage.getItem('openrouter_key') || '',
-        userOpenAIKey: localStorage.getItem('openai_key') || '',
-        userGeminiKey: localStorage.getItem('gemini_key') || ''
-    };
+    const geminiKey = localStorage.getItem('gemini_key');
+    if (!geminiKey) {
+        throw new Error("Gemini API Key가 설정되지 않았습니다. Settings에서 키를 입력해주세요.");
+    }
 
-    console.log("[AI] Calling server proxy...");
+    console.log("[AI] Calling Gemini directly...");
     try {
-        const resp = await fetch('/ai-proxy', {
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, ...userKeys })
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
         });
         const data = await resp.json();
-
-        if (data.error) {
-            const details = data.details ? '\n' + data.details.join('\n') : '';
-            throw new Error(data.error + details);
-        }
-
-        if (!data.text) throw new Error("Empty response from AI proxy");
-        console.log("[AI] Proxy success");
-        return data.text;
+        if (data.error) throw new Error(data.error.message);
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("Empty response from Gemini");
+        console.log("[AI] Gemini success");
+        return text;
     } catch (e) {
-        console.error("[AI] Proxy failed:", e);
-        throw new Error("AI Generation Failed: " + e.message);
+        console.error("[AI] Gemini failed:", e);
+        throw new Error("AI Error: " + e.message);
     }
 }
 
@@ -175,15 +171,7 @@ function init() {
     // --- INITIAL DATA LOAD ---
     const savedKey = localStorage.getItem('gemini_key');
     document.getElementById('setting-gemini-key').value = savedKey || '';
-    document.getElementById('setting-gemini-key').placeholder = savedKey ? 'AIza...' : 'Using default key (built-in)';
-
-    const savedOpenAIKey = localStorage.getItem('openai_key');
-    document.getElementById('setting-openai-key').value = savedOpenAIKey || '';
-    document.getElementById('setting-openai-key').placeholder = savedOpenAIKey ? 'sk-...' : 'Using default key (built-in)';
-
-    const savedOpenRouterKey = localStorage.getItem('openrouter_key');
-    document.getElementById('setting-openrouter-key').value = savedOpenRouterKey || '';
-    document.getElementById('setting-openrouter-key').placeholder = savedOpenRouterKey ? 'sk-or-...' : 'Using default key (built-in)';
+    document.getElementById('setting-gemini-key').placeholder = 'AIzaSy...';
 
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -221,13 +209,10 @@ async function doLogin() {
 
 // --- SETTINGS ---
 const saveSettings = () => {
-    const k = document.getElementById('setting-gemini-key').value;
-    const o = document.getElementById('setting-openai-key').value;
-    const or = document.getElementById('setting-openrouter-key').value;
+    const k = document.getElementById('setting-gemini-key').value.trim();
+    if (!k) return alert('Gemini API Key를 입력해주세요.');
     localStorage.setItem('gemini_key', k);
-    localStorage.setItem('openai_key', o);
-    localStorage.setItem('openrouter_key', or);
-    alert('Settings Saved');
+    alert('Gemini API Key 저장 완료!');
 };
 
 // --- MODALS ---

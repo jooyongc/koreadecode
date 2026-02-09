@@ -432,24 +432,17 @@
                 <!-- General Settings -->
                 <div class="card">
                     <h3>General</h3>
-                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                        <div style="color: var(--success); font-weight: 600; font-size: 13px;"><i class="ph ph-check-circle"></i> AI calls are routed through the server proxy with built-in keys.</div>
-                        <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">Override below only if you want to use your own keys instead.</div>
+                    <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                        <div style="color: var(--accent); font-weight: 600; font-size: 13px;"><i class="ph ph-key"></i> Google Gemini API를 사용합니다</div>
+                        <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;"><a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">Google AI Studio</a>에서 무료 키를 발급받아 아래에 입력하세요.</div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Gemini API Key</label>
-                        <input type="password" id="setting-gemini-key" class="form-input" placeholder="Using default key (built-in)">
+                        <label class="form-label">Gemini API Key (필수)</label>
+                        <input type="password" id="setting-gemini-key" class="form-input" placeholder="AIzaSy...">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">OpenAI API Key</label>
-                        <input type="password" id="setting-openai-key" class="form-input" placeholder="Using default key (built-in)">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">OpenRouter Key (Free models available)</label>
-                        <input type="password" id="setting-openrouter-key" class="form-input" placeholder="Using default key (built-in)">
-                        <small style="color:var(--text-muted); display:block; margin-top:4px;">Get a free key at <a href="https://openrouter.ai/" target="_blank" style="color:var(--accent);">openrouter.ai</a></small>
-                    </div>
-                    <button id="btn-save-settings" class="btn btn-primary">Save</button>
+                    <button id="btn-save-settings" class="btn btn-primary" style="width:100%;">
+                        <i class="ph ph-floppy-disk"></i> Save API Key
+                    </button>
                     <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
                     <h3 style="margin-bottom: 10px; color: var(--warning);">Maintenance</h3>
                     <button id="btn-remove-duplicates" class="btn btn-outline" style="border-color: var(--warning); color: var(--warning);">Remove Duplicate Posts</button>
@@ -562,6 +555,6 @@
     </div>
 
     <!-- All scripts are now loaded as modules from within admin.js -->
-    <script type="module" src="/admin/admin.js?v=18"></script>
+    <script type="module" src="/admin/admin.js?v=19"></script>
 </body>
 </html>
