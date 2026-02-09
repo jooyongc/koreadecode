@@ -32,83 +32,95 @@ import {
 
 const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
 
-// --- HELPER: CLIENT-SIDE AI CALL (Direct) ---
+// --- DEFAULT API KEYS (Used when user has not set custom keys in Settings) ---
+const DEFAULT_GEMINI_KEY = 'AIzaSyCM14GVoAINRtX8fk5LdkWjtC_gVQfMBmw';
+const DEFAULT_OPENAI_KEY = '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';
+const DEFAULT_OPENROUTER_KEY = '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';
+
+function getAPIKeys() {
+    return {
+        openrouter: localStorage.getItem('openrouter_key') || DEFAULT_OPENROUTER_KEY,
+        openai: localStorage.getItem('openai_key') || DEFAULT_OPENAI_KEY,
+        gemini: localStorage.getItem('gemini_key') || DEFAULT_GEMINI_KEY
+    };
+}
+
+// --- HELPER: CLIENT-SIDE AI CALL (Direct with built-in fallback) ---
 async function callAI(prompt) {
-    const userOpenRouterKey = localStorage.getItem('openrouter_key');
-    const userOpenAIKey = localStorage.getItem('openai_key');
-    const userGeminiKey = localStorage.getItem('gemini_key');
+    const keys = getAPIKeys();
+    let errors = [];
 
-    // 1. Try OpenRouter (Preferred)
-    if (userOpenRouterKey) {
-        try {
-            console.log("[Client] Using OpenRouter...");
-            const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userOpenRouterKey}`,
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Korea Decode Admin'
-                },
-                body: JSON.stringify({
-                    model: "google/gemini-2.0-flash-exp:free", // Default to a free/cheap model
-                    messages: [{ role: "user", content: prompt }]
-                })
-            });
-            const data = await resp.json();
-            if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-            return data.choices?.[0]?.message?.content || "";
-        } catch (e) {
-            console.warn("OpenRouter Failed:", e);
-            if (!userOpenAIKey && !userGeminiKey) throw e; // Fail if no other keys
-        }
+    // 1. Try OpenRouter (Preferred - supports free models)
+    try {
+        console.log("[AI] Trying OpenRouter...");
+        const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${keys.openrouter}`,
+                'HTTP-Referer': window.location.origin,
+                'X-Title': 'Korea Decode Admin'
+            },
+            body: JSON.stringify({
+                model: "google/gemini-2.0-flash-exp:free",
+                messages: [{ role: "user", content: prompt }]
+            })
+        });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+        const text = data.choices?.[0]?.message?.content;
+        if (text) { console.log("[AI] OpenRouter success"); return text; }
+        throw new Error("Empty response from OpenRouter");
+    } catch (e) {
+        console.warn("[AI] OpenRouter failed:", e.message);
+        errors.push(`OpenRouter: ${e.message}`);
     }
 
-    // 2. Try OpenAI
-    if (userOpenAIKey) {
-        try {
-            console.log("[Client] Using OpenAI...");
-            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${userOpenAIKey}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o-mini",
-                    messages: [{ role: "user", content: prompt }]
-                })
-            });
-            const data = await resp.json();
-            if (data.error) throw new Error(data.error.message);
-            return data.choices?.[0]?.message?.content || "";
-        } catch (e) {
-            console.warn("OpenAI Failed:", e);
-            if (!userGeminiKey) throw e;
-        }
+    // 2. Try Gemini (Fast and reliable)
+    try {
+        console.log("[AI] Trying Gemini...");
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keys.gemini}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error.message);
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) { console.log("[AI] Gemini success"); return text; }
+        throw new Error("Empty response from Gemini");
+    } catch (e) {
+        console.warn("[AI] Gemini failed:", e.message);
+        errors.push(`Gemini: ${e.message}`);
     }
 
-    // 3. Try Gemini
-    if (userGeminiKey) {
-        try {
-            console.log("[Client] Using Gemini...");
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userGeminiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
-            const data = await resp.json();
-            if (data.error) throw new Error(data.error.message);
-            return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        } catch (e) {
-            console.error("Gemini Failed:", e);
-            throw e;
-        }
+    // 3. Try OpenAI (Final fallback)
+    try {
+        console.log("[AI] Trying OpenAI...");
+        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${keys.openai}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }]
+            })
+        });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error.message);
+        const text = data.choices?.[0]?.message?.content;
+        if (text) { console.log("[AI] OpenAI success"); return text; }
+        throw new Error("Empty response from OpenAI");
+    } catch (e) {
+        console.warn("[AI] OpenAI failed:", e.message);
+        errors.push(`OpenAI: ${e.message}`);
     }
 
-    throw new Error("Missing API Key. Please go to 'Settings' and save a Gemini, OpenAI, or OpenRouter API key.");
+    throw new Error("All AI providers failed.\n" + errors.join("\n"));
 }
 
 function cleanJSONResponse(text) {
@@ -192,6 +204,9 @@ function init() {
     document.getElementById('btn-save-persona').addEventListener('click', saveOrUpdatePersona);
     document.getElementById('btn-cancel-persona').addEventListener('click', resetPersonaForm);
 
+    // Automation
+    document.getElementById('btn-run-automation').addEventListener('click', runAutomation);
+
     // Migration
     document.getElementById('btn-start-migration').addEventListener('click', startMigration);
 
@@ -218,13 +233,16 @@ function init() {
 
     // --- INITIAL DATA LOAD ---
     const savedKey = localStorage.getItem('gemini_key');
-    if (savedKey) document.getElementById('setting-gemini-key').value = savedKey;
-    
+    document.getElementById('setting-gemini-key').value = savedKey || '';
+    document.getElementById('setting-gemini-key').placeholder = savedKey ? 'AIza...' : 'Using default key (built-in)';
+
     const savedOpenAIKey = localStorage.getItem('openai_key');
-    if (savedOpenAIKey) document.getElementById('setting-openai-key').value = savedOpenAIKey;
+    document.getElementById('setting-openai-key').value = savedOpenAIKey || '';
+    document.getElementById('setting-openai-key').placeholder = savedOpenAIKey ? 'sk-...' : 'Using default key (built-in)';
 
     const savedOpenRouterKey = localStorage.getItem('openrouter_key');
-    if (savedOpenRouterKey) document.getElementById('setting-openrouter-key').value = savedOpenRouterKey;
+    document.getElementById('setting-openrouter-key').value = savedOpenRouterKey || '';
+    document.getElementById('setting-openrouter-key').placeholder = savedOpenRouterKey ? 'sk-or-...' : 'Using default key (built-in)';
 
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -464,9 +482,9 @@ async function loadDashboard() {
     });
 }
 
-window.removeDuplicates = async () => {
+async function removeDuplicates() {
     if (!confirm("This will delete duplicate posts (keeping oldest). Continue?")) return;
-    const btn = document.querySelector('button[onclick="removeDuplicates()"]');
+    const btn = document.getElementById('btn-remove-duplicates');
     btn.innerText = "Processing...";
     btn.disabled = true;
     try {
@@ -805,7 +823,7 @@ window.searchUnsplashAI = async () => {
     }
 };
 
-window.runAutomation = async () => {
+async function runAutomation() {
     const topics = document.getElementById('auto-topics').value.split('\n').filter(t => t.trim() !== '');
     const category = document.getElementById('auto-category').value;
     const startStr = document.getElementById('auto-start-date').value;
