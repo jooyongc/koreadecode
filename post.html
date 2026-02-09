@@ -44,7 +44,7 @@
     </div>
 
     <script type="module">
-        import { db, doc, getDoc, updateDoc } from '/js/firebase-config.js';
+        import { supabase } from '/js/supabase-config.js';
 
         const urlParams = new URLSearchParams(window.location.search);
         const postId = urlParams.get('id');
@@ -55,28 +55,30 @@
                 return;
             }
 
-            const docRef = doc(db, "posts", postId);
-            const docSnap = await getDoc(docRef);
+            const { data: post, error } = await supabase
+                .from('posts')
+                .select('*')
+                .eq('id', postId)
+                .single();
 
-            if (docSnap.exists()) {
-                const post = docSnap.data();
+            if (post && !error) {
                 document.title = `${post.title} - Korea Decode`;
-                
-                // Increment View Count
-                updateDoc(docRef, { views: (post.views || 0) + 1 });
 
-                const date = post.createdAt ? new Date(post.createdAt.toDate()).toLocaleDateString() : '';
-                
-                // Writer Block
+                // Increment View Count via RPC
+                supabase.rpc('increment_views', { post_id: postId });
+
+                const date = post.created_at ? new Date(post.created_at).toLocaleDateString() : '';
+
+                // Writer Block (flattened columns)
                 let writerHtml = '';
-                if (post.writer) {
+                if (post.writer_name) {
                     writerHtml = `
                         <div class="writer-card">
-                            <div class="writer-avatar">${(post.writer.avatar || post.writer.name[0] || 'K')}</div>
+                            <div class="writer-avatar">${(post.writer_avatar || post.writer_name[0] || 'K')}</div>
                             <div class="writer-info">
-                                <span class="writer-role">${post.writer.job || 'Editor'}</span>
-                                <h3>${post.writer.name}</h3>
-                                <p class="writer-bio">${post.writer.bio || 'Sharing the best of Korea.'}</p>
+                                <span class="writer-role">${post.writer_job || 'Editor'}</span>
+                                <h3>${post.writer_name}</h3>
+                                <p class="writer-bio">${post.writer_bio || 'Sharing the best of Korea.'}</p>
                             </div>
                         </div>
                     `;

@@ -456,12 +456,13 @@
         </div>
     </div>
 
-    <script>
-        const WP_URL = 'https://koreadecode.mycafe24.com';
-        let allPosts = []; 
+    <script type="module">
+        import { supabase } from '/js/supabase-config.js';
+
+        let allPosts = [];
         let gridPosts = [];
-        let catsMap = {};
-        
+        let categories = [];
+
         let currentGridIndex = 0;
         const LOAD_STEP = 6;
 
@@ -471,12 +472,12 @@
             if(name.includes('food')) return 'ph-pizza';
             if(name.includes('k-pop')) return 'ph-music-note';
             if(name.includes('tech')) return 'ph-robot';
+            if(name.includes('beauty')) return 'ph-sparkle';
             return 'ph-star';
         }
 
         async function init() {
             try {
-                await fetchCats();
                 await fetchPosts();
             } catch(e) {
                 console.log("Error:", e);
@@ -485,42 +486,46 @@
             }
         }
 
-        async function fetchCats() {
-            try {
-                const res = await fetch(`${WP_URL}/wp-json/wp/v2/categories`);
-                const cats = await res.json();
-                const menu = document.querySelector('.dock-menu');
-                
-                cats.forEach(c => {
-                    if(c.count > 0) {
-                        catsMap[c.id] = c.name;
-                        const btn = document.createElement('button');
-                        btn.className = 'dock-btn';
-                        btn.setAttribute('data-label', c.name);
-                        btn.innerHTML = `<i class="ph ${getIcon(c.name)}"></i>`;
-                        btn.onclick = (e) => filter(c.id, e.currentTarget);
-                        menu.appendChild(btn);
-                    }
-                });
-            } catch(e) { console.error(e); }
-        }
-
         async function fetchPosts() {
             try {
-                const res = await fetch(`${WP_URL}/wp-json/wp/v2/posts?_embed&per_page=50`);
-                allPosts = await res.json();
-                
+                const { data, error } = await supabase
+                    .from('posts')
+                    .select('id, title, slug, category, image, views, status, created_at')
+                    .eq('status', 'published')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                allPosts = data || [];
+
+                // Build categories from posts
+                const catSet = new Set();
+                allPosts.forEach(p => { if (p.category) catSet.add(p.category); });
+                categories = [...catSet];
+                buildCategoryNav();
+
                 document.getElementById('loader').style.display = 'none';
-                
+
                 renderAll(allPosts);
                 updateMarquee(allPosts);
             } catch(e) { console.error(e); }
         }
 
+        function buildCategoryNav() {
+            const menu = document.querySelector('.dock-menu');
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'dock-btn';
+                btn.setAttribute('data-label', cat);
+                btn.innerHTML = `<i class="ph ${getIcon(cat)}"></i>`;
+                btn.onclick = (e) => filter(cat, e.currentTarget);
+                menu.appendChild(btn);
+            });
+        }
+
         function updateMarquee(posts) {
             const mq = document.getElementById('marquee-text');
             if(posts && posts.length > 0) {
-                const titles = posts.slice(0, 5).map(p => `<span>${p.title.rendered}</span> <span>///</span>`).join(' ');
+                const titles = posts.slice(0, 5).map(p => `<span>${p.title}</span> <span>///</span>`).join(' ');
                 mq.innerHTML = titles + titles;
             }
         }
@@ -528,7 +533,7 @@
         function renderAll(posts) {
             const heroSlot = document.getElementById('hero-slot');
             const gridSlot = document.getElementById('grid-slot');
-            
+
             heroSlot.innerHTML = '';
             gridSlot.innerHTML = '';
             document.getElementById('load-more-btn').style.display = 'none';
@@ -546,22 +551,23 @@
             loadMorePosts();
         }
 
-        function loadMorePosts() {
+        // Expose to global scope for onclick
+        window.loadMorePosts = function() {
             const gridSlot = document.getElementById('grid-slot');
             const btn = document.getElementById('load-more-btn');
-            
+
             const nextBatch = gridPosts.slice(currentGridIndex, currentGridIndex + LOAD_STEP);
-            
+
             nextBatch.forEach((p, idx) => {
                 const link = document.createElement('a');
-                link.href = `/posts/${p.slug}.html`;
+                link.href = `/post.html?id=${p.id}`;
                 link.className = 'mag-card';
                 link.style.display = 'block';
                 link.style.animationDelay = `${idx * 0.1}s`;
                 link.innerHTML = `
-                    <div class="mag-meta">${getCat(p)}</div>
-                    <img loading="lazy" src="${getImg(p)}" class="mag-img" alt="${p.title.rendered}">
-                    <div class="mag-title">${p.title.rendered}</div>
+                    <div class="mag-meta">${p.category || 'NEWS'}</div>
+                    <img loading="lazy" src="${p.image || 'https://images.unsplash.com/photo-1550424683-1498c8c52d8e?w=800'}" class="mag-img" alt="${p.title}">
+                    <div class="mag-title">${p.title}</div>
                 `;
                 gridSlot.appendChild(link);
             });
@@ -573,35 +579,33 @@
             } else {
                 btn.style.display = 'none';
             }
-        }
+        };
 
         function renderHero(p) {
-            const img = getImg(p);
+            const img = p.image || 'https://images.unsplash.com/photo-1550424683-1498c8c52d8e?w=800';
             document.getElementById('hero-slot').innerHTML = `
-                <a href="/posts/${p.slug}.html" class="hero-box" style="display:grid; text-decoration:none;">
-                    <div class="hero-img-wrap"><img loading="lazy" src="${img}" class="hero-img" alt="${p.title.rendered}"></div>
+                <a href="/post.html?id=${p.id}" class="hero-box" style="display:grid; text-decoration:none;">
+                    <div class="hero-img-wrap"><img loading="lazy" src="${img}" class="hero-img" alt="${p.title}"></div>
                     <div class="hero-info">
                         <div class="label-accent">FEATURED STORY</div>
-                        <div class="hero-title-txt">${p.title.rendered}</div>
+                        <div class="hero-title-txt">${p.title}</div>
                         <div class="cta-arrow"><i class="ph ph-arrow-right"></i></div>
                     </div>
                 </a>
             `;
         }
 
-        function filter(cid, btn) {
+        // Expose filter to global scope for onclick
+        window.filter = function(cid, btn) {
             document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            
+
             if(cid === 'all') renderAll(allPosts);
             else {
-                const filtered = allPosts.filter(p => p.categories.includes(cid));
+                const filtered = allPosts.filter(p => p.category === cid);
                 renderAll(filtered);
             }
-        }
-
-        function getImg(p) { return p._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'https://images.unsplash.com/photo-1550424683-1498c8c52d8e?w=800'; }
-        function getCat(p) { return (p.categories && p.categories.length) ? (catsMap[p.categories[0]] || 'NEWS') : 'NEWS'; }
+        };
 
         init();
     </script>

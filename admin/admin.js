@@ -1,38 +1,8 @@
-// Import initialized Firebase services from our config file
-import {
-    auth,
-    db,
-    storage
-} from '/js/firebase-config.js';
-
-// Import the specific Firebase functions we need
-import {
-    signInWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import {
-    collection,
-    addDoc,
-    getDocs,
-    doc,
-    getDoc,
-    updateDoc,
-    deleteDoc,
-    serverTimestamp,
-    query,
-    orderBy,
-    where
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {
-    ref,
-    uploadBytes,
-    getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { supabase } from '/js/supabase-config.js';
 
 const UNSPLASH_ACCESS_KEY = 'Ikq6GOeQuWc_77ydvsODR4GFqahyl7mdL6YCQRGqPIg';
 
-// --- AI CALL: Direct Gemini API from browser (bypasses server region restriction) ---
+// --- AI CALL: Direct Gemini API from browser ---
 async function callAI(prompt) {
     const geminiKey = localStorage.getItem('gemini_key');
     if (!geminiKey) {
@@ -61,7 +31,6 @@ async function callAI(prompt) {
 }
 
 function cleanJSONResponse(text) {
-    // Remove markdown code blocks if present
     text = text.trim();
     if (text.startsWith("```json")) {
         text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "");
@@ -81,50 +50,55 @@ let editingPersonaId = null;
 let availablePersonas = [];
 
 // --- CORE INITIALIZATION ---
-function init() {
+async function init() {
     // Initialize Quill Editor
     quill = new Quill('#editor-container', {
         theme: 'snow',
         modules: {
             toolbar: [
-                [{
-                    'header': [1, 2, 3, false]
-                }],
+                [{ 'header': [1, 2, 3, false] }],
                 ['bold', 'italic', 'underline', 'blockquote'],
-                [{
-                    'list': 'ordered'
-                }, {
-                    'list': 'bullet'
-                }],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                 ['link', 'clean']
             ]
         }
     });
     quill.on('text-change', calculateSEOScore);
 
-    // Firebase Auth State Listener
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUser = user;
+    // Supabase Auth: Check existing session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        currentUser = session.user;
+        document.getElementById('login-section').style.display = 'none';
+        loadDashboard();
+        loadPersonas();
+    } else {
+        document.getElementById('login-section').style.display = 'flex';
+    }
+
+    // Supabase Auth State Listener
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            currentUser = session.user;
             document.getElementById('login-section').style.display = 'none';
             loadDashboard();
             loadPersonas();
         } else {
+            currentUser = null;
             document.getElementById('login-section').style.display = 'flex';
         }
     });
 
     // --- STATIC EVENT LISTENERS ---
-    // Main Navigation
     document.querySelectorAll('.nav-item[data-view]').forEach(el => {
         el.addEventListener('click', () => switchView(el.dataset.view));
     });
 
-    // Login/Logout
     document.getElementById('btn-login').addEventListener('click', doLogin);
-    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+        await supabase.auth.signOut();
+    });
 
-    // AI Writer Buttons
     document.getElementById('btn-reset-ai').addEventListener('click', resetAI);
     document.getElementById('btn-seo-polish').addEventListener('click', runSEOPolish);
     document.getElementById('btn-run-ai-phase1').addEventListener('click', runAIPhase1);
@@ -133,42 +107,28 @@ function init() {
     document.getElementById('btn-save-post').addEventListener('click', publishPost);
     document.getElementById('btn-show-preview').addEventListener('click', showMobilePreview);
 
-
-    // Settings Page Buttons
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
     document.getElementById('btn-remove-duplicates').addEventListener('click', removeDuplicates);
     document.getElementById('btn-generate-persona').addEventListener('click', generateRandomPersona);
     document.getElementById('btn-save-persona').addEventListener('click', saveOrUpdatePersona);
     document.getElementById('btn-cancel-persona').addEventListener('click', resetPersonaForm);
 
-    // Automation
     document.getElementById('btn-run-automation').addEventListener('click', runAutomation);
-
-    // Migration
     document.getElementById('btn-start-migration').addEventListener('click', startMigration);
 
-    // Modals
     document.getElementById('btn-close-unsplash').addEventListener('click', () => closeModal('modal-unsplash'));
     document.getElementById('btn-close-preview').addEventListener('click', () => closeModal('modal-preview'));
 
-    // --- DELEGATED EVENT LISTENERS ---
-    // For dynamically created persona buttons
     const personaList = document.getElementById('persona-list');
     personaList.addEventListener('click', (event) => {
         const button = event.target.closest('button');
         if (!button) return;
-
         const action = button.dataset.action;
         const id = button.dataset.id;
-
-        if (action === 'edit') {
-            editPersona(id);
-        } else if (action === 'delete') {
-            deletePersona(id);
-        }
+        if (action === 'edit') editPersona(id);
+        else if (action === 'delete') deletePersona(id);
     });
 
-    // --- INITIAL DATA LOAD ---
     const savedKey = localStorage.getItem('gemini_key');
     document.getElementById('setting-gemini-key').value = savedKey || '';
     document.getElementById('setting-gemini-key').placeholder = 'AIzaSy...';
@@ -201,7 +161,8 @@ async function doLogin() {
     const e = document.getElementById('login-email').value;
     const p = document.getElementById('login-password').value;
     try {
-        await signInWithEmailAndPassword(auth, e, p);
+        const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
+        if (error) throw error;
     } catch (err) {
         document.getElementById('login-error').innerText = err.message;
     }
@@ -224,13 +185,12 @@ async function loadPersonas() {
     const list = document.getElementById('persona-list');
     list.innerHTML = 'Loading...';
     try {
-        const snap = await getDocs(collection(db, "personas"));
-        availablePersonas = [];
+        const { data, error } = await supabase.from('personas').select('*');
+        if (error) throw error;
+
+        availablePersonas = data || [];
         list.innerHTML = '';
-        snap.forEach(doc => {
-            const p = doc.data();
-            p.id = doc.id;
-            availablePersonas.push(p);
+        availablePersonas.forEach(p => {
             list.innerHTML += `
                 <div class="persona-card">
                     <div style="display:flex; align-items:center;">
@@ -241,8 +201,8 @@ async function loadPersonas() {
                         </div>
                     </div>
                     <div style="display:flex; gap:8px;">
-                        <button class="btn btn-outline" data-action="edit" data-id="${doc.id}" style="padding: 4px 8px; font-size:12px;"><i class="ph ph-pencil"></i></button>
-                        <button class="btn btn-outline" data-action="delete" data-id="${doc.id}" style="color:var(--danger); border-color:var(--danger); padding: 4px 8px; font-size:12px;"><i class="ph ph-trash"></i></button>
+                        <button class="btn btn-outline" data-action="edit" data-id="${p.id}" style="padding: 4px 8px; font-size:12px;"><i class="ph ph-pencil"></i></button>
+                        <button class="btn btn-outline" data-action="delete" data-id="${p.id}" style="color:var(--danger); border-color:var(--danger); padding: 4px 8px; font-size:12px;"><i class="ph ph-trash"></i></button>
                     </div>
                 </div>
             `;
@@ -272,9 +232,7 @@ const editPersona = (id) => {
     document.getElementById('btn-save-persona').innerText = "Update Persona";
     document.getElementById('btn-cancel-persona').style.display = 'block';
 
-    document.getElementById('persona-form-title').scrollIntoView({
-        behavior: "smooth"
-    });
+    document.getElementById('persona-form-title').scrollIntoView({ behavior: "smooth" });
 };
 
 const resetPersonaForm = () => {
@@ -318,31 +276,25 @@ async function saveOrUpdatePersona() {
 
     if (!name || !job) return alert('Name and Job are required');
 
-    const personaData = {
-        name,
-        age,
-        gender,
-        nationality,
-        job,
-        likes,
-        bio
-    };
+    const personaData = { name, age, gender, nationality, job, likes, bio };
 
     if (editingPersonaId) {
-        await updateDoc(doc(db, "personas", editingPersonaId), personaData);
+        const { error } = await supabase.from('personas').update(personaData).eq('id', editingPersonaId);
+        if (error) return alert('Error: ' + error.message);
         alert('Persona Updated!');
     } else {
-        await addDoc(collection(db, "personas"), personaData);
+        const { error } = await supabase.from('personas').insert(personaData);
+        if (error) return alert('Error: ' + error.message);
         alert('Persona Created!');
     }
 
     resetPersonaForm();
     loadPersonas();
-};
+}
 
 const deletePersona = async (id) => {
     if (confirm('Are you sure you want to delete this persona?')) {
-        await deleteDoc(doc(db, "personas", id));
+        await supabase.from('personas').delete().eq('id', id);
         loadPersonas();
     }
 };
@@ -360,20 +312,17 @@ function refreshPersonaSelect() {
 
 // --- DASHBOARD ANALYTICS ---
 async function loadDashboard() {
-    const postsSnap = await getDocs(collection(db, "posts"));
+    const { data: posts, error } = await supabase.from('posts').select('title, views, status');
+    if (error) { console.error(error); return; }
+
     let totalViews = 0;
     let scheduled = 0;
-    let posts = [];
+    let postList = [];
 
-    postsSnap.forEach(doc => {
-        const d = doc.data();
+    (posts || []).forEach(d => {
         if (d.status === 'scheduled') scheduled++;
-        // Keep Firestore internal views as a backup/base
         totalViews += (d.views || 0);
-        posts.push({
-            title: d.title,
-            views: d.views || 0
-        });
+        postList.push({ title: d.title, views: d.views || 0 });
     });
 
     // Fetch GA4 Data (via Proxy)
@@ -381,26 +330,24 @@ async function loadDashboard() {
         const gaRes = await fetch('/ga-proxy', { method: 'POST' });
         if (gaRes.ok) {
             const gaData = await gaRes.json();
-            // Use GA data if available, otherwise fall back to Firestore sum
             if (gaData.pageViews) {
                 document.getElementById('stat-views').innerText = gaData.pageViews.toLocaleString();
-                // We could also update the "Active Users" or "Sources" UI if we had slots for them
             } else {
                 document.getElementById('stat-views').innerText = totalViews.toLocaleString();
             }
         } else {
-             document.getElementById('stat-views').innerText = totalViews.toLocaleString();
+            document.getElementById('stat-views').innerText = totalViews.toLocaleString();
         }
     } catch (e) {
-        console.warn("GA Fetch Failed, using Firestore stats:", e);
+        console.warn("GA Fetch Failed, using DB stats:", e);
         document.getElementById('stat-views').innerText = totalViews.toLocaleString();
     }
 
-    document.getElementById('stat-posts').innerText = postsSnap.size;
+    document.getElementById('stat-posts').innerText = (posts || []).length;
     document.getElementById('stat-scheduled').innerText = scheduled;
 
-    posts.sort((a, b) => b.views - a.views);
-    const top5 = posts.slice(0, 5);
+    postList.sort((a, b) => b.views - a.views);
+    const top5 = postList.slice(0, 5);
     const tbody = document.querySelector('#dashboard-top-posts tbody');
     tbody.innerHTML = '';
     top5.forEach(p => {
@@ -414,16 +361,18 @@ async function removeDuplicates() {
     btn.innerText = "Processing...";
     btn.disabled = true;
     try {
-        const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
-        const snap = await getDocs(q);
+        const { data, error } = await supabase.from('posts').select('id, title, created_at').order('created_at', { ascending: true });
+        if (error) throw error;
+
         const seen = new Set();
         let count = 0;
-        for (const d of snap.docs) {
-            const t = d.data().title;
-            if (seen.has(t)) {
-                await deleteDoc(doc(db, "posts", d.id));
+        for (const d of (data || [])) {
+            if (seen.has(d.title)) {
+                await supabase.from('posts').delete().eq('id', d.id);
                 count++;
-            } else seen.add(t);
+            } else {
+                seen.add(d.title);
+            }
         }
         alert(`Deleted ${count} duplicates.`);
     } catch (e) {
@@ -432,34 +381,33 @@ async function removeDuplicates() {
         btn.innerText = "Remove Duplicate Posts";
         btn.disabled = false;
     }
-};
+}
 
 window.editPost = async (id) => {
     editingPostId = id;
     switchView('ai-writer');
     document.getElementById('writer-heading').innerText = "Edit Post";
     document.getElementById('btn-save-post').innerHTML = '<i class="ph ph-floppy-disk"></i> Update';
-    const docRef = doc(db, "posts", id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        const p = docSnap.data();
-        document.getElementById('ai-suggested-title').value = p.title;
-        document.getElementById('ai-category').value = p.category;
-        quill.clipboard.dangerouslyPasteHTML(p.content);
-        activeImage = p.image;
-        if (activeImage) {
-            document.getElementById('selected-ai-img').src = activeImage;
-            document.getElementById('selected-ai-img').style.display = 'block';
-            document.getElementById('ai-img-placeholder').style.display = 'none';
-        }
-        document.getElementById('step-1').classList.remove('active');
-        document.getElementById('step-2').style.opacity = '1';
-        document.getElementById('step-2').style.pointerEvents = 'auto';
-        document.getElementById('step-2').classList.remove('active');
-        document.getElementById('step-3').style.opacity = '1';
-        document.getElementById('step-3').style.pointerEvents = 'auto';
-        document.getElementById('step-3').classList.add('active');
+
+    const { data: p, error } = await supabase.from('posts').select('*').eq('id', id).single();
+    if (error || !p) return;
+
+    document.getElementById('ai-suggested-title').value = p.title;
+    document.getElementById('ai-category').value = p.category;
+    quill.clipboard.dangerouslyPasteHTML(p.content);
+    activeImage = p.image;
+    if (activeImage) {
+        document.getElementById('selected-ai-img').src = activeImage;
+        document.getElementById('selected-ai-img').style.display = 'block';
+        document.getElementById('ai-img-placeholder').style.display = 'none';
     }
+    document.getElementById('step-1').classList.remove('active');
+    document.getElementById('step-2').style.opacity = '1';
+    document.getElementById('step-2').style.pointerEvents = 'auto';
+    document.getElementById('step-2').classList.remove('active');
+    document.getElementById('step-3').style.opacity = '1';
+    document.getElementById('step-3').style.pointerEvents = 'auto';
+    document.getElementById('step-3').classList.add('active');
 };
 
 window.resetAI = () => {
@@ -482,7 +430,6 @@ window.resetAI = () => {
 
 window.runAIPhase1 = async () => {
     const topic = document.getElementById('ai-topic').value;
-    
     if (!topic) return alert('Please enter a topic');
 
     const btn = document.querySelector('#step-1 .btn-ai');
@@ -493,10 +440,10 @@ window.runAIPhase1 = async () => {
     try {
         const prompt = `
                 Analyze the topic: "${topic}".
-                
+
                 Your task is to generate a comprehensive SEO plan for a blog post on this topic for the website 'Korea Decode'.
-                
-                Provide your response in a clean JSON format, like this: 
+
+                Provide your response in a clean JSON format, like this:
                 {
                   "suggested_titles": [
                     "Unique, engaging, SEO-friendly title 1",
@@ -515,7 +462,6 @@ window.runAIPhase1 = async () => {
                 Ensure the titles are captivating and the keywords are highly relevant for ranking on Google.
                 `;
 
-        // USE NEW UNIFIED AI CALL (Keys are handled on server)
         let rawText = await callAI(prompt);
         rawText = cleanJSONResponse(rawText);
         const data = JSON.parse(rawText);
@@ -525,7 +471,6 @@ window.runAIPhase1 = async () => {
         kwContainer.innerHTML = '';
         data.seo_keywords.forEach(k => kwContainer.innerHTML += `<span class="suggestion-chip selected">${k}</span>`);
 
-        // Add title options
         const titleContainer = document.getElementById('ai-title-options-container') || document.createElement('div');
         if (!titleContainer.id) {
             titleContainer.id = 'ai-title-options-container';
@@ -543,7 +488,6 @@ window.runAIPhase1 = async () => {
             };
             titleContainer.appendChild(chip);
         });
-
 
         document.getElementById('step-1').classList.remove('active');
         document.getElementById('step-2').style.opacity = '1';
@@ -571,7 +515,6 @@ window.runAIPhase2 = async () => {
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Fetching images & writing...';
     btn.disabled = true;
 
-    // Find Persona
     let persona = availablePersonas.find(p => p.id === personaId);
     if (!persona) {
         persona = {
@@ -585,7 +528,7 @@ window.runAIPhase2 = async () => {
         };
     }
 
-    // 1. Fetch Images from Unsplash (keyword-based, 5 images)
+    // 1. Fetch Images from Unsplash
     let allImages = [];
     const searchQuery = encodeURIComponent(`${topic} ${keywords.slice(0, 2).join(' ')} korea`);
     try {
@@ -604,7 +547,6 @@ window.runAIPhase2 = async () => {
         console.error("Unsplash Error:", e);
     }
 
-    // If not enough images, try a broader search
     if (allImages.length < 3) {
         try {
             const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=5&query=${encodeURIComponent(topic)}&orientation=landscape&client_id=${UNSPLASH_ACCESS_KEY}`);
@@ -627,14 +569,13 @@ window.runAIPhase2 = async () => {
         }
     }
 
-    // First image = featured image, rest = content images
     if (allImages.length > 0) {
         activeImage = allImages[0].url;
         document.getElementById('selected-ai-img').src = activeImage;
         document.getElementById('selected-ai-img').style.display = 'block';
         document.getElementById('ai-img-placeholder').style.display = 'none';
     }
-    const contentImages = allImages.slice(1, 4); // Up to 3 images for article body
+    const contentImages = allImages.slice(1, 4);
     const imgCount = contentImages.length;
 
     // 2. Generate Content with AI
@@ -671,12 +612,10 @@ window.runAIPhase2 = async () => {
 
         let rawContent = await callAI(prompt);
 
-        // Inject images into [INSERT_IMAGE_HERE] placeholders
         contentImages.forEach(img => {
             const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
             rawContent = rawContent.replace('[INSERT_IMAGE_HERE]', imgHtml);
         });
-        // Remove any leftover placeholders
         rawContent = rawContent.replace(/\[INSERT_IMAGE_HERE\]/g, '');
         content = rawContent;
 
@@ -782,13 +721,13 @@ async function runAutomation() {
             const data = await res.json();
             if (data.results.length > 0) imgUrl = data.results[0].urls.regular;
         } catch (e) {}
-        await addDoc(collection(db, "posts"), {
+        await supabase.from('posts').insert({
             title,
             category,
             content,
             image: imgUrl,
             views: 0,
-            createdAt: new Date(currentDate),
+            created_at: new Date(currentDate).toISOString(),
             status: 'scheduled'
         });
         currentDate.setHours(currentDate.getHours() + intervalHours);
@@ -797,21 +736,22 @@ async function runAutomation() {
     document.getElementById('auto-topics').value = '';
     btn.innerHTML = '<i class="ph ph-robot"></i> Generate & Schedule All';
     loadQueue();
-};
+}
 
 async function loadQueue() {
     const tbody = document.getElementById('auto-queue-list');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
-    const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
-    const snap = await getDocs(q);
+
+    const { data, error } = await supabase.from('posts').select('id, title, status, created_at').order('created_at', { ascending: true });
+    if (error) { console.error(error); return; }
+
     const now = new Date();
     tbody.innerHTML = '';
-    snap.forEach(doc => {
-        const p = doc.data();
-        const pDate = p.createdAt.toDate();
+    (data || []).forEach(p => {
+        const pDate = new Date(p.created_at);
         if (pDate > now) {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><span style="padding:4px 8px; background:#f59e0b20; color:#f59e0b; font-size:12px;">Scheduled</span></td><td>${p.title}</td><td>${pDate.toLocaleString()}</td><td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${doc.id}')">Cancel</button></td>`;
+            tr.innerHTML = `<td><span style="padding:4px 8px; background:#f59e0b20; color:#f59e0b; font-size:12px;">Scheduled</span></td><td>${p.title}</td><td>${pDate.toLocaleString()}</td><td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${p.id}')">Cancel</button></td>`;
             tbody.appendChild(tr);
         }
     });
@@ -820,7 +760,7 @@ async function loadQueue() {
 
 window.deletePost = async (id) => {
     if (confirm('Cancel this post?')) {
-        await deleteDoc(doc(db, "posts", id));
+        await supabase.from('posts').delete().eq('id', id);
         loadQueue();
     }
 }
@@ -852,7 +792,7 @@ window.publishPost = async () => {
 
     if (!title) return alert("Title is required");
 
-    // Get selected Persona info
+    // Get selected Persona info (flattened for Supabase)
     const personaId = document.getElementById('ai-persona-select').value;
     let persona = availablePersonas.find(p => p.id === personaId);
     if (!persona) {
@@ -863,27 +803,26 @@ window.publishPost = async () => {
         };
     }
 
-    const writerData = {
-        name: persona.name,
-        job: persona.job,
-        bio: persona.bio || "Writer at Korea Decode",
-        avatar: persona.name[0] || "E"
-    };
-
     try {
         if (editingPostId) {
-            await updateDoc(doc(db, "posts", editingPostId), {
+            const updateData = {
                 title,
                 category,
                 content,
                 image: activeImage || '',
-                writer: writerData,
-                // Only update status if explicitly scheduling
-                ...(scheduleStr ? { status: 'scheduled', createdAt: new Date(scheduleStr) } : {})
-            });
+                writer_name: persona.name,
+                writer_job: persona.job,
+                writer_bio: persona.bio || "Writer at Korea Decode",
+                writer_avatar: persona.name[0] || "E"
+            };
+            if (scheduleStr) {
+                updateData.status = 'scheduled';
+                updateData.created_at = new Date(scheduleStr).toISOString();
+            }
+            const { error } = await supabase.from('posts').update(updateData).eq('id', editingPostId);
+            if (error) throw error;
             alert('Post Updated!');
         } else {
-            // New Post
             const postData = {
                 title,
                 category,
@@ -891,15 +830,20 @@ window.publishPost = async () => {
                 image: activeImage || '',
                 views: 0,
                 status: scheduleStr ? 'scheduled' : 'published',
-                writer: writerData,
-                createdAt: scheduleStr ? new Date(scheduleStr) : serverTimestamp()
+                writer_name: persona.name,
+                writer_job: persona.job,
+                writer_bio: persona.bio || "Writer at Korea Decode",
+                writer_avatar: persona.name[0] || "E"
             };
-
-            await addDoc(collection(db, "posts"), postData);
+            if (scheduleStr) {
+                postData.created_at = new Date(scheduleStr).toISOString();
+            }
+            const { error } = await supabase.from('posts').insert(postData);
+            if (error) throw error;
             alert('Post Published!');
         }
         resetAI();
-        loadDashboard(); // Refresh stats
+        loadDashboard();
     } catch (e) {
         console.error("Publish Error:", e);
         alert("Error publishing post: " + e.message);
@@ -909,11 +853,12 @@ window.publishPost = async () => {
 async function loadPosts() {
     const grid = document.getElementById('posts-grid');
     grid.innerHTML = 'Loading...';
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
+
+    const { data, error } = await supabase.from('posts').select('id, title, category, views, status, writer_name').order('created_at', { ascending: false });
+    if (error) { console.error(error); grid.innerHTML = 'Error loading posts.'; return; }
+
     grid.innerHTML = '';
-    snap.forEach(doc => {
-        const p = doc.data();
+    (data || []).forEach(p => {
         const div = document.createElement('div');
         div.className = 'card';
         div.style.padding = '16px';
@@ -922,12 +867,12 @@ async function loadPosts() {
                         <div>
                             <div style="font-weight:700; font-size:16px;">${p.title}</div>
                             <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                                ${p.category} • ${p.views || 0} views • ${p.writer?.name || 'Admin'}
+                                ${p.category} • ${p.views || 0} views • ${p.writer_name || 'Admin'}
                             </div>
                         </div>
                         <div style="display:flex; gap: 8px;">
-                            <a href="/post.html?id=${doc.id}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">View</a>
-                            <button class="btn btn-outline" style="padding:6px 12px; font-size:12px; color:var(--accent); border-color:var(--accent);" onclick="editPost('${doc.id}')">Edit</button>
+                            <a href="/post.html?id=${p.id}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">View</a>
+                            <button class="btn btn-outline" style="padding:6px 12px; font-size:12px; color:var(--accent); border-color:var(--accent);" onclick="editPost('${p.id}')">Edit</button>
                         </div>
                     </div>
                 `;
@@ -947,9 +892,9 @@ window.startMigration = async () => {
             const res = await fetch(path);
             if (!res.ok) continue;
             const html = await res.text();
-            const doc = parser.parseFromString(html, 'text/html');
-            let title = doc.querySelector('title')?.innerText.split(' - ')[0] || "Untitled";
-            let contentEl = doc.querySelector('.elementor-widget-theme-post-content') || doc.querySelector('article') || doc.body;
+            const d = parser.parseFromString(html, 'text/html');
+            let title = d.querySelector('title')?.innerText.split(' - ')[0] || "Untitled";
+            let contentEl = d.querySelector('.elementor-widget-theme-post-content') || d.querySelector('article') || d.body;
             let content = contentEl.innerHTML;
 
             content = content.replace(/http:\/\/koreadecode.mycafe24.com/g, '');
@@ -957,22 +902,19 @@ window.startMigration = async () => {
             content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "");
             content = content.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
 
-            await addDoc(collection(db, "posts"), {
+            await supabase.from('posts').insert({
                 title,
                 category: 'Archive',
                 content,
                 image: 'https://images.unsplash.com/photo-1576085898323-218337e3e43c?w=800',
                 views: 0,
-                createdAt: serverTimestamp(),
                 status: 'published',
-                writer: {
-                    name: "Korea Decode Archive",
-                    job: "System",
-                    bio: "Legacy content from our previous blog."
-                }
+                writer_name: "Korea Decode Archive",
+                writer_job: "System",
+                writer_bio: "Legacy content from our previous blog.",
+                writer_avatar: "K"
             });
-            logBox.innerHTML += `> Imported ${title}
-`;
+            logBox.innerHTML += `> Imported ${title}\n`;
         } catch (e) {}
     }
     alert('Migration Done');
