@@ -30,7 +30,7 @@ import {
     getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-const UNSPLASH_ACCESS_KEY = 'TMpRwGXIoEuszwIoROwgwukRP5iqf08ej2mk4Pdbz8s';
+const UNSPLASH_ACCESS_KEY = 'Ikq6GOeQuWc_77ydvsODR4GFqahyl7mdL6YCQRGqPIg';
 
 // --- AI CALL: Direct Gemini API from browser (bypasses server region restriction) ---
 async function callAI(prompt) {
@@ -568,7 +568,7 @@ window.runAIPhase2 = async () => {
     if (!title) return alert('Please generate or select a title first.');
 
     const btn = document.querySelector('#step-2 .btn-primary');
-    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing Full Article...';
+    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Fetching images & writing...';
     btn.disabled = true;
 
     // Find Persona
@@ -580,21 +580,20 @@ window.runAIPhase2 = async () => {
             job: "Travel Guide",
             likes: "everything",
             age: "30s",
+            gender: "Non-binary",
             bio: "Your guide to all things Korea."
         };
     }
 
-    // 1. Fetch Images from Unsplash
-    let contentImages = [];
+    // 1. Fetch Images from Unsplash (keyword-based, 5 images)
+    let allImages = [];
+    const searchQuery = encodeURIComponent(`${topic} ${keywords.slice(0, 2).join(' ')} korea`);
     try {
-        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=3&query=${topic} korea&client_id=${UNSPLASH_ACCESS_KEY}`);
+        console.log("[Unsplash] Searching:", searchQuery);
+        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=5&query=${searchQuery}&orientation=landscape&client_id=${UNSPLASH_ACCESS_KEY}`);
         const data = await res.json();
         if (data.results && data.results.length > 0) {
-            activeImage = data.results[0].urls.regular;
-            document.getElementById('selected-ai-img').src = activeImage;
-            document.getElementById('selected-ai-img').style.display = 'block';
-            document.getElementById('ai-img-placeholder').style.display = 'none';
-            contentImages = data.results.slice(1).map(img => ({
+            allImages = data.results.map(img => ({
                 url: img.urls.regular,
                 alt: img.alt_description || title,
                 user: img.user.name,
@@ -605,66 +604,80 @@ window.runAIPhase2 = async () => {
         console.error("Unsplash Error:", e);
     }
 
+    // If not enough images, try a broader search
+    if (allImages.length < 3) {
+        try {
+            const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=5&query=${encodeURIComponent(topic)}&orientation=landscape&client_id=${UNSPLASH_ACCESS_KEY}`);
+            const data = await res.json();
+            if (data.results) {
+                const existingUrls = new Set(allImages.map(i => i.url));
+                data.results.forEach(img => {
+                    if (!existingUrls.has(img.urls.regular)) {
+                        allImages.push({
+                            url: img.urls.regular,
+                            alt: img.alt_description || title,
+                            user: img.user.name,
+                            user_link: img.user.links.html
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Unsplash fallback error:", e);
+        }
+    }
+
+    // First image = featured image, rest = content images
+    if (allImages.length > 0) {
+        activeImage = allImages[0].url;
+        document.getElementById('selected-ai-img').src = activeImage;
+        document.getElementById('selected-ai-img').style.display = 'block';
+        document.getElementById('ai-img-placeholder').style.display = 'none';
+    }
+    const contentImages = allImages.slice(1, 4); // Up to 3 images for article body
+    const imgCount = contentImages.length;
+
     // 2. Generate Content with AI
     let content = '';
 
     try {
         const prompt = `
-                **Act as an expert content creator for the 'Korea Decode' blog.**
+**Act as an expert content creator for the 'Korea Decode' blog.**
 
-                **Your Persona:**
-                - **Name:** ${persona.name}
-                - **Identity:** You are a ${persona.age}, ${persona.gender}, ${persona.nationality} ${persona.job}.
-                - **Expertise & Passion:** You are deeply passionate about ${persona.likes}.
-                - **Bio:** "${persona.bio}"
+**Your Persona:**
+- **Name:** ${persona.name}
+- **Identity:** You are a ${persona.age}, ${persona.gender}, ${persona.nationality} ${persona.job}.
+- **Expertise & Passion:** You are deeply passionate about ${persona.likes}.
+- **Bio:** "${persona.bio}"
 
-                **Task:** Write a high-quality, engaging, and SEO-optimized blog post.
+**Task:** Write a high-quality, engaging, and SEO-optimized blog post.
 
-                **Topic:** "${title}"
-                **Core Subject:** "${topic}"
-                **Target Keywords:** ${keywords.join(', ')}
+**Topic:** "${title}"
+**Core Subject:** "${topic}"
+**Target Keywords:** ${keywords.join(', ')}
 
-                **Content & Style Guidelines (Strictly Follow):**
-                1.  **Tone of Voice:** Write in a **conversational, authentic, and expert** human voice. Use "I," "we," and "you." Be relatable and engaging, sharing personal opinions and simulated experiences based on your persona. **AVOID** robotic, academic, or generic marketing language.
-                2.  **Structure:**
-                    - **Hook Introduction:** Start with a compelling hook that grabs the reader's attention immediately. Do **NOT** introduce yourself (e.g., "Hello, I'm...").
-                    - **Main Body:** Divide the content into logical sections using 
-<h2>
- and 
-<h3>
- tags. Use bullet points (
-<ul><li>...</li></ul>
-) for lists, and 
-<strong>
- for emphasis on key terms.
-                    - **Conclusion:** End with a strong summary and a call-to-action (e.g., asking a question, encouraging comments).
-                3.  **Image Placeholder:** You have TWO images to place. To insert an image, use the placeholder **[INSERT_IMAGE_HERE]** on its own line where it would best fit visually and contextually within the article. Use both placeholders.
-                4.  **Formatting:**
-                    - Use clean HTML. **DO NOT** include 
-<html>
-, 
-<body>
-, or 
-<h1>
- tags. The main title is handled separately.
-                    - Use 
-<p>
- for paragraphs.
-                    - Use 
-<blockquote>
- for highlighting quotes or important tips.
-                
-                **Final Output:** Produce only the HTML content for the article body.
-                `;
+**Content & Style Guidelines (Strictly Follow):**
+1.  **Tone of Voice:** Write in a **conversational, authentic, and expert** human voice. Use "I," "we," and "you." Be relatable and engaging, sharing personal opinions and simulated experiences based on your persona. **AVOID** robotic, academic, or generic marketing language.
+2.  **Structure:**
+    - **Hook Introduction:** Start with a compelling hook that grabs the reader's attention immediately. Do **NOT** introduce yourself (e.g., "Hello, I'm...").
+    - **Main Body:** Divide the content into logical sections using <h2> and <h3> tags. Use bullet points (<ul><li>...</li></ul>) for lists, and <strong> for emphasis on key terms.
+    - **Conclusion:** End with a strong summary and a call-to-action (e.g., asking a question, encouraging comments).
+3.  **Image Placement:** You have **${imgCount}** images to place inside the article body. Use the placeholder **[INSERT_IMAGE_HERE]** on its own line where an image fits best visually and contextually. Spread them evenly throughout the article. You MUST use exactly **${imgCount}** placeholders.
+4.  **Formatting:**
+    - Use clean HTML. Do NOT include <html>, <body>, or <h1> tags. The main title is handled separately.
+    - Use <p> for paragraphs, <blockquote> for tips/quotes.
 
-        // USE NEW UNIFIED AI CALL (Keys handled on server)
+**Final Output:** Produce only the HTML content for the article body.`;
+
         let rawContent = await callAI(prompt);
 
-        // Inject images into placeholders
+        // Inject images into [INSERT_IMAGE_HERE] placeholders
         contentImages.forEach(img => {
-            const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}"><figcaption>Photo by <a href="${img.user_link}" target="_blank">${img.user}</a> on Unsplash</figcaption></figure>`;
+            const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
             rawContent = rawContent.replace('[INSERT_IMAGE_HERE]', imgHtml);
         });
+        // Remove any leftover placeholders
+        rawContent = rawContent.replace(/\[INSERT_IMAGE_HERE\]/g, '');
         content = rawContent;
 
     } catch (e) {
@@ -678,6 +691,7 @@ window.runAIPhase2 = async () => {
     document.getElementById('step-3').style.opacity = '1';
     document.getElementById('step-3').style.pointerEvents = 'auto';
     document.getElementById('step-3').classList.add('active');
+    document.getElementById('ai-img-query').value = topic;
     btn.innerHTML = '<i class="ph ph-pen-nib"></i> Write Full Article';
     btn.disabled = false;
 };
