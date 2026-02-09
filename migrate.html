@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase → Supabase Migration</title>
+    <style>
+        body { font-family: monospace; background: #111; color: #0f0; padding: 40px; }
+        h1 { color: #fff; }
+        .log { background: #000; padding: 20px; border: 1px solid #333; height: 500px; overflow-y: auto; white-space: pre-wrap; margin-top: 20px; }
+        button { background: #0f0; color: #000; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 5px; font-family: monospace; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        input { background: #222; color: #fff; border: 1px solid #444; padding: 10px; font-size: 14px; width: 300px; font-family: monospace; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #333; }
+        .status { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Firebase → Supabase Migration</h1>
+
+    <div class="section">
+        <h3>Step 1: Firebase Login</h3>
+        <input type="email" id="fb-email" placeholder="Firebase admin email">
+        <input type="password" id="fb-password" placeholder="Firebase password">
+        <button id="btn-fb-login">Login to Firebase</button>
+        <span id="fb-status" class="status"></span>
+    </div>
+
+    <div class="section">
+        <h3>Step 2: Supabase Login</h3>
+        <input type="email" id="sb-email" placeholder="Supabase admin email">
+        <input type="password" id="sb-password" placeholder="Supabase password">
+        <button id="btn-sb-login">Login to Supabase</button>
+        <span id="sb-status" class="status"></span>
+    </div>
+
+    <div class="section">
+        <h3>Step 3: Migrate</h3>
+        <button id="btn-migrate-posts" disabled>Migrate Posts</button>
+        <button id="btn-migrate-personas" disabled>Migrate Personas</button>
+        <button id="btn-migrate-all" disabled>Migrate ALL</button>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Supabase import
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAcDLX8xujdFUOo8vVhxqE4URygfZDuCkY",
+            authDomain: "koreadecode.firebaseapp.com",
+            projectId: "koreadecode",
+            storageBucket: "koreadecode.appspot.com",
+            messagingSenderId: "525928843461",
+            appId: "1:525928843461:web:c20f7822818404d30e88ac"
+        };
+
+        const fbApp = initializeApp(firebaseConfig);
+        const fbAuth = getAuth(fbApp);
+        const fbDb = getFirestore(fbApp);
+
+        const supabase = createClient(
+            'https://agkkvtfwqmzgbrqhvohs.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFna2t2dGZ3cW16Z2JycWh2b2hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg4MjU3NzcsImV4cCI6MjA1NDQwMTc3N30.cNEhFMhQC8QOjROBkHeDdEJxME6KfWfHMOmfMNYG4WE'
+        );
+
+        let fbLoggedIn = false;
+        let sbLoggedIn = false;
+        const logEl = document.getElementById('log');
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            logEl.textContent += `[${time}] ${msg}\n`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function checkReady() {
+            const ready = fbLoggedIn && sbLoggedIn;
+            document.getElementById('btn-migrate-posts').disabled = !ready;
+            document.getElementById('btn-migrate-personas').disabled = !ready;
+            document.getElementById('btn-migrate-all').disabled = !ready;
+        }
+
+        // Firebase login
+        document.getElementById('btn-fb-login').addEventListener('click', async () => {
+            const email = document.getElementById('fb-email').value;
+            const pass = document.getElementById('fb-password').value;
+            try {
+                await signInWithEmailAndPassword(fbAuth, email, pass);
+                fbLoggedIn = true;
+                document.getElementById('fb-status').textContent = ' ✅ Logged in';
+                log('Firebase: Login successful');
+                checkReady();
+            } catch (e) {
+                document.getElementById('fb-status').textContent = ' ❌ ' + e.message;
+                log('Firebase: Login failed - ' + e.message);
+            }
+        });
+
+        // Supabase login
+        document.getElementById('btn-sb-login').addEventListener('click', async () => {
+            const email = document.getElementById('sb-email').value;
+            const pass = document.getElementById('sb-password').value;
+            try {
+                const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+                if (error) throw error;
+                sbLoggedIn = true;
+                document.getElementById('sb-status').textContent = ' ✅ Logged in';
+                log('Supabase: Login successful');
+                checkReady();
+            } catch (e) {
+                document.getElementById('sb-status').textContent = ' ❌ ' + e.message;
+                log('Supabase: Login failed - ' + e.message);
+            }
+        });
+
+        // Migrate Posts
+        async function migratePosts() {
+            log('--- MIGRATING POSTS ---');
+            try {
+                const q = query(collection(fbDb, "posts"), orderBy("createdAt", "desc"));
+                const snap = await getDocs(q);
+                log(`Found ${snap.size} posts in Firebase`);
+
+                let success = 0;
+                let failed = 0;
+
+                for (const docSnap of snap.docs) {
+                    const d = docSnap.data();
+                    try {
+                        // Convert Firestore timestamp
+                        let createdAt = null;
+                        if (d.createdAt) {
+                            if (d.createdAt.toDate) {
+                                createdAt = d.createdAt.toDate().toISOString();
+                            } else if (d.createdAt instanceof Date) {
+                                createdAt = d.createdAt.toISOString();
+                            } else {
+                                createdAt = new Date(d.createdAt).toISOString();
+                            }
+                        }
+
+                        const postData = {
+                            title: d.title || 'Untitled',
+                            category: d.category || 'News',
+                            content: d.content || '',
+                            image: d.image || '',
+                            views: d.views || 0,
+                            status: d.status || 'published',
+                            writer_name: d.writer?.name || 'Korea Decode Editor',
+                            writer_job: d.writer?.job || 'Editor',
+                            writer_bio: d.writer?.bio || '',
+                            writer_avatar: d.writer?.avatar || (d.writer?.name?.[0]) || 'K'
+                        };
+                        if (createdAt) postData.created_at = createdAt;
+
+                        const { error } = await supabase.from('posts').insert(postData);
+                        if (error) throw error;
+
+                        success++;
+                        log(`  ✅ "${d.title}"`);
+                    } catch (e) {
+                        failed++;
+                        log(`  ❌ "${d.title}" - ${e.message}`);
+                    }
+                }
+
+                log(`Posts done: ${success} success, ${failed} failed`);
+            } catch (e) {
+                log('Posts migration error: ' + e.message);
+            }
+        }
+
+        // Migrate Personas
+        async function migratePersonas() {
+            log('--- MIGRATING PERSONAS ---');
+            try {
+                const snap = await getDocs(collection(fbDb, "personas"));
+                log(`Found ${snap.size} personas in Firebase`);
+
+                let success = 0;
+                let failed = 0;
+
+                for (const docSnap of snap.docs) {
+                    const d = docSnap.data();
+                    try {
+                        const personaData = {
+                            name: d.name || 'Unknown',
+                            age: d.age || '20s',
+                            gender: d.gender || 'Female',
+                            nationality: d.nationality || 'USA',
+                            job: d.job || 'Writer',
+                            likes: d.likes || '',
+                            bio: d.bio || ''
+                        };
+
+                        const { error } = await supabase.from('personas').insert(personaData);
+                        if (error) throw error;
+
+                        success++;
+                        log(`  ✅ "${d.name}"`);
+                    } catch (e) {
+                        failed++;
+                        log(`  ❌ "${d.name}" - ${e.message}`);
+                    }
+                }
+
+                log(`Personas done: ${success} success, ${failed} failed`);
+            } catch (e) {
+                log('Personas migration error: ' + e.message);
+            }
+        }
+
+        document.getElementById('btn-migrate-posts').addEventListener('click', migratePosts);
+        document.getElementById('btn-migrate-personas').addEventListener('click', migratePersonas);
+        document.getElementById('btn-migrate-all').addEventListener('click', async () => {
+            await migratePosts();
+            await migratePersonas();
+            log('=== ALL MIGRATION COMPLETE ===');
+        });
+    </script>
+</body>
+</html>
