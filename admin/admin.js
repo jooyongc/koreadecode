@@ -437,30 +437,44 @@ window.runAIPhase1 = async () => {
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Brainstorming SEO Plan...';
     btn.disabled = true;
 
+    // Get selected persona for title generation
+    const personaId = document.getElementById('ai-persona-select').value;
+    let persona = availablePersonas.find(p => p.id === personaId);
+    let personaContext = '';
+    if (persona) {
+        personaContext = `
+**Writer Persona Context (titles MUST reflect this voice):**
+- Name: ${persona.name}, a ${persona.age} ${persona.gender} ${persona.nationality} ${persona.job}
+- Passionate about: ${persona.likes}
+- Voice: ${persona.nationality === 'USA' ? 'Casual American English, uses slang and pop-culture references' : persona.nationality === 'UK' ? 'Witty British English, dry humor' : persona.nationality === 'Australia' ? 'Laid-back Australian tone, friendly slang' : persona.nationality === 'France' ? 'Sophisticated European perspective, refined taste' : persona.nationality === 'Germany' ? 'Precise, detail-oriented, practical perspective' : persona.nationality === 'Singapore' ? 'Southeast Asian perspective, multicultural awareness' : persona.nationality === 'Japan' ? 'Attention to aesthetics and detail, cultural bridge perspective' : 'International perspective with unique cultural lens'}
+- The titles should sound like something THIS specific person would write — not generic blog titles.
+`;
+    }
+
     try {
         const prompt = `
-                Analyze the topic: "${topic}".
+Analyze the topic: "${topic}".
+${personaContext}
+Your task is to generate a comprehensive SEO plan for a blog post on this topic for the website 'Korea Decode'.
 
-                Your task is to generate a comprehensive SEO plan for a blog post on this topic for the website 'Korea Decode'.
+Provide your response in a clean JSON format, like this:
+{
+  "suggested_titles": [
+    "Unique, engaging, SEO-friendly title that matches the writer's voice 1",
+    "Alternative creative title reflecting the persona's perspective 2",
+    "Another compelling title with the writer's unique angle 3"
+  ],
+  "seo_keywords": [
+    "primary keyword",
+    "secondary keyword",
+    "long-tail keyword 1",
+    "semantic keyword",
+    "related topic"
+  ]
+}
 
-                Provide your response in a clean JSON format, like this:
-                {
-                  "suggested_titles": [
-                    "Unique, engaging, SEO-friendly title 1",
-                    "Alternative creative title 2",
-                    "Another compelling title option 3"
-                  ],
-                  "seo_keywords": [
-                    "primary keyword",
-                    "secondary keyword",
-                    "long-tail keyword 1",
-                    "semantic keyword",
-                    "related topic"
-                  ]
-                }
-
-                Ensure the titles are captivating and the keywords are highly relevant for ranking on Google.
-                `;
+Ensure the titles are captivating, reflect the writer's unique personality and expertise, and the keywords are highly relevant for ranking on Google.
+`;
 
         let rawText = await callAI(prompt);
         rawText = cleanJSONResponse(rawText);
@@ -582,40 +596,80 @@ window.runAIPhase2 = async () => {
     let content = '';
 
     try {
+        // Build persona-specific voice guidelines
+        let voiceGuide = '';
+        if (persona.nationality === 'USA') voiceGuide = 'Write in casual American English. Use modern slang, pop-culture references, and enthusiastic energy. Say things like "honestly," "literally," "game-changer," "vibe check." Be upbeat and relatable like a popular American vlogger.';
+        else if (persona.nationality === 'UK') voiceGuide = 'Write in British English with dry wit and understated humor. Use phrases like "rather brilliant," "spot on," "quite frankly." Be charming but not over-the-top. Think educated British travel writer.';
+        else if (persona.nationality === 'Australia') voiceGuide = 'Write in laid-back Australian English. Use phrases like "no worries," "heaps of," "reckon," "arvo." Be friendly, adventurous, and down-to-earth like a backpacker sharing stories at a hostel.';
+        else if (persona.nationality === 'France') voiceGuide = 'Write with a sophisticated European sensibility. Compare Korean culture to French equivalents. Appreciate aesthetics, food quality, and craftsmanship. Use occasional French expressions naturally.';
+        else if (persona.nationality === 'Germany') voiceGuide = 'Write with precision and thoroughness. Be practical and detail-oriented. Include specific facts, prices, and logistics. Compare efficiency and systems to German standards.';
+        else if (persona.nationality === 'Singapore') voiceGuide = 'Write from a Southeast Asian multicultural perspective. Draw comparisons with Singaporean culture, food, and lifestyle. Use Singlish-flavored expressions occasionally. Be warm and community-oriented.';
+        else if (persona.nationality === 'Japan') voiceGuide = 'Write with attention to aesthetics and cultural nuance. Draw comparisons between Korean and Japanese culture. Appreciate the subtle details. Be polite yet personal.';
+        else if (persona.nationality === 'Canada') voiceGuide = 'Write in friendly Canadian English. Be polite, inclusive, and warm. Compare to Canadian multicultural experience. Use phrases like "for sure," "pretty solid." Be genuine and approachable.';
+        else voiceGuide = 'Write with a unique international perspective. Share how Korean culture looks through your cultural lens. Be authentic and personal.';
+
+        let jobVoice = '';
+        if (persona.job.includes('Blogger') || persona.job.includes('Nomad')) jobVoice = 'Write like an experienced travel content creator — practical tips, hidden gems, budget advice, personal anecdotes from the road.';
+        else if (persona.job.includes('Beauty') || persona.job.includes('Skincare')) jobVoice = 'Write like a beauty industry insider — ingredient knowledge, product comparisons, application techniques, before/after experiences.';
+        else if (persona.job.includes('Food') || persona.job.includes('Critic')) jobVoice = 'Write like a food journalist — flavor descriptions, cooking techniques, restaurant atmosphere, cultural context of dishes.';
+        else if (persona.job.includes('K-Pop') || persona.job.includes('Stan')) jobVoice = 'Write like a passionate K-Pop fan with deep knowledge — fandom terminology, comeback analysis, concert experiences, idol culture insights.';
+        else if (persona.job.includes('Student')) jobVoice = 'Write like a young student abroad — budget-conscious, discovering things for the first time, relatable struggles and excitement.';
+        else jobVoice = 'Write with professional authority in your field while keeping it accessible to general readers.';
+
         const prompt = `
-**Act as an expert content creator for the 'Korea Decode' blog.**
+**You ARE ${persona.name}. Stay in character for the ENTIRE article.**
 
-**Your Persona:**
-- **Name:** ${persona.name}
-- **Identity:** You are a ${persona.age}, ${persona.gender}, ${persona.nationality} ${persona.job}.
-- **Expertise & Passion:** You are deeply passionate about ${persona.likes}.
-- **Bio:** "${persona.bio}"
+**Your Identity:**
+- ${persona.age} ${persona.gender} from ${persona.nationality}, working as a ${persona.job}
+- Passionate about: ${persona.likes}
+- Bio: "${persona.bio}"
 
-**Task:** Write a high-quality, engaging, and SEO-optimized blog post.
+**YOUR UNIQUE VOICE (CRITICAL — follow strictly):**
+${voiceGuide}
+${jobVoice}
+
+**Task:** Write a blog post for 'Korea Decode'.
 
 **Topic:** "${title}"
 **Core Subject:** "${topic}"
 **Target Keywords:** ${keywords.join(', ')}
 
-**Content & Style Guidelines (Strictly Follow):**
-1.  **Tone of Voice:** Write in a **conversational, authentic, and expert** human voice. Use "I," "we," and "you." Be relatable and engaging, sharing personal opinions and simulated experiences based on your persona. **AVOID** robotic, academic, or generic marketing language.
-2.  **Structure:**
-    - **Hook Introduction:** Start with a compelling hook that grabs the reader's attention immediately. Do **NOT** introduce yourself (e.g., "Hello, I'm...").
-    - **Main Body:** Divide the content into logical sections using <h2> and <h3> tags. Use bullet points (<ul><li>...</li></ul>) for lists, and <strong> for emphasis on key terms.
-    - **Conclusion:** End with a strong summary and a call-to-action (e.g., asking a question, encouraging comments).
-3.  **Image Placement:** You have **${imgCount}** images to place inside the article body. Use the placeholder **[INSERT_IMAGE_HERE]** on its own line where an image fits best visually and contextually. Spread them evenly throughout the article. You MUST use exactly **${imgCount}** placeholders.
-4.  **Formatting:**
-    - Use clean HTML. Do NOT include <html>, <body>, or <h1> tags. The main title is handled separately.
-    - Use <p> for paragraphs, <blockquote> for tips/quotes.
+**RULES:**
+1. **Voice:** First person ("I", "my"). Share personal opinions, experiences, and reactions that fit YOUR background. A ${persona.nationality} ${persona.job} would notice different things than other writers — highlight THOSE unique observations. NEVER sound like a generic AI blog post.
+2. **Structure:**
+   - Hook intro (NO self-introduction like "Hello, I'm..."). Jump straight into an engaging opening.
+   - 3-5 sections with <h2>/<h3> tags. Use <ul><li> for lists, <strong> for key terms, <blockquote> for personal tips.
+   - Strong conclusion with call-to-action.
+3. **IMAGES — MANDATORY:** You MUST place exactly **${imgCount}** image markers in the article. Write the text **[IMG]** alone on its own line, wrapped in a paragraph tag like this: <p>[IMG]</p>. Space them evenly through the article (roughly every 2-3 paragraphs). This is REQUIRED — do not skip this.
+4. **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <blockquote>.
 
-**Final Output:** Produce only the HTML content for the article body.`;
+**Output:** Only the article HTML body. No explanations before or after.`;
 
         let rawContent = await callAI(prompt);
 
+        // Clean markdown code blocks from response
+        rawContent = rawContent.trim();
+        if (rawContent.startsWith('```html')) {
+            rawContent = rawContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
+        } else if (rawContent.startsWith('```')) {
+            rawContent = rawContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+
+        // Replace image placeholders with actual Unsplash images
         contentImages.forEach(img => {
             const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
-            rawContent = rawContent.replace('[INSERT_IMAGE_HERE]', imgHtml);
+            // Match multiple placeholder formats
+            if (rawContent.includes('<p>[IMG]</p>')) {
+                rawContent = rawContent.replace('<p>[IMG]</p>', imgHtml);
+            } else if (rawContent.includes('[IMG]')) {
+                rawContent = rawContent.replace('[IMG]', imgHtml);
+            } else if (rawContent.includes('[INSERT_IMAGE_HERE]')) {
+                rawContent = rawContent.replace('[INSERT_IMAGE_HERE]', imgHtml);
+            }
         });
+        // Remove any leftover placeholders
+        rawContent = rawContent.replace(/<p>\[IMG\]<\/p>/g, '');
+        rawContent = rawContent.replace(/\[IMG\]/g, '');
         rawContent = rawContent.replace(/\[INSERT_IMAGE_HERE\]/g, '');
         content = rawContent;
 
