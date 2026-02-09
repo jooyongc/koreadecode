@@ -43,7 +43,7 @@ async function callAI(prompt) {
 
     console.log("[AI] Calling server proxy...");
     try {
-        const resp = await fetch('/functions/ai-proxy', {
+        const resp = await fetch('/ai-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, ...userKeys })
@@ -393,7 +393,7 @@ async function loadDashboard() {
 
     // Fetch GA4 Data (via Proxy)
     try {
-        const gaRes = await fetch('/functions/ga-proxy', { method: 'POST' });
+        const gaRes = await fetch('/ga-proxy', { method: 'POST' });
         if (gaRes.ok) {
             const gaData = await gaRes.json();
             // Use GA data if available, otherwise fall back to Firestore sum
