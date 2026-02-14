@@ -23,6 +23,9 @@ export async function onRequest(context) {
     if (!saJson) throw new Error("GA_SERVICE_ACCOUNT secret not configured");
 
     const sa = typeof saJson === 'string' ? JSON.parse(saJson) : saJson;
+    if (!sa.client_email || !sa.private_key) {
+      throw new Error("GA_SERVICE_ACCOUNT JSON missing client_email or private_key");
+    }
 
     // 1. Create JWT
     const now = Math.floor(Date.now() / 1000);
@@ -59,86 +62,62 @@ export async function onRequest(context) {
     if (!tokenData.access_token) throw new Error("Token exchange failed: " + JSON.stringify(tokenData));
     const accessToken = tokenData.access_token;
 
-    // 3. Fetch GA4 reports (last 28 days)
-    const reportRes = await fetch(
-      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
-          metrics: [
-            { name: "screenPageViews" },
-            { name: "totalUsers" },
-            { name: "activeUsers" },
-            { name: "sessions" },
-          ],
-        }),
+    // Helper to fetch GA4 report and check for errors
+    async function fetchGA4Report(body, label) {
+      const res = await fetch(
+        `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(`GA4 ${label} failed (${res.status}): ${JSON.stringify(data.error || data)}`);
       }
-    );
-    const reportData = await reportRes.json();
+      return data;
+    }
+
+    // 3. Fetch GA4 reports (last 28 days)
+    const reportData = await fetchGA4Report({
+      dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
+      metrics: [
+        { name: "screenPageViews" },
+        { name: "totalUsers" },
+        { name: "activeUsers" },
+        { name: "sessions" },
+      ],
+    }, "overview");
 
     // 4. Fetch top pages
-    const pagesRes = await fetch(
-      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
-          dimensions: [{ name: "pagePath" }],
-          metrics: [{ name: "screenPageViews" }],
-          orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
-          limit: 10,
-        }),
-      }
-    );
-    const pagesData = await pagesRes.json();
+    const pagesData = await fetchGA4Report({
+      dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
+      dimensions: [{ name: "pagePath" }],
+      metrics: [{ name: "screenPageViews" }],
+      orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+      limit: 10,
+    }, "topPages");
 
     // 5. Fetch traffic sources
-    const sourcesRes = await fetch(
-      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
-          dimensions: [{ name: "sessionDefaultChannelGroup" }],
-          metrics: [{ name: "sessions" }],
-          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-          limit: 6,
-        }),
-      }
-    );
-    const sourcesData = await sourcesRes.json();
+    const sourcesData = await fetchGA4Report({
+      dateRanges: [{ startDate: "28daysAgo", endDate: "today" }],
+      dimensions: [{ name: "sessionDefaultChannelGroup" }],
+      metrics: [{ name: "sessions" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: 6,
+    }, "trafficSources");
 
     // 6. Fetch daily page views (last 7 days for trend)
-    const trendRes = await fetch(
-      `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dateRanges: [{ startDate: "7daysAgo", endDate: "today" }],
-          dimensions: [{ name: "date" }],
-          metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
-          orderBys: [{ dimension: { dimensionName: "date" }, desc: false }],
-        }),
-      }
-    );
-    const trendData = await trendRes.json();
+    const trendData = await fetchGA4Report({
+      dateRanges: [{ startDate: "7daysAgo", endDate: "today" }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+      orderBys: [{ dimension: { dimensionName: "date" }, desc: false }],
+    }, "dailyTrend");
 
     // Parse overview metrics
     const overviewRow = reportData.rows?.[0]?.metricValues || [];
