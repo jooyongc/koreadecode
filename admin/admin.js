@@ -149,6 +149,16 @@ async function init() {
             document.getElementById('auto-batch-actions').style.display = tabName === 'drafts' ? 'flex' : 'none';
         });
     });
+    document.getElementById('btn-save-decode-config').addEventListener('click', saveDecodeConfig);
+    document.getElementById('btn-refresh-decode-logs').addEventListener('click', loadDecodeLogs);
+    document.getElementById('btn-decode-logs-prev').addEventListener('click', () => { decodeLogsPage = Math.max(0, decodeLogsPage - 1); loadDecodeLogs(); });
+    document.getElementById('btn-decode-logs-next').addEventListener('click', () => { decodeLogsPage++; loadDecodeLogs(); });
+    document.getElementById('decode-max-tokens').addEventListener('input', (e) => {
+        document.getElementById('decode-tokens-val').innerText = e.target.value;
+    });
+    document.getElementById('decode-temperature').addEventListener('input', (e) => {
+        document.getElementById('decode-temp-val').innerText = e.target.value;
+    });
     document.getElementById('btn-start-migration').addEventListener('click', startMigration);
 
     document.getElementById('btn-insert-body-img').addEventListener('click', openUnsplashForBody);
@@ -192,6 +202,7 @@ const switchView = (viewName) => {
     if (viewName === 'dashboard') loadDashboard();
     if (viewName === 'automation') loadQueue();
     if (viewName === 'settings') loadPersonas();
+    if (viewName === 'decode-config') { loadDecodeConfig(); loadDecodeLogs(); }
     if (viewName === 'ai-writer') {
         if (!editingPostId) resetAI();
         refreshPersonaSelect();
@@ -1412,6 +1423,115 @@ async function loadPosts() {
                 `;
         grid.appendChild(div);
     });
+}
+
+// --- DECODE AI CONFIG ---
+let decodeLogsPage = 0;
+const DECODE_LOGS_PER_PAGE = 20;
+
+async function loadDecodeConfig() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_config')
+            .select('*')
+            .eq('feature_name', 'decode_this')
+            .single();
+
+        if (error) throw error;
+        if (!data) return;
+
+        document.getElementById('decode-system-prompt').value = data.system_prompt || '';
+        document.getElementById('decode-active').checked = data.is_active !== false;
+        document.getElementById('decode-model').value = data.model || 'gemini-2.0-flash';
+
+        const maxTokens = data.max_tokens || 500;
+        document.getElementById('decode-max-tokens').value = maxTokens;
+        document.getElementById('decode-tokens-val').innerText = maxTokens;
+
+        const temp = data.temperature ?? 0.7;
+        document.getElementById('decode-temperature').value = temp;
+        document.getElementById('decode-temp-val').innerText = temp;
+
+        const examples = data.example_questions || [];
+        document.getElementById('decode-examples').value = examples.join('\n');
+
+    } catch (e) {
+        console.error('Failed to load decode config:', e);
+    }
+}
+
+async function saveDecodeConfig() {
+    const systemPrompt = document.getElementById('decode-system-prompt').value.trim();
+    const isActive = document.getElementById('decode-active').checked;
+    const model = document.getElementById('decode-model').value;
+    const maxTokens = parseInt(document.getElementById('decode-max-tokens').value);
+    const temperature = parseFloat(document.getElementById('decode-temperature').value);
+    const examplesRaw = document.getElementById('decode-examples').value.trim();
+    const exampleQuestions = examplesRaw.split('\n').map(q => q.trim()).filter(q => q);
+
+    try {
+        const { error } = await supabase
+            .from('ai_config')
+            .update({
+                system_prompt: systemPrompt,
+                is_active: isActive,
+                model: model,
+                max_tokens: maxTokens,
+                temperature: temperature,
+                example_questions: exampleQuestions,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('feature_name', 'decode_this');
+
+        if (error) throw error;
+        alert('Decode AI config saved!');
+    } catch (e) {
+        alert('Error saving config: ' + e.message);
+    }
+}
+
+async function loadDecodeLogs() {
+    const tbody = document.getElementById('decode-logs-list');
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
+
+    try {
+        const from = decodeLogsPage * DECODE_LOGS_PER_PAGE;
+        const to = from + DECODE_LOGS_PER_PAGE - 1;
+
+        const { data, error, count } = await supabase
+            .from('ai_decode_logs')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        tbody.innerHTML = '';
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No logs yet</td></tr>';
+        } else {
+            data.forEach(log => {
+                const time = new Date(log.created_at).toLocaleString();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${log.question}">${log.question}</td>
+                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted);">${log.answer_summary || '-'}</td>
+                    <td style="white-space:nowrap; font-size:12px; color:var(--text-muted);">${time}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Update pagination
+        const totalPages = Math.ceil((count || 0) / DECODE_LOGS_PER_PAGE);
+        document.getElementById('decode-logs-page').innerText = `Page ${decodeLogsPage + 1}${totalPages > 0 ? ' / ' + totalPages : ''}`;
+        document.getElementById('btn-decode-logs-prev').disabled = decodeLogsPage === 0;
+        document.getElementById('btn-decode-logs-next').disabled = decodeLogsPage >= totalPages - 1;
+
+    } catch (e) {
+        console.error('Failed to load decode logs:', e);
+        tbody.innerHTML = '<tr><td colspan="3" style="color:var(--danger);">Error loading logs</td></tr>';
+    }
 }
 
 // Mock migrationList if migration-list.js is not loaded

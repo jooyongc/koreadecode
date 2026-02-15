@@ -165,6 +165,7 @@
             <div class="nav-item" data-view="ai-writer"><i class="ph ph-magic-wand"></i> AI Writer</div>
             <div class="nav-item" data-view="automation"><i class="ph ph-robot"></i> Automation</div>
             <div class="nav-item" data-view="posts"><i class="ph ph-article"></i> All Posts</div>
+            <div class="nav-item" data-view="decode-config"><i class="ph ph-brain"></i> Decode AI</div>
             <div class="nav-item" data-view="migration" style="color: #f59e0b;"><i class="ph ph-database"></i> Migration</div>
             <div class="nav-item" data-view="settings"><i class="ph ph-gear"></i> Settings</div>
         </nav>
@@ -632,6 +633,80 @@
             </div>
         </div>
 
+        <!-- DECODE AI CONFIG -->
+        <div id="view-decode-config" class="view-section">
+            <h1 style="margin-bottom: 24px;">Decode This — AI Config</h1>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Left: Settings -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Settings</h3>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <span style="font-size: 13px; color: var(--text-muted);">Active</span>
+                            <input type="checkbox" id="decode-active" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">System Prompt</label>
+                        <textarea id="decode-system-prompt" class="form-textarea" rows="10" style="font-family: monospace; font-size: 13px;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Example Questions (one per line)</label>
+                        <textarea id="decode-examples" class="form-textarea" rows="4" placeholder="What is 한 (Han)?&#10;Why do K-dramas have product placement?&#10;Explain Korean age system"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">AI Model</label>
+                            <select id="decode-model" class="form-select">
+                                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Max Tokens: <span id="decode-tokens-val">500</span></label>
+                            <input type="range" id="decode-max-tokens" min="100" max="2000" step="50" value="500" style="width: 100%; accent-color: var(--accent);">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Temperature: <span id="decode-temp-val">0.7</span></label>
+                        <input type="range" id="decode-temperature" min="0" max="1" step="0.1" value="0.7" style="width: 100%; accent-color: var(--accent);">
+                    </div>
+
+                    <button id="btn-save-decode-config" class="btn btn-primary" style="width: 100%;">
+                        <i class="ph ph-floppy-disk"></i> Save Config
+                    </button>
+                </div>
+
+                <!-- Right: Recent Logs -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Recent Questions</h3>
+                        <button id="btn-refresh-decode-logs" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
+                            <i class="ph ph-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div style="max-height: 600px; overflow-y: auto;">
+                        <table class="auto-table">
+                            <thead><tr><th>Question</th><th>Answer</th><th>Time</th></tr></thead>
+                            <tbody id="decode-logs-list">
+                                <tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 12px;">
+                        <button id="btn-decode-logs-prev" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;" disabled>&lt; Prev</button>
+                        <span id="decode-logs-page" style="font-size: 13px; color: var(--text-muted); line-height: 32px;">Page 1</span>
+                        <button id="btn-decode-logs-next" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;">Next &gt;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- MODALS -->
@@ -668,6 +743,6 @@
     </div>
 
     <!-- All scripts are now loaded as modules from within admin.js -->
-    <script type="module" src="/admin/admin.js?v=23"></script>
+    <script type="module" src="/admin/admin.js?v=24"></script>
 </body>
 </html>

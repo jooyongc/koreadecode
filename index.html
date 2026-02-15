@@ -289,6 +289,93 @@
             transition: width 0.3s ease;
         }
 
+        /* --- [Decode This Section] --- */
+        .decode-section {
+            border: var(--border); margin-bottom: 100px; padding: 60px;
+            background: var(--bg-sec); position: relative; overflow: hidden;
+        }
+        .decode-section::before {
+            content: '///'; position: absolute; top: 20px; right: 30px;
+            font-family: 'Syncopate', sans-serif; font-size: 1.2rem;
+            color: rgba(204, 255, 0, 0.2); letter-spacing: 4px;
+        }
+        .decode-title {
+            font-family: 'Syncopate', sans-serif; font-size: 2.5rem;
+            text-transform: uppercase; margin-bottom: 10px; line-height: 1;
+        }
+        .decode-title span { color: var(--accent); }
+        .decode-sub { color: var(--text-gray); font-size: 0.95rem; margin-bottom: 30px; max-width: 600px; }
+        .decode-input-row {
+            display: flex; align-items: center; gap: 0;
+            border: 1px solid rgba(255,255,255,0.2); background: #0a0a0a;
+            border-radius: 0; transition: 0.3s;
+        }
+        .decode-input-row:focus-within { border-color: var(--accent); box-shadow: 0 0 30px rgba(204, 255, 0, 0.15); }
+        .decode-prompt {
+            padding: 0 16px; color: var(--accent); font-family: 'Space Mono', monospace;
+            font-size: 1.2rem; font-weight: 700; user-select: none; line-height: 56px;
+        }
+        .decode-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: var(--text-white); font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem; padding: 16px 0;
+        }
+        .decode-input::placeholder { color: #555; }
+        .decode-send {
+            width: 56px; height: 56px; background: var(--accent); border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #000; font-size: 1.3rem; transition: 0.3s;
+            flex-shrink: 0;
+        }
+        .decode-send:hover { background: var(--accent-hover, #b8e600); }
+        .decode-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .decode-chips {
+            display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;
+        }
+        .decode-chip {
+            padding: 8px 16px; border: 1px solid rgba(255,255,255,0.15);
+            background: transparent; color: var(--text-gray); font-size: 0.85rem;
+            cursor: pointer; transition: 0.2s; font-family: inherit;
+        }
+        .decode-chip:hover { border-color: var(--accent); color: var(--accent); }
+        .decode-response {
+            margin-top: 30px; display: none; padding: 30px;
+            border: 1px solid rgba(204, 255, 0, 0.2); background: #0a0a0a;
+            position: relative;
+        }
+        .decode-response.active { display: block; animation: fadeInUp 0.4s ease; }
+        .decode-response-label {
+            position: absolute; top: -10px; left: 20px; background: #0a0a0a;
+            padding: 0 10px; color: var(--accent); font-size: 0.75rem;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+        }
+        .decode-answer {
+            color: #ccc; font-size: 1rem; line-height: 1.8;
+            font-family: 'Inter', sans-serif;
+        }
+        .decode-answer strong { color: var(--text-white); }
+        .decode-cursor {
+            display: inline-block; width: 2px; height: 1em;
+            background: var(--accent); margin-left: 2px;
+            animation: blink-cursor 0.7s infinite;
+            vertical-align: text-bottom;
+        }
+        @keyframes blink-cursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .decode-related {
+            margin-top: 20px; padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .decode-related-title {
+            color: var(--accent); font-size: 0.8rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
+        }
+        .decode-related a {
+            display: inline-block; padding: 6px 14px; margin-right: 8px; margin-bottom: 6px;
+            border: 1px solid rgba(255,255,255,0.15); color: var(--text-white);
+            font-size: 0.85rem; transition: 0.2s;
+        }
+        .decode-related a:hover { border-color: var(--accent); color: var(--accent); }
+
         /* --- [6. Responsive] --- */
         @media (max-width: 1024px) {
             .hero-box { grid-template-columns: 1fr; }
@@ -334,6 +421,12 @@
             .hero-img-wrap { height: 250px; }
             .hero-info { padding: 30px 20px; }
             
+            .decode-section { padding: 30px 20px; margin-bottom: 50px; }
+            .decode-title { font-size: 1.5rem; }
+            .decode-sub { font-size: 0.85rem; }
+            .decode-chips { gap: 6px; }
+            .decode-chip { font-size: 0.78rem; padding: 6px 12px; }
+            .decode-response { padding: 20px; }
             .view-inner { padding: 60px 20px 100px; }
             .close-btn { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 1.5rem; }
             #v-title { font-size: 2rem !important; }
@@ -408,6 +501,23 @@
                         </div>
                     </div>
                 </noscript>
+            </div>
+
+            <!-- Decode This Section -->
+            <div id="decode-section" class="decode-section">
+                <div class="decode-title">Decode <span>This_</span></div>
+                <div class="decode-sub">Drop any Korean word, K-pop lyric, meme, or cultural moment. We'll decode it.</div>
+                <div class="decode-input-row">
+                    <span class="decode-prompt">&gt;</span>
+                    <input type="text" id="decode-input" class="decode-input" placeholder="e.g. What does 눈치 mean? / Why do Koreans say 화이팅? / Explain aegyo culture..." maxlength="500">
+                    <button id="decode-send" class="decode-send" onclick="submitDecode()"><i class="ph ph-arrow-right"></i></button>
+                </div>
+                <div class="decode-chips" id="decode-chips"></div>
+                <div class="decode-response" id="decode-response">
+                    <div class="decode-response-label">/// DECODED</div>
+                    <div class="decode-answer" id="decode-answer"></div>
+                    <div class="decode-related" id="decode-related" style="display:none;"></div>
+                </div>
             </div>
 
             <!-- Magazine Grid -->
@@ -608,6 +718,123 @@
             }
         };
 
+        // --- Decode This Feature ---
+        async function loadDecodeConfig() {
+            try {
+                const { data, error } = await supabase
+                    .from('ai_config')
+                    .select('is_active, example_questions')
+                    .eq('feature_name', 'decode_this')
+                    .single();
+
+                if (error || !data) return;
+
+                const section = document.getElementById('decode-section');
+                if (!data.is_active) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                // Render example chips
+                const chips = data.example_questions || [];
+                const chipsContainer = document.getElementById('decode-chips');
+                chipsContainer.innerHTML = '';
+                chips.forEach(q => {
+                    const chip = document.createElement('button');
+                    chip.className = 'decode-chip';
+                    chip.textContent = q;
+                    chip.onclick = () => {
+                        document.getElementById('decode-input').value = q;
+                        submitDecode();
+                    };
+                    chipsContainer.appendChild(chip);
+                });
+            } catch (e) {
+                console.warn('Decode config load failed:', e);
+            }
+        }
+
+        window.submitDecode = async function() {
+            const input = document.getElementById('decode-input');
+            const question = input.value.trim();
+            if (!question) return;
+
+            const sendBtn = document.getElementById('decode-send');
+            const responseBox = document.getElementById('decode-response');
+            const answerBox = document.getElementById('decode-answer');
+            const relatedBox = document.getElementById('decode-related');
+
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="ph ph-spinner" style="animation:spin 1s linear infinite;"></i>';
+            responseBox.classList.add('active');
+            answerBox.innerHTML = '<span class="decode-cursor"></span>';
+            relatedBox.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/decode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    answerBox.innerHTML = `<span style="color:#ef4444;">${data.error}</span>`;
+                    return;
+                }
+
+                // Typing animation
+                await typeText(answerBox, data.answer || 'No response.');
+
+                // Related posts
+                if (data.relatedPosts && data.relatedPosts.length > 0) {
+                    relatedBox.style.display = 'block';
+                    relatedBox.innerHTML = '<div class="decode-related-title">Related reads</div>';
+                    data.relatedPosts.forEach(p => {
+                        relatedBox.innerHTML += `<a href="/post.html?id=${p.id}">${p.title}</a>`;
+                    });
+                }
+            } catch (e) {
+                answerBox.innerHTML = '<span style="color:#ef4444;">Connection error. Please try again.</span>';
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="ph ph-arrow-right"></i>';
+            }
+        };
+
+        async function typeText(el, text) {
+            // Convert markdown bold to HTML
+            const html = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            // Split into tokens (tags and characters)
+            const tokens = [];
+            let inTag = false;
+            let current = '';
+            for (const char of html) {
+                if (char === '<') { inTag = true; current = '<'; continue; }
+                if (char === '>' && inTag) { inTag = false; tokens.push(current + '>'); current = ''; continue; }
+                if (inTag) { current += char; continue; }
+                tokens.push(char);
+            }
+
+            el.innerHTML = '';
+            let buffer = '';
+            for (let i = 0; i < tokens.length; i++) {
+                buffer += tokens[i];
+                // Only render every 3 chars or on tags for performance
+                if (tokens[i].startsWith('<') || i % 3 === 0 || i === tokens.length - 1) {
+                    el.innerHTML = buffer + '<span class="decode-cursor"></span>';
+                    await new Promise(r => setTimeout(r, 8));
+                }
+            }
+            el.innerHTML = buffer; // Remove cursor at end
+        }
+
+        // Enter key support
+        document.getElementById('decode-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitDecode();
+        });
+
+        loadDecodeConfig();
         init();
     </script>
 </body>
