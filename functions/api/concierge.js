@@ -66,7 +66,7 @@ export async function onRequest(context) {
 
     const systemPrompt = config.system_prompt || 'You are Korea Concierge, a premium AI travel planner for Korea. Create personalized day-by-day itineraries. Respond ONLY in valid JSON.';
     const model = config.model || 'gemini-2.0-flash';
-    const maxTokens = config.max_tokens || 2000;
+    const maxTokens = config.max_tokens || 4000;
     const temperature = config.temperature ?? 0.7;
 
     // --- Build User Prompt ---
@@ -116,18 +116,28 @@ Create a complete day-by-day itinerary. Remember to respond ONLY in valid JSON f
     let itinerary;
     try {
       let cleaned = rawText.trim();
-      if (cleaned.startsWith('```json')) {
-        cleaned = cleaned.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-      } else if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
-      }
+      // Strip markdown code fences
+      cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```\s*$/, '');
       itinerary = JSON.parse(cleaned);
     } catch (parseErr) {
-      console.error('JSON parse error:', parseErr, 'Raw:', rawText.substring(0, 200));
-      return jsonResponse({
-        error: 'AI returned invalid format. Please try again.',
-        rawText: rawText.substring(0, 500),
-      }, 500, corsHeaders);
+      // Attempt to repair truncated JSON
+      try {
+        let repaired = rawText.trim().replace(/^```(?:json)?\s*/, '').replace(/\s*```\s*$/, '');
+        // Close any unclosed strings, arrays, objects
+        const opens = (repaired.match(/\[/g) || []).length - (repaired.match(/\]/g) || []).length;
+        const braces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
+        // Trim trailing incomplete key/value
+        repaired = repaired.replace(/,\s*"[^"]*$/, '');
+        repaired = repaired.replace(/,\s*$/, '');
+        for (let i = 0; i < opens; i++) repaired += ']';
+        for (let i = 0; i < braces; i++) repaired += '}';
+        itinerary = JSON.parse(repaired);
+      } catch (repairErr) {
+        console.error('JSON parse error:', parseErr, 'Raw:', rawText.substring(0, 300));
+        return jsonResponse({
+          error: 'AI returned invalid format. Please try again.',
+        }, 500, corsHeaders);
+      }
     }
 
     // --- Fetch Affiliate Links ---
