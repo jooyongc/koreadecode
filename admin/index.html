@@ -13,7 +13,7 @@
 
       gtag('config', 'G-487F519VEM');
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
@@ -21,29 +21,30 @@
     
     <style>
         :root {
-            --bg-body: #0f172a; /* Slate 900 */
-            --bg-panel: #1e293b; /* Slate 800 */
-            --bg-input: #334155; /* Slate 700 */
-            --text-main: #f8fafc; /* Slate 50 */
-            --text-muted: #94a3b8; /* Slate 400 */
-            --accent: #6366f1; /* Indigo 500 */
-            --accent-hover: #4f46e5; /* Indigo 600 */
-            --border: #334155;
+            --bg-body: #000000;
+            --bg-panel: #111111;
+            --bg-input: #1a1a1a;
+            --text-main: #FFFFFF;
+            --text-muted: #888888;
+            --accent: #CCFF00;
+            --accent-hover: #b8e600;
+            --border: rgba(255,255,255,0.15);
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
         }
         * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        body { font-family: 'Space Grotesk', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
         /* Layout */
         .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px; }
         .main-content { flex: 1; padding: 32px; overflow-y: auto; position: relative; }
         
         /* Components */
-        .brand { font-size: 22px; font-weight: 800; margin-bottom: 40px; color: var(--text-main); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        .brand { font-family: 'Syncopate', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 40px; color: var(--text-main); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
         .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text-muted); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: 0.2s; cursor: pointer; font-weight: 500; }
-        .nav-item:hover, .nav-item.active { background-color: var(--bg-input); color: var(--text-main); }
+        .nav-item:hover { background-color: var(--bg-input); color: var(--text-main); }
+        .nav-item.active { background-color: rgba(204, 255, 0, 0.1); color: var(--accent); }
         .nav-item i { font-size: 20px; }
         
         .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
@@ -51,35 +52,40 @@
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
         .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 15px; outline: none; transition: 0.2s; font-family: inherit; }
-        .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(204, 255, 0, 0.2); }
         
         .btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .btn-primary { background-color: var(--accent); color: white; }
-        .btn-primary:hover { background-color: var(--accent-hover); }
+        .btn-primary { background-color: var(--accent); color: #000; font-weight: 700; }
+        .btn-primary:hover { background-color: var(--accent-hover); box-shadow: 0 0 20px rgba(204, 255, 0, 0.4); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
         .btn-outline:hover { border-color: var(--text-muted); color: var(--text-main); background: var(--bg-input); }
-        .btn-ai { background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
-        .btn-ai:hover { box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5); transform: translateY(-1px); }
+        .btn-ai { background: var(--accent); color: #000; font-weight: 700; box-shadow: 0 4px 12px rgba(204, 255, 0, 0.3); }
+        .btn-ai:hover { box-shadow: 0 0 20px rgba(204, 255, 0, 0.5); transform: translateY(-1px); }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         /* AI Process Steps */
         .ai-step { border-left: 2px solid var(--border); padding-left: 20px; margin-bottom: 30px; position: relative; }
         .ai-step.active { border-left-color: var(--accent); }
         .ai-step-badge { position: absolute; left: -11px; top: 0; width: 20px; height: 20px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 50%; color: var(--text-muted); font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .ai-step.active .ai-step-badge { border-color: var(--accent); background: var(--accent); color: white; }
+        .ai-step.active .ai-step-badge { border-color: var(--accent); background: var(--accent); color: #000; }
         .ai-step-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
 
         /* Generated Options */
         .suggestion-chip { display: inline-block; padding: 6px 12px; background: var(--bg-input); border-radius: 20px; font-size: 13px; margin: 0 5px 5px 0; cursor: pointer; border: 1px solid transparent; }
         .suggestion-chip:hover { background: var(--border); }
-        .suggestion-chip.selected { background: rgba(99, 102, 241, 0.2); border-color: var(--accent); color: var(--accent); }
+        .suggestion-chip.selected { background: rgba(204, 255, 0, 0.15); border-color: var(--accent); color: var(--accent); }
 
         /* Editor Overrides */
         .ql-toolbar { background-color: var(--bg-input); border: 1px solid var(--border) !important; border-radius: 8px 8px 0 0; }
-        .ql-container { background-color: rgba(0,0,0,0.2); color: var(--text-main); border: 1px solid var(--border) !important; border-top: none; border-radius: 0 0 8px 8px; font-size: 16px; height: 500px; }
+        .ql-toolbar .ql-formats button:hover { background: rgba(204, 255, 0, 0.15); border-radius: 4px; }
+        .ql-container { background-color: #0a0a0a; color: var(--text-main); border: 1px solid var(--border) !important; border-top: none; border-radius: 0 0 8px 8px; font-size: 16px; height: 500px; font-family: 'Inter', sans-serif; }
+        .ql-editor { line-height: 1.7; }
+        .ql-editor a { color: var(--accent); }
         .ql-stroke { stroke: var(--text-muted) !important; }
         .ql-fill { fill: var(--text-muted) !important; }
         .ql-picker { color: var(--text-muted) !important; }
+        .ql-picker-options { background-color: var(--bg-panel) !important; border-color: var(--border) !important; }
+        .ql-picker-item:hover { color: var(--accent) !important; }
 
         /* Modals & Utils */
         .login-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-body); z-index: 9999; display: flex; align-items: center; justify-content: center; }
@@ -124,7 +130,7 @@
 
         /* Persona Card */
         .persona-card { border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); }
-        .persona-avatar { width: 40px; height: 40px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; margin-right: 12px; }
+        .persona-avatar { width: 40px; height: 40px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; margin-right: 12px; }
         .persona-details { flex: 1; }
         .persona-name { font-weight: 600; color: var(--text-main); }
         .persona-role { font-size: 12px; color: var(--text-muted); }
@@ -137,7 +143,7 @@
     <div id="login-section" class="login-wrap">
         <div class="card" style="width: 400px; border: 1px solid var(--border);">
             <div style="text-align: center; margin-bottom: 24px;">
-                <div class="brand" style="justify-content: center;"><i class="ph ph-command"></i> K-Decode Admin</div>
+                <div class="brand" style="justify-content: center;"><span style="color: var(--accent);">K-</span>Decode Admin</div>
                 <p style="color: var(--text-muted);">Sign in to manage content</p>
             </div>
             <div class="form-group">
@@ -153,7 +159,7 @@
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
-        <div class="brand"><i class="ph ph-command" style="color: var(--accent);"></i> K-Decode</div>
+        <div class="brand"><span style="color: var(--accent);">K-</span>Decode</div>
         <nav>
             <div class="nav-item active" data-view="dashboard"><i class="ph ph-squares-four"></i> Dashboard</div>
             <div class="nav-item" data-view="ai-writer"><i class="ph ph-magic-wand"></i> AI Writer</div>
@@ -323,6 +329,9 @@
                         <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--bg-input); display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-weight: 600;">Editor</span>
                             <div style="display: flex; gap: 8px;">
+                                <button id="btn-insert-body-img" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
+                                    <i class="ph ph-image"></i> Insert Image
+                                </button>
                                 <button id="btn-show-preview" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
                                     <i class="ph ph-device-mobile"></i> Preview
                                 </button>
@@ -361,46 +370,145 @@
         <!-- AUTOMATION -->
         <div id="view-automation" class="view-section">
             <h1 style="margin-bottom: 24px;">Bulk Automation</h1>
-            <div class="row" style="gap: 40px;">
-                <div style="flex: 1; max-width: 400px;">
+            <div style="display: flex; gap: 24px;">
+                <!-- Left Panel: Profile Settings -->
+                <div style="flex: 1; max-width: 420px;">
                     <div class="card">
-                        <h3>Schedule Settings</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">Automation Profile</h3>
+                            <div style="display: flex; gap: 6px;">
+                                <select id="auto-profile-select" class="form-select" style="width: 140px; padding: 6px 10px; font-size: 12px;">
+                                    <option value="">New Profile</option>
+                                </select>
+                                <button id="btn-save-auto-profile" class="btn btn-outline" style="padding: 6px 10px; font-size: 12px;" title="Save Profile"><i class="ph ph-floppy-disk"></i></button>
+                                <button id="btn-delete-auto-profile" class="btn btn-outline" style="padding: 6px 10px; font-size: 12px; color: var(--danger);" title="Delete Profile"><i class="ph ph-trash"></i></button>
+                            </div>
+                        </div>
                         <div class="form-group">
-                            <label class="form-label">Category</label>
-                            <select id="auto-category" class="form-select">
-                                <option value="News">News</option>
-                                <option value="K-pop">K-Pop</option>
-                                <option value="Food">Food</option>
-                                <option value="Travel">Travel</option>
+                            <label class="form-label">Profile Name</label>
+                            <input type="text" id="auto-profile-name" class="form-input" placeholder="e.g. Daily K-Pop News">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Persona</label>
+                            <select id="auto-persona" class="form-select">
+                                <option value="default">Default AI (Generic)</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Start Date</label>
-                            <input type="datetime-local" id="auto-start-date" class="form-input">
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Category</label>
+                                <select id="auto-category" class="form-select">
+                                    <option value="News">News</option>
+                                    <option value="K-pop">K-Pop</option>
+                                    <option value="Food">Food</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Beauty">Beauty</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Word Count</label>
+                                <select id="auto-wordcount" class="form-select">
+                                    <option value="800">~800 words</option>
+                                    <option value="1200" selected>~1200 words</option>
+                                    <option value="1800">~1800 words</option>
+                                    <option value="2500">~2500 words</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Inline Images</label>
+                                <select id="auto-img-count" class="form-select">
+                                    <option value="1">1 image</option>
+                                    <option value="2" selected>2 images</option>
+                                    <option value="3">3 images</option>
+                                    <option value="4">4 images</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Output Status</label>
+                                <select id="auto-output-status" class="form-select">
+                                    <option value="draft" selected>Draft (Review first)</option>
+                                    <option value="scheduled">Scheduled (Auto-publish)</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Interval</label>
-                            <select id="auto-interval" class="form-select">
-                                <option value="24">Every 24 Hours (Daily)</option>
-                                <option value="12">Every 12 Hours</option>
-                            </select>
+                            <label class="form-label">Tone Override (optional)</label>
+                            <input type="text" id="auto-tone" class="form-input" placeholder="e.g. Extra sarcastic, Gen-Z slang">
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Start Date</label>
+                                <input type="datetime-local" id="auto-start-date" class="form-input">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Interval</label>
+                                <select id="auto-interval" class="form-select">
+                                    <option value="24">Every 24h</option>
+                                    <option value="12">Every 12h</option>
+                                    <option value="48">Every 48h</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Topics</label>
-                            <textarea id="auto-topics" class="form-textarea" rows="10"></textarea>
+                            <label class="form-label">Topics (one per line)</label>
+                            <textarea id="auto-topics" class="form-textarea" rows="8" placeholder="Best Korean BBQ in Seoul&#10;Hidden Cafes in Hongdae&#10;K-Beauty Routine for Beginners"></textarea>
                         </div>
                         <button id="btn-run-automation" class="btn btn-ai" style="width: 100%;">
-                            <i class="ph ph-robot"></i> Schedule All
+                            <i class="ph ph-robot"></i> Generate All with AI
                         </button>
+
+                        <!-- Progress Card -->
+                        <div id="auto-progress-card" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                <span style="font-weight: 600; font-size: 14px;">Progress</span>
+                                <span id="auto-progress-text" style="font-size: 13px; color: var(--text-muted);">0/0</span>
+                            </div>
+                            <div style="height: 6px; background: var(--bg-body); border-radius: 3px; overflow: hidden;">
+                                <div id="auto-progress-bar" style="width: 0%; height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s;"></div>
+                            </div>
+                            <div id="auto-progress-log" class="log-box" style="height: 120px; margin-top: 10px; font-size: 11px;"></div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Right Panel: Queue with Tabs -->
                 <div style="flex: 2;">
                     <div class="card">
-                        <h3>Queue</h3>
-                        <table class="auto-table">
-                            <thead><tr><th>Status</th><th>Title</th><th>Scheduled</th><th>Action</th></tr></thead>
-                            <tbody id="auto-queue-list"></tbody>
-                        </table>
+                        <div style="display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
+                            <button class="btn btn-outline auto-queue-tab active" data-tab="drafts" style="border: none; border-bottom: 2px solid var(--accent); border-radius: 0; padding: 10px 20px; font-size: 14px;">
+                                Drafts for Review <span id="auto-draft-count" style="background: var(--accent); color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 6px;">0</span>
+                            </button>
+                            <button class="btn btn-outline auto-queue-tab" data-tab="scheduled" style="border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 20px; font-size: 14px;">
+                                Scheduled <span id="auto-sched-count" style="background: var(--bg-input); color: var(--text-muted); font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 6px;">0</span>
+                            </button>
+                        </div>
+
+                        <!-- Batch Actions (Drafts only) -->
+                        <div id="auto-batch-actions" style="display: flex; gap: 8px; margin-bottom: 12px;">
+                            <button id="btn-batch-publish" class="btn btn-primary" style="padding: 6px 14px; font-size: 12px;"><i class="ph ph-paper-plane-right"></i> Publish Selected</button>
+                            <button id="btn-batch-delete" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px; color: var(--danger); border-color: var(--danger);"><i class="ph ph-trash"></i> Delete Selected</button>
+                            <label style="display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                <input type="checkbox" id="auto-select-all"> Select All
+                            </label>
+                        </div>
+
+                        <!-- Drafts Tab -->
+                        <div id="auto-tab-drafts">
+                            <table class="auto-table">
+                                <thead><tr><th style="width:30px;"></th><th>Title</th><th>Category</th><th>Action</th></tr></thead>
+                                <tbody id="auto-drafts-list"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Scheduled Tab -->
+                        <div id="auto-tab-scheduled" style="display: none;">
+                            <table class="auto-table">
+                                <thead><tr><th>Status</th><th>Title</th><th>Scheduled</th><th>Action</th></tr></thead>
+                                <tbody id="auto-queue-list"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -433,7 +541,7 @@
                 <!-- General Settings -->
                 <div class="card">
                     <h3>General</h3>
-                    <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                    <div style="background: rgba(204, 255, 0, 0.08); border: 1px solid var(--accent); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
                         <div style="color: var(--accent); font-weight: 600; font-size: 13px;"><i class="ph ph-key"></i> Google Gemini API를 사용합니다</div>
                         <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;"><a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">Google AI Studio</a>에서 무료 키를 발급받아 아래에 입력하세요.</div>
                     </div>
@@ -530,8 +638,12 @@
     <div id="modal-unsplash" class="modal-overlay">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-                <h3 style="margin: 0;">Unsplash Images</h3>
+                <h3 style="margin: 0;" id="unsplash-modal-title">Unsplash Images</h3>
                 <button id="btn-close-unsplash" class="btn btn-outline" style="padding: 4px 10px;"><i class="ph ph-x"></i></button>
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <input type="text" id="unsplash-modal-search" class="form-input" placeholder="Search images...">
+                <button id="btn-unsplash-modal-search" class="btn btn-primary" style="padding: 8px 16px;"><i class="ph ph-magnifying-glass"></i></button>
             </div>
             <div id="unsplash-results" class="modal-grid"></div>
         </div>
@@ -556,6 +668,6 @@
     </div>
 
     <!-- All scripts are now loaded as modules from within admin.js -->
-    <script type="module" src="/admin/admin.js?v=22"></script>
+    <script type="module" src="/admin/admin.js?v=23"></script>
 </body>
 </html>

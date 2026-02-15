@@ -48,6 +48,7 @@ let currentUser = null;
 let editingPostId = null;
 let editingPersonaId = null;
 let availablePersonas = [];
+let unsplashMode = 'featured'; // 'featured' | 'body'
 
 // --- CORE INITIALIZATION ---
 async function init() {
@@ -70,6 +71,7 @@ async function init() {
     if (session) {
         currentUser = session.user;
         document.getElementById('login-section').style.display = 'none';
+        restoreGeminiKeyFromCloud(session.user);
         loadDashboard();
         loadPersonas();
     } else {
@@ -81,6 +83,7 @@ async function init() {
         if (session) {
             currentUser = session.user;
             document.getElementById('login-section').style.display = 'none';
+            restoreGeminiKeyFromCloud(session.user);
             loadDashboard();
             loadPersonas();
         } else {
@@ -95,6 +98,16 @@ async function init() {
     });
 
     document.getElementById('btn-login').addEventListener('click', doLogin);
+    document.getElementById('login-email').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const pw = document.getElementById('login-password');
+            if (!pw.value) pw.focus();
+            else doLogin();
+        }
+    });
+    document.getElementById('login-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doLogin();
+    });
     document.getElementById('btn-logout').addEventListener('click', async () => {
         await supabase.auth.signOut();
     });
@@ -114,8 +127,35 @@ async function init() {
     document.getElementById('btn-cancel-persona').addEventListener('click', resetPersonaForm);
 
     document.getElementById('btn-run-automation').addEventListener('click', runAutomation);
+    document.getElementById('btn-save-auto-profile').addEventListener('click', saveAutoProfile);
+    document.getElementById('btn-delete-auto-profile').addEventListener('click', deleteAutoProfile);
+    document.getElementById('auto-profile-select').addEventListener('change', loadAutoProfile);
+    document.getElementById('btn-batch-publish').addEventListener('click', batchPublishDrafts);
+    document.getElementById('btn-batch-delete').addEventListener('click', batchDeleteDrafts);
+    document.getElementById('auto-select-all').addEventListener('change', (e) => {
+        document.querySelectorAll('.auto-draft-check').forEach(cb => cb.checked = e.target.checked);
+    });
+    document.querySelectorAll('.auto-queue-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.auto-queue-tab').forEach(t => {
+                t.classList.remove('active');
+                t.style.borderBottomColor = 'transparent';
+            });
+            tab.classList.add('active');
+            tab.style.borderBottomColor = 'var(--accent)';
+            const tabName = tab.dataset.tab;
+            document.getElementById('auto-tab-drafts').style.display = tabName === 'drafts' ? 'block' : 'none';
+            document.getElementById('auto-tab-scheduled').style.display = tabName === 'scheduled' ? 'block' : 'none';
+            document.getElementById('auto-batch-actions').style.display = tabName === 'drafts' ? 'flex' : 'none';
+        });
+    });
     document.getElementById('btn-start-migration').addEventListener('click', startMigration);
 
+    document.getElementById('btn-insert-body-img').addEventListener('click', openUnsplashForBody);
+    document.getElementById('btn-unsplash-modal-search').addEventListener('click', searchUnsplashModal);
+    document.getElementById('unsplash-modal-search').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchUnsplashModal();
+    });
     document.getElementById('btn-close-unsplash').addEventListener('click', () => closeModal('modal-unsplash'));
     document.getElementById('btn-close-preview').addEventListener('click', () => closeModal('modal-preview'));
 
@@ -136,6 +176,8 @@ async function init() {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('auto-start-date').value = now.toISOString().slice(0, 16);
+
+    loadAutoProfiles();
 }
 
 
@@ -169,12 +211,47 @@ async function doLogin() {
 }
 
 // --- SETTINGS ---
-const saveSettings = () => {
+const saveSettings = async () => {
     const k = document.getElementById('setting-gemini-key').value.trim();
     if (!k) return alert('Gemini API Key를 입력해주세요.');
     localStorage.setItem('gemini_key', k);
-    alert('Gemini API Key 저장 완료!');
+    // Cloud save to Supabase user metadata
+    try {
+        await supabase.auth.updateUser({ data: { gemini_key: k } });
+        updateKeyStatusIndicator(true);
+    } catch (e) {
+        console.warn('Cloud sync failed:', e);
+        updateKeyStatusIndicator(false);
+    }
+    alert('Gemini API Key 저장 완료! (Cloud synced)');
 };
+
+function restoreGeminiKeyFromCloud(user) {
+    const cloudKey = user?.user_metadata?.gemini_key;
+    if (cloudKey && !localStorage.getItem('gemini_key')) {
+        localStorage.setItem('gemini_key', cloudKey);
+        const input = document.getElementById('setting-gemini-key');
+        if (input) input.value = cloudKey;
+        console.log('[Settings] Gemini key restored from cloud');
+    }
+    updateKeyStatusIndicator(!!cloudKey);
+}
+
+function updateKeyStatusIndicator(synced) {
+    let indicator = document.getElementById('key-sync-status');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'key-sync-status';
+        indicator.style.cssText = 'font-size: 12px; margin-top: 8px; display: flex; align-items: center; gap: 6px;';
+        const btn = document.getElementById('btn-save-settings');
+        if (btn) btn.insertAdjacentElement('afterend', indicator);
+    }
+    if (synced) {
+        indicator.innerHTML = '<i class="ph ph-cloud-check" style="color: var(--success);"></i> <span style="color: var(--success);">Cloud synced</span>';
+    } else {
+        indicator.innerHTML = '<i class="ph ph-cloud-slash" style="color: var(--text-muted);"></i> <span style="color: var(--text-muted);">Local only</span>';
+    }
+}
 
 // --- MODALS ---
 const closeModal = (id) => document.getElementById(id).style.display = 'none';
@@ -209,6 +286,7 @@ async function loadPersonas() {
         });
         if (availablePersonas.length === 0) list.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No personas created yet.</div>';
         refreshPersonaSelect();
+        refreshAutoPersonaSelect();
     } catch (e) {
         console.error(e);
         list.innerHTML = 'Failed to load personas.';
@@ -657,25 +735,8 @@ window.runAIPhase2 = async () => {
     let content = '';
 
     try {
-        // Build persona-specific voice guidelines
-        let voiceGuide = '';
-        if (persona.nationality === 'USA') voiceGuide = 'Write in casual American English. Use modern slang, pop-culture references, and enthusiastic energy. Say things like "honestly," "literally," "game-changer," "vibe check." Be upbeat and relatable like a popular American vlogger.';
-        else if (persona.nationality === 'UK') voiceGuide = 'Write in British English with dry wit and understated humor. Use phrases like "rather brilliant," "spot on," "quite frankly." Be charming but not over-the-top. Think educated British travel writer.';
-        else if (persona.nationality === 'Australia') voiceGuide = 'Write in laid-back Australian English. Use phrases like "no worries," "heaps of," "reckon," "arvo." Be friendly, adventurous, and down-to-earth like a backpacker sharing stories at a hostel.';
-        else if (persona.nationality === 'France') voiceGuide = 'Write with a sophisticated European sensibility. Compare Korean culture to French equivalents. Appreciate aesthetics, food quality, and craftsmanship. Use occasional French expressions naturally.';
-        else if (persona.nationality === 'Germany') voiceGuide = 'Write with precision and thoroughness. Be practical and detail-oriented. Include specific facts, prices, and logistics. Compare efficiency and systems to German standards.';
-        else if (persona.nationality === 'Singapore') voiceGuide = 'Write from a Southeast Asian multicultural perspective. Draw comparisons with Singaporean culture, food, and lifestyle. Use Singlish-flavored expressions occasionally. Be warm and community-oriented.';
-        else if (persona.nationality === 'Japan') voiceGuide = 'Write with attention to aesthetics and cultural nuance. Draw comparisons between Korean and Japanese culture. Appreciate the subtle details. Be polite yet personal.';
-        else if (persona.nationality === 'Canada') voiceGuide = 'Write in friendly Canadian English. Be polite, inclusive, and warm. Compare to Canadian multicultural experience. Use phrases like "for sure," "pretty solid." Be genuine and approachable.';
-        else voiceGuide = 'Write with a unique international perspective. Share how Korean culture looks through your cultural lens. Be authentic and personal.';
-
-        let jobVoice = '';
-        if (persona.job.includes('Blogger') || persona.job.includes('Nomad')) jobVoice = 'Write like an experienced travel content creator — practical tips, hidden gems, budget advice, personal anecdotes from the road.';
-        else if (persona.job.includes('Beauty') || persona.job.includes('Skincare')) jobVoice = 'Write like a beauty industry insider — ingredient knowledge, product comparisons, application techniques, before/after experiences.';
-        else if (persona.job.includes('Food') || persona.job.includes('Critic')) jobVoice = 'Write like a food journalist — flavor descriptions, cooking techniques, restaurant atmosphere, cultural context of dishes.';
-        else if (persona.job.includes('K-Pop') || persona.job.includes('Stan')) jobVoice = 'Write like a passionate K-Pop fan with deep knowledge — fandom terminology, comeback analysis, concert experiences, idol culture insights.';
-        else if (persona.job.includes('Student')) jobVoice = 'Write like a young student abroad — budget-conscious, discovering things for the first time, relatable struggles and excitement.';
-        else jobVoice = 'Write with professional authority in your field while keeping it accessible to general readers.';
+        const voiceGuide = getVoiceGuide(persona.nationality);
+        const jobVoice = getJobVoice(persona.job);
 
         const prompt = `
 **You ARE ${persona.name}. Stay in character for the ENTIRE article.**
@@ -791,93 +852,451 @@ window.runSEOPolish = () => {
 };
 
 window.searchUnsplashAI = async () => {
+    unsplashMode = 'featured';
     const q = document.getElementById('ai-img-query').value;
+    document.getElementById('unsplash-modal-search').value = q;
+    document.getElementById('unsplash-modal-title').innerText = 'Featured Image';
+    searchUnsplashModal();
+};
+
+function openUnsplashForBody() {
+    unsplashMode = 'body';
+    document.getElementById('unsplash-modal-title').innerText = 'Insert Image into Body';
+    document.getElementById('unsplash-modal-search').value = document.getElementById('ai-topic')?.value || '';
+    document.getElementById('unsplash-results').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Search for an image to insert</div>';
+    document.getElementById('modal-unsplash').style.display = 'flex';
+    document.getElementById('unsplash-modal-search').focus();
+}
+
+async function searchUnsplashModal() {
+    const q = document.getElementById('unsplash-modal-search').value.trim();
+    if (!q) return;
     const container = document.getElementById('unsplash-results');
     container.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Searching...</div>';
     document.getElementById('modal-unsplash').style.display = 'flex';
     try {
-        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=12&query=${q}&client_id=${UNSPLASH_ACCESS_KEY}`);
+        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=12&query=${encodeURIComponent(q)}&client_id=${UNSPLASH_ACCESS_KEY}`);
         const data = await res.json();
         container.innerHTML = '';
+        if (!data.results || data.results.length === 0) {
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);">No results found</div>';
+            return;
+        }
         data.results.forEach(img => {
             const el = document.createElement('img');
             el.src = img.urls.small;
             el.className = 'modal-img-item';
             el.onclick = () => {
-                activeImage = img.urls.regular;
-                document.getElementById('selected-ai-img').src = activeImage;
-                document.getElementById('selected-ai-img').style.display = 'block';
-                document.getElementById('ai-img-placeholder').style.display = 'none';
+                if (unsplashMode === 'body') {
+                    insertImageIntoBody({
+                        url: img.urls.regular,
+                        alt: img.alt_description || q,
+                        user: img.user.name,
+                        user_link: img.user.links.html
+                    });
+                } else {
+                    selectFeaturedImage(img);
+                }
                 document.getElementById('modal-unsplash').style.display = 'none';
             };
             container.appendChild(el);
         });
     } catch (e) {
-        container.innerHTML = 'API Error';
+        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--danger);">API Error</div>';
     }
-};
+}
+
+function selectFeaturedImage(img) {
+    activeImage = img.urls.regular;
+    document.getElementById('selected-ai-img').src = activeImage;
+    document.getElementById('selected-ai-img').style.display = 'block';
+    document.getElementById('ai-img-placeholder').style.display = 'none';
+}
+
+function insertImageIntoBody(img) {
+    const range = quill.getSelection(true);
+    const index = range ? range.index : quill.getLength() - 1;
+    const figureHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
+    quill.insertText(index, '\n');
+    quill.clipboard.dangerouslyPasteHTML(index + 1, figureHtml);
+    quill.setSelection(index + 2);
+}
+
+// --- SHARED VOICE GUIDE FUNCTIONS ---
+function getVoiceGuide(nationality) {
+    if (nationality === 'USA') return 'Write in casual American English. Use modern slang, pop-culture references, and enthusiastic energy. Say things like "honestly," "literally," "game-changer," "vibe check." Be upbeat and relatable like a popular American vlogger.';
+    if (nationality === 'UK') return 'Write in British English with dry wit and understated humor. Use phrases like "rather brilliant," "spot on," "quite frankly." Be charming but not over-the-top. Think educated British travel writer.';
+    if (nationality === 'Australia') return 'Write in laid-back Australian English. Use phrases like "no worries," "heaps of," "reckon," "arvo." Be friendly, adventurous, and down-to-earth like a backpacker sharing stories at a hostel.';
+    if (nationality === 'France') return 'Write with a sophisticated European sensibility. Compare Korean culture to French equivalents. Appreciate aesthetics, food quality, and craftsmanship. Use occasional French expressions naturally.';
+    if (nationality === 'Germany') return 'Write with precision and thoroughness. Be practical and detail-oriented. Include specific facts, prices, and logistics. Compare efficiency and systems to German standards.';
+    if (nationality === 'Singapore') return 'Write from a Southeast Asian multicultural perspective. Draw comparisons with Singaporean culture, food, and lifestyle. Use Singlish-flavored expressions occasionally. Be warm and community-oriented.';
+    if (nationality === 'Japan') return 'Write with attention to aesthetics and cultural nuance. Draw comparisons between Korean and Japanese culture. Appreciate the subtle details. Be polite yet personal.';
+    if (nationality === 'Canada') return 'Write in friendly Canadian English. Be polite, inclusive, and warm. Compare to Canadian multicultural experience. Use phrases like "for sure," "pretty solid." Be genuine and approachable.';
+    return 'Write with a unique international perspective. Share how Korean culture looks through your cultural lens. Be authentic and personal.';
+}
+
+function getJobVoice(job) {
+    if (job.includes('Blogger') || job.includes('Nomad')) return 'Write like an experienced travel content creator — practical tips, hidden gems, budget advice, personal anecdotes from the road.';
+    if (job.includes('Beauty') || job.includes('Skincare')) return 'Write like a beauty industry insider — ingredient knowledge, product comparisons, application techniques, before/after experiences.';
+    if (job.includes('Food') || job.includes('Critic')) return 'Write like a food journalist — flavor descriptions, cooking techniques, restaurant atmosphere, cultural context of dishes.';
+    if (job.includes('K-Pop') || job.includes('Stan')) return 'Write like a passionate K-Pop fan with deep knowledge — fandom terminology, comeback analysis, concert experiences, idol culture insights.';
+    if (job.includes('Student')) return 'Write like a young student abroad — budget-conscious, discovering things for the first time, relatable struggles and excitement.';
+    return 'Write with professional authority in your field while keeping it accessible to general readers.';
+}
+
+// --- AUTOMATION PROFILES ---
+function loadAutoProfiles() {
+    const profiles = JSON.parse(localStorage.getItem('auto_profiles') || '[]');
+    const sel = document.getElementById('auto-profile-select');
+    sel.innerHTML = '<option value="">New Profile</option>';
+    profiles.forEach((p, i) => {
+        sel.innerHTML += `<option value="${i}">${p.name}</option>`;
+    });
+}
+
+function saveAutoProfile() {
+    const name = document.getElementById('auto-profile-name').value.trim();
+    if (!name) return alert('Enter a profile name');
+    const profile = {
+        name,
+        persona: document.getElementById('auto-persona').value,
+        category: document.getElementById('auto-category').value,
+        wordcount: document.getElementById('auto-wordcount').value,
+        imgCount: document.getElementById('auto-img-count').value,
+        outputStatus: document.getElementById('auto-output-status').value,
+        tone: document.getElementById('auto-tone').value,
+        interval: document.getElementById('auto-interval').value
+    };
+    const profiles = JSON.parse(localStorage.getItem('auto_profiles') || '[]');
+    const selVal = document.getElementById('auto-profile-select').value;
+    if (selVal !== '') {
+        profiles[parseInt(selVal)] = profile;
+    } else {
+        profiles.push(profile);
+    }
+    localStorage.setItem('auto_profiles', JSON.stringify(profiles));
+    loadAutoProfiles();
+    document.getElementById('auto-profile-select').value = selVal !== '' ? selVal : String(profiles.length - 1);
+    alert('Profile saved!');
+}
+
+function deleteAutoProfile() {
+    const idx = document.getElementById('auto-profile-select').value;
+    if (idx === '') return;
+    if (!confirm('Delete this profile?')) return;
+    const profiles = JSON.parse(localStorage.getItem('auto_profiles') || '[]');
+    profiles.splice(parseInt(idx), 1);
+    localStorage.setItem('auto_profiles', JSON.stringify(profiles));
+    loadAutoProfiles();
+    document.getElementById('auto-profile-name').value = '';
+}
+
+function loadAutoProfile() {
+    const idx = document.getElementById('auto-profile-select').value;
+    if (idx === '') {
+        document.getElementById('auto-profile-name').value = '';
+        return;
+    }
+    const profiles = JSON.parse(localStorage.getItem('auto_profiles') || '[]');
+    const p = profiles[parseInt(idx)];
+    if (!p) return;
+    document.getElementById('auto-profile-name').value = p.name;
+    document.getElementById('auto-persona').value = p.persona || 'default';
+    document.getElementById('auto-category').value = p.category || 'News';
+    document.getElementById('auto-wordcount').value = p.wordcount || '1200';
+    document.getElementById('auto-img-count').value = p.imgCount || '2';
+    document.getElementById('auto-output-status').value = p.outputStatus || 'draft';
+    document.getElementById('auto-tone').value = p.tone || '';
+    document.getElementById('auto-interval').value = p.interval || '24';
+}
+
+function refreshAutoPersonaSelect() {
+    const sel = document.getElementById('auto-persona');
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="default">Default AI (Generic)</option>';
+    availablePersonas.forEach(p => {
+        sel.innerHTML += `<option value="${p.id}">${p.name} - ${p.job} (${p.nationality})</option>`;
+    });
+    if (currentVal) sel.value = currentVal;
+}
+
+// --- AUTOMATION AI GENERATION ---
+async function generateAutomationSEOPlan(topic, persona) {
+    let personaContext = '';
+    if (persona && persona.name !== 'Korea Decode Editor') {
+        personaContext = `Writer: ${persona.name}, a ${persona.age} ${persona.gender} ${persona.nationality} ${persona.job}. Titles must reflect their voice.`;
+    }
+    const prompt = `Generate an SEO plan for a Korea Decode blog post.
+Topic: "${topic}"
+${personaContext}
+Return JSON only: { "title": "SEO-optimized engaging title", "keywords": ["kw1","kw2","kw3","kw4","kw5"] }`;
+    const raw = await callAI(prompt);
+    return JSON.parse(cleanJSONResponse(raw));
+}
+
+async function fetchAutomationImages(topic, keywords, count) {
+    const images = [];
+    const q = encodeURIComponent(`${topic} ${(keywords || []).slice(0, 2).join(' ')} korea`);
+    try {
+        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=${count + 1}&query=${q}&orientation=landscape&client_id=${UNSPLASH_ACCESS_KEY}`);
+        const data = await res.json();
+        if (data.results) {
+            data.results.forEach(img => {
+                images.push({
+                    url: img.urls.regular,
+                    alt: img.alt_description || topic,
+                    user: img.user.name,
+                    user_link: img.user.links.html
+                });
+            });
+        }
+    } catch (e) {
+        console.error('Automation Unsplash error:', e);
+    }
+    return images;
+}
+
+async function generateAutomationArticle(topic, title, keywords, persona, wordCount, imgCount, toneOverride, images) {
+    const voiceGuide = getVoiceGuide(persona.nationality);
+    const jobVoice = getJobVoice(persona.job);
+    const contentImages = images.slice(1, imgCount + 1);
+    const actualImgCount = contentImages.length;
+
+    const prompt = `
+**You ARE ${persona.name}. Stay in character for the ENTIRE article.**
+
+**Your Identity:**
+- ${persona.age} ${persona.gender} from ${persona.nationality}, working as a ${persona.job}
+- Passionate about: ${persona.likes}
+
+**YOUR UNIQUE VOICE:**
+${voiceGuide}
+${jobVoice}
+${toneOverride ? `**TONE OVERRIDE:** ${toneOverride}` : ''}
+
+**Task:** Write a ~${wordCount}-word blog post for 'Korea Decode'.
+**Topic:** "${title}"
+**Core Subject:** "${topic}"
+**Target Keywords:** ${keywords.join(', ')}
+
+**RULES:**
+1. First person ("I", "my"). Share personal opinions and experiences fitting YOUR background. NEVER sound like a generic AI blog.
+2. Structure: Hook intro (NO self-intro). 3-5 sections with <h2>/<h3>. Use <ul><li>, <strong>, <blockquote>.
+3. Place exactly **${actualImgCount}** image markers: <p>[IMG]</p> spaced evenly through the article.
+4. HTML only. No <html>, <body>, <h1>, or markdown.
+5. Strong conclusion with call-to-action.
+
+**Output:** Only the article HTML body.`;
+
+    let rawContent = await callAI(prompt);
+    rawContent = rawContent.trim();
+    if (rawContent.startsWith('```html')) rawContent = rawContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
+    else if (rawContent.startsWith('```')) rawContent = rawContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+
+    // Replace [IMG] with actual images
+    contentImages.forEach(img => {
+        const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
+        if (rawContent.includes('<p>[IMG]</p>')) rawContent = rawContent.replace('<p>[IMG]</p>', imgHtml);
+        else if (rawContent.includes('[IMG]')) rawContent = rawContent.replace('[IMG]', imgHtml);
+    });
+    rawContent = rawContent.replace(/<p>\[IMG\]<\/p>/g, '').replace(/\[IMG\]/g, '');
+
+    return rawContent;
+}
 
 async function runAutomation() {
     const topics = document.getElementById('auto-topics').value.split('\n').filter(t => t.trim() !== '');
     const category = document.getElementById('auto-category').value;
     const startStr = document.getElementById('auto-start-date').value;
     const intervalHours = parseInt(document.getElementById('auto-interval').value);
-    if (topics.length === 0) return alert('Enter topics');
+    const wordCount = parseInt(document.getElementById('auto-wordcount').value);
+    const imgCount = parseInt(document.getElementById('auto-img-count').value);
+    const outputStatus = document.getElementById('auto-output-status').value;
+    const toneOverride = document.getElementById('auto-tone').value.trim();
+    const personaId = document.getElementById('auto-persona').value;
+
+    if (topics.length === 0) return alert('Enter topics (one per line)');
     if (!startStr) return alert('Select start date');
-    const btn = document.querySelector('#view-automation .btn-ai');
-    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Scheduling...';
-    let currentDate = new Date(startStr);
-    for (const topic of topics) {
-        const title = `[Auto] ${topic} - Korea Decode Report`;
-        const content = `<p>Automatically generated article about <strong>${topic}</strong>.</p>`;
-        let imgUrl = '';
-        try {
-            const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=1&query=${topic}&client_id=${UNSPLASH_ACCESS_KEY}`);
-            const data = await res.json();
-            if (data.results.length > 0) imgUrl = data.results[0].urls.regular;
-        } catch (e) {}
-        await supabase.from('posts').insert({
-            title,
-            category,
-            content,
-            image: imgUrl,
-            views: 0,
-            created_at: new Date(currentDate).toISOString(),
-            status: 'scheduled'
-        });
-        currentDate.setHours(currentDate.getHours() + intervalHours);
+
+    let persona = availablePersonas.find(p => p.id === personaId);
+    if (!persona) {
+        persona = { name: 'Korea Decode Editor', nationality: 'Seoul', job: 'Travel Guide', likes: 'everything', age: '30s', gender: 'Non-binary', bio: 'Your guide to all things Korea.' };
     }
-    alert(`Successfully scheduled ${topics.length} posts!`);
-    document.getElementById('auto-topics').value = '';
-    btn.innerHTML = '<i class="ph ph-robot"></i> Generate & Schedule All';
+
+    const btn = document.getElementById('btn-run-automation');
+    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Generating...';
+    btn.disabled = true;
+
+    // Show progress card
+    const progressCard = document.getElementById('auto-progress-card');
+    const progressBar = document.getElementById('auto-progress-bar');
+    const progressText = document.getElementById('auto-progress-text');
+    const progressLog = document.getElementById('auto-progress-log');
+    progressCard.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressText.innerText = `0/${topics.length}`;
+    progressLog.innerHTML = '';
+
+    const logMsg = (msg) => {
+        progressLog.innerHTML += `> ${msg}\n`;
+        progressLog.scrollTop = progressLog.scrollHeight;
+    };
+
+    let currentDate = new Date(startStr);
+    let completed = 0;
+
+    for (const topic of topics) {
+        const topicTrimmed = topic.trim();
+        logMsg(`Processing: "${topicTrimmed}"...`);
+
+        try {
+            // Step 1: Generate SEO Plan
+            logMsg('  → Generating SEO plan...');
+            const seoPlan = await generateAutomationSEOPlan(topicTrimmed, persona);
+            const title = seoPlan.title || `${topicTrimmed} - Korea Decode`;
+            const keywords = seoPlan.keywords || [];
+            logMsg(`  → Title: "${title}"`);
+
+            // Step 2: Fetch Images
+            logMsg('  → Fetching images...');
+            const images = await fetchAutomationImages(topicTrimmed, keywords, imgCount + 1);
+            logMsg(`  → Found ${images.length} images`);
+
+            // Step 3: Generate Full Article
+            logMsg('  → Writing article (~' + wordCount + ' words)...');
+            const content = await generateAutomationArticle(topicTrimmed, title, keywords, persona, wordCount, imgCount, toneOverride, images);
+
+            // Step 4: Save to Supabase
+            const postData = {
+                title,
+                category,
+                content,
+                image: images.length > 0 ? images[0].url : '',
+                views: 0,
+                status: outputStatus === 'scheduled' ? 'scheduled' : 'draft',
+                created_at: new Date(currentDate).toISOString(),
+                writer_name: persona.name,
+                writer_job: persona.job,
+                writer_bio: persona.bio || 'Writer at Korea Decode',
+                writer_avatar: persona.name[0] || 'E'
+            };
+
+            const { error } = await supabase.from('posts').insert(postData);
+            if (error) throw error;
+
+            logMsg(`  ✓ Saved as ${postData.status}`);
+            currentDate.setHours(currentDate.getHours() + intervalHours);
+
+        } catch (e) {
+            logMsg(`  ✗ ERROR: ${e.message} — skipping`);
+            console.error('Automation error for topic:', topicTrimmed, e);
+        }
+
+        completed++;
+        const pct = Math.round((completed / topics.length) * 100);
+        progressBar.style.width = pct + '%';
+        progressText.innerText = `${completed}/${topics.length}`;
+    }
+
+    logMsg(`\nDone! ${completed}/${topics.length} topics processed.`);
+    btn.innerHTML = '<i class="ph ph-robot"></i> Generate All with AI';
+    btn.disabled = false;
     loadQueue();
 }
 
 async function loadQueue() {
-    const tbody = document.getElementById('auto-queue-list');
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    const draftsTbody = document.getElementById('auto-drafts-list');
+    const schedTbody = document.getElementById('auto-queue-list');
+    draftsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    schedTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
 
-    const { data, error } = await supabase.from('posts').select('id, title, status, created_at').order('created_at', { ascending: true });
+    const { data, error } = await supabase.from('posts').select('id, title, category, status, created_at').order('created_at', { ascending: false });
     if (error) { console.error(error); return; }
 
-    const now = new Date();
-    tbody.innerHTML = '';
-    (data || []).forEach(p => {
-        const pDate = new Date(p.created_at);
-        if (pDate > now) {
+    const drafts = (data || []).filter(p => p.status === 'draft');
+    const scheduled = (data || []).filter(p => p.status === 'scheduled');
+
+    // Update counts
+    document.getElementById('auto-draft-count').innerText = drafts.length;
+    document.getElementById('auto-sched-count').innerText = scheduled.length;
+
+    // Render drafts
+    draftsTbody.innerHTML = '';
+    if (drafts.length === 0) {
+        draftsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No drafts to review</td></tr>';
+    } else {
+        drafts.forEach(p => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td><span style="padding:4px 8px; background:#f59e0b20; color:#f59e0b; font-size:12px;">Scheduled</span></td><td>${p.title}</td><td>${pDate.toLocaleString()}</td><td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${p.id}')">Cancel</button></td>`;
-            tbody.appendChild(tr);
-        }
-    });
-    if (tbody.innerHTML === '') tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">No scheduled posts.</td></tr>';
+            tr.innerHTML = `
+                <td><input type="checkbox" class="auto-draft-check" value="${p.id}"></td>
+                <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.title}</td>
+                <td>${p.category || '-'}</td>
+                <td style="white-space:nowrap;">
+                    <button class="btn btn-primary" style="padding:4px 10px; font-size:12px;" onclick="publishDraft('${p.id}')">Publish</button>
+                    <button class="btn btn-outline" style="padding:4px 10px; font-size:12px; color:var(--accent); border-color:var(--accent);" onclick="editPost('${p.id}')">Edit</button>
+                    <button class="btn btn-outline" style="padding:4px 10px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="deletePost('${p.id}')">Delete</button>
+                </td>
+            `;
+            draftsTbody.appendChild(tr);
+        });
+    }
+
+    // Render scheduled
+    schedTbody.innerHTML = '';
+    if (scheduled.length === 0) {
+        schedTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No scheduled posts</td></tr>';
+    } else {
+        scheduled.forEach(p => {
+            const pDate = new Date(p.created_at);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span style="padding:4px 8px; background:#f59e0b20; color:#f59e0b; font-size:12px; border-radius:4px;">Scheduled</span></td>
+                <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.title}</td>
+                <td>${pDate.toLocaleString()}</td>
+                <td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${p.id}')">Cancel</button></td>
+            `;
+            schedTbody.appendChild(tr);
+        });
+    }
+
+    // Refresh persona select for automation
+    refreshAutoPersonaSelect();
 }
 
 window.deletePost = async (id) => {
-    if (confirm('Cancel this post?')) {
+    if (confirm('Delete this post?')) {
         await supabase.from('posts').delete().eq('id', id);
         loadQueue();
+        loadPosts();
     }
+};
+
+window.publishDraft = async (id) => {
+    const { error } = await supabase.from('posts').update({ status: 'published' }).eq('id', id);
+    if (error) return alert('Error: ' + error.message);
+    loadQueue();
+};
+
+async function batchPublishDrafts() {
+    const checked = Array.from(document.querySelectorAll('.auto-draft-check:checked'));
+    if (checked.length === 0) return alert('Select drafts to publish');
+    if (!confirm(`Publish ${checked.length} draft(s)?`)) return;
+    for (const cb of checked) {
+        await supabase.from('posts').update({ status: 'published' }).eq('id', cb.value);
+    }
+    alert(`Published ${checked.length} posts!`);
+    loadQueue();
+}
+
+async function batchDeleteDrafts() {
+    const checked = Array.from(document.querySelectorAll('.auto-draft-check:checked'));
+    if (checked.length === 0) return alert('Select drafts to delete');
+    if (!confirm(`Delete ${checked.length} draft(s)? This cannot be undone.`)) return;
+    for (const cb of checked) {
+        await supabase.from('posts').delete().eq('id', cb.value);
+    }
+    alert(`Deleted ${checked.length} drafts.`);
+    loadQueue();
 }
 
 function calculateSEOScore() {
