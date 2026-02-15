@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Settings — Korea Decode Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-body: #000000;
+            --bg-panel: #111111;
+            --bg-input: #1a1a1a;
+            --text-main: #FFFFFF;
+            --text-muted: #888888;
+            --accent: #CCFF00;
+            --accent-hover: #b8e600;
+            --border: rgba(255,255,255,0.15);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Space Grotesk', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px; }
+        .main-content { flex: 1; padding: 32px; overflow-y: auto; position: relative; }
+
+        .brand { font-family: 'Syncopate', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 40px; color: var(--text-main); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text-muted); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: 0.2s; cursor: pointer; font-weight: 500; }
+        .nav-item:hover { background-color: var(--bg-input); color: var(--text-main); }
+        .nav-item.active { background-color: rgba(204, 255, 0, 0.1); color: var(--accent); }
+        .nav-item i { font-size: 20px; }
+
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 15px; outline: none; transition: 0.2s; font-family: inherit; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(204, 255, 0, 0.2); }
+
+        .btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .btn-primary { background-color: var(--accent); color: #000; font-weight: 700; }
+        .btn-primary:hover { background-color: var(--accent-hover); box-shadow: 0 0 20px rgba(204, 255, 0, 0.4); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-outline:hover { border-color: var(--text-muted); color: var(--text-main); background: var(--bg-input); }
+
+        .auto-table { width: 100%; border-collapse: collapse; }
+        .auto-table th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; }
+        .auto-table td { padding: 16px 12px; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 14px; }
+
+        /* Tabs */
+        .tab-nav { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+        .tab-btn { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-panel { display: none; animation: fadeIn 0.3s ease-out; }
+        .tab-panel.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Usage Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-align: center; }
+        .stat-card .stat-value { font-size: 36px; font-weight: 700; margin: 8px 0; }
+        .stat-card .stat-label { font-size: 14px; color: var(--text-muted); }
+
+        .chart-container { display: flex; align-items: flex-end; gap: 6px; height: 180px; padding: 0 10px; }
+        .chart-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .chart-bars { display: flex; gap: 2px; align-items: flex-end; width: 100%; justify-content: center; }
+        .chart-bar { border-radius: 3px 3px 0 0; min-width: 12px; transition: height 0.3s; }
+        .chart-bar.decode { background: var(--accent); }
+        .chart-bar.concierge { background: #8b5cf6; }
+        .chart-label { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+        .chart-legend { display: flex; gap: 20px; justify-content: center; margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+        .chart-legend span { display: flex; align-items: center; gap: 6px; }
+        .chart-legend .dot { width: 10px; height: 10px; border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="brand"><span style="color: var(--accent);">K-</span>Decode</div>
+        <nav>
+            <a href="/admin/index.html" class="nav-item" style="text-decoration:none;"><i class="ph ph-squares-four"></i> Dashboard</a>
+            <a href="/admin/index.html#ai-writer" class="nav-item" style="text-decoration:none;"><i class="ph ph-magic-wand"></i> AI Writer</a>
+            <a href="/admin/index.html#automation" class="nav-item" style="text-decoration:none;"><i class="ph ph-robot"></i> Automation</a>
+            <a href="/admin/index.html#posts" class="nav-item" style="text-decoration:none;"><i class="ph ph-article"></i> All Posts</a>
+            <a href="/admin/ai-config.html" class="nav-item active" style="text-decoration:none;"><i class="ph ph-brain"></i> AI Settings</a>
+            <a href="/admin/index.html#migration" class="nav-item" style="text-decoration:none; color: #f59e0b;"><i class="ph ph-database"></i> Migration</a>
+            <a href="/admin/index.html#settings" class="nav-item" style="text-decoration:none;"><i class="ph ph-gear"></i> Settings</a>
+        </nav>
+        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
+            <div class="nav-item" id="btn-logout" style="color: #ef4444;"><i class="ph ph-sign-out"></i> Sign Out</div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <h1 style="margin-bottom: 24px;">AI Settings</h1>
+
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="decode"><i class="ph ph-brain"></i> Decode This</button>
+            <button class="tab-btn" data-tab="concierge"><i class="ph ph-compass"></i> Korea Concierge</button>
+            <button class="tab-btn" data-tab="usage"><i class="ph ph-chart-bar"></i> Usage Stats</button>
+        </div>
+
+        <!-- TAB 1: Decode This -->
+        <div id="tab-decode" class="tab-panel active">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Left: Settings -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Settings</h3>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <span style="font-size: 13px; color: var(--text-muted);">Active</span>
+                            <input type="checkbox" id="decode-active" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">System Prompt</label>
+                        <textarea id="decode-system-prompt" class="form-textarea" rows="10" style="font-family: monospace; font-size: 13px;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Example Questions (one per line)</label>
+                        <textarea id="decode-examples" class="form-textarea" rows="4" placeholder="What is &#54620; (Han)?&#10;Why do K-dramas have product placement?&#10;Explain Korean age system"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">AI Model</label>
+                            <select id="decode-model" class="form-select">
+                                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Max Tokens: <span id="decode-tokens-val">500</span></label>
+                            <input type="range" id="decode-max-tokens" min="100" max="2000" step="50" value="500" style="width: 100%; accent-color: var(--accent);">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Temperature: <span id="decode-temp-val">0.7</span></label>
+                        <input type="range" id="decode-temperature" min="0" max="1" step="0.1" value="0.7" style="width: 100%; accent-color: var(--accent);">
+                    </div>
+
+                    <button id="btn-save-decode-config" class="btn btn-primary" style="width: 100%;">
+                        <i class="ph ph-floppy-disk"></i> Save Config
+                    </button>
+                </div>
+
+                <!-- Right: Recent Logs -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Recent Questions</h3>
+                        <button id="btn-refresh-decode-logs" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
+                            <i class="ph ph-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    <div style="max-height: 600px; overflow-y: auto;">
+                        <table class="auto-table">
+                            <thead><tr><th>Question</th><th>Answer</th><th>Time</th></tr></thead>
+                            <tbody id="decode-logs-list">
+                                <tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 12px;">
+                        <button id="btn-decode-logs-prev" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;" disabled>&lt; Prev</button>
+                        <span id="decode-logs-page" style="font-size: 13px; color: var(--text-muted); line-height: 32px;">Page 1</span>
+                        <button id="btn-decode-logs-next" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;">Next &gt;</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Korea Concierge -->
+        <div id="tab-concierge" class="tab-panel">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Left: AI Settings + Categories -->
+                <div>
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">AI Settings</h3>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <span style="font-size: 13px; color: var(--text-muted);">Active</span>
+                                <input type="checkbox" id="concierge-active" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">System Prompt</label>
+                            <textarea id="concierge-system-prompt" class="form-textarea" rows="10" style="font-family: monospace; font-size: 13px;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">AI Model</label>
+                                <select id="concierge-model" class="form-select">
+                                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Max Tokens: <span id="concierge-tokens-val">4000</span></label>
+                                <input type="range" id="concierge-max-tokens" min="500" max="8000" step="100" value="4000" style="width: 100%; accent-color: var(--accent);">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Temperature: <span id="concierge-temp-val">0.7</span></label>
+                            <input type="range" id="concierge-temperature" min="0" max="1" step="0.1" value="0.7" style="width: 100%; accent-color: var(--accent);">
+                        </div>
+                        <button id="btn-save-concierge-config" class="btn btn-primary" style="width: 100%;">
+                            <i class="ph ph-floppy-disk"></i> Save Config
+                        </button>
+                    </div>
+
+                    <!-- Categories Management -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">Vibe Categories</h3>
+                        </div>
+                        <div id="concierge-categories-list" style="margin-bottom: 16px;"></div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="concierge-new-cat-emoji" class="form-input" placeholder="Emoji" style="width: 60px;">
+                            <input type="text" id="concierge-new-cat-name" class="form-input" placeholder="Category name" style="flex: 1;">
+                            <button id="btn-add-concierge-cat" class="btn btn-primary" style="padding: 8px 16px;"><i class="ph ph-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Affiliate Links + Usage Logs -->
+                <div>
+                    <!-- Affiliate Links -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">Affiliate Links</h3>
+                        </div>
+                        <div id="concierge-affiliate-list" style="margin-bottom: 16px;"></div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <input type="text" id="aff-city" class="form-input" placeholder="City" style="width: 80px;">
+                            <input type="text" id="aff-label" class="form-input" placeholder="Label" style="flex: 1;">
+                            <input type="text" id="aff-url" class="form-input" placeholder="URL" style="flex: 2;">
+                            <input type="text" id="aff-icon" class="form-input" placeholder="Icon" style="width: 50px;" value="📌">
+                            <button id="btn-add-affiliate" class="btn btn-primary" style="padding: 8px 16px;"><i class="ph ph-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Usage Logs -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">Usage Logs</h3>
+                            <button id="btn-refresh-concierge-logs" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="ph ph-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table class="auto-table">
+                                <thead><tr><th>Vibes</th><th>City</th><th>Duration</th><th>Budget</th><th>Time</th></tr></thead>
+                                <tbody id="concierge-logs-list">
+                                    <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 12px;">
+                            <button id="btn-concierge-logs-prev" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;" disabled>&lt; Prev</button>
+                            <span id="concierge-logs-page" style="font-size: 13px; color: var(--text-muted); line-height: 32px;">Page 1</span>
+                            <button id="btn-concierge-logs-next" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;">Next &gt;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Usage Stats -->
+        <div id="tab-usage" class="tab-panel">
+            <!-- Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Decode Queries</div>
+                    <div class="stat-value" id="stat-decode-total" style="color: var(--accent);">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Concierge Queries</div>
+                    <div class="stat-value" id="stat-concierge-total" style="color: #8b5cf6;">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Today's Total</div>
+                    <div class="stat-value" id="stat-today-total" style="color: var(--success);">-</div>
+                </div>
+            </div>
+
+            <!-- Daily Chart -->
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Daily Queries (Last 14 days)</h3>
+                <div class="chart-container" id="usage-chart"></div>
+                <div class="chart-legend">
+                    <span><span class="dot" style="background: var(--accent);"></span> Decode This</span>
+                    <span><span class="dot" style="background: #8b5cf6;"></span> Korea Concierge</span>
+                </div>
+            </div>
+
+            <!-- Top 10 Questions -->
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Top 10 Popular Questions</h3>
+                <table class="auto-table">
+                    <thead><tr><th>#</th><th>Question</th><th style="text-align:right;">Count</th></tr></thead>
+                    <tbody id="top-questions-list">
+                        <tr><td colspan="3" style="text-align:center; color: var(--text-muted);">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { supabase } from '/js/supabase-config.js';
+
+        // --- AUTH CHECK ---
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            window.location.href = '/admin/';
+        }
+
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/admin/';
+        });
+
+        // --- TAB SWITCHING ---
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+                if (btn.dataset.tab === 'usage') {
+                    loadUsageStats();
+                    loadDailyChart();
+                    loadTopQuestions();
+                }
+            });
+        });
+
+        // =====================
+        // DECODE THIS
+        // =====================
+        let decodeLogsPage = 0;
+        const DECODE_LOGS_PER_PAGE = 20;
+
+        async function loadDecodeConfig() {
+            try {
+                const { data, error } = await supabase
+                    .from('ai_config')
+                    .select('*')
+                    .eq('feature_name', 'decode_this')
+                    .single();
+
+                if (error) throw error;
+                if (!data) return;
+
+                document.getElementById('decode-system-prompt').value = data.system_prompt || '';
+                document.getElementById('decode-active').checked = data.is_active !== false;
+                document.getElementById('decode-model').value = data.model || 'gemini-2.0-flash';
+
+                const maxTokens = data.max_tokens || 500;
+                document.getElementById('decode-max-tokens').value = maxTokens;
+                document.getElementById('decode-tokens-val').innerText = maxTokens;
+
+                const temp = data.temperature ?? 0.7;
+                document.getElementById('decode-temperature').value = temp;
+                document.getElementById('decode-temp-val').innerText = temp;
+
+                const examples = data.example_questions || [];
+                document.getElementById('decode-examples').value = examples.join('\n');
+            } catch (e) {
+                console.error('Failed to load decode config:', e);
+            }
+        }
+
+        async function saveDecodeConfig() {
+            const systemPrompt = document.getElementById('decode-system-prompt').value.trim();
+            const isActive = document.getElementById('decode-active').checked;
+            const model = document.getElementById('decode-model').value;
+            const maxTokens = parseInt(document.getElementById('decode-max-tokens').value);
+            const temperature = parseFloat(document.getElementById('decode-temperature').value);
+            const examplesRaw = document.getElementById('decode-examples').value.trim();
+            const exampleQuestions = examplesRaw.split('\n').map(q => q.trim()).filter(q => q);
+
+            try {
+                const { error } = await supabase
+                    .from('ai_config')
+                    .update({
+                        system_prompt: systemPrompt,
+                        is_active: isActive,
+                        model: model,
+                        max_tokens: maxTokens,
+                        temperature: temperature,
+                        example_questions: exampleQuestions,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('feature_name', 'decode_this');
+
+                if (error) throw error;
+                alert('Decode AI config saved!');
+            } catch (e) {
+                alert('Error saving config: ' + e.message);
+            }
+        }
+
+        async function loadDecodeLogs() {
+            const tbody = document.getElementById('decode-logs-list');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
+
+            try {
+                const from = decodeLogsPage * DECODE_LOGS_PER_PAGE;
+                const to = from + DECODE_LOGS_PER_PAGE - 1;
+
+                const { data, error, count } = await supabase
+                    .from('ai_decode_logs')
+                    .select('*', { count: 'exact' })
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+
+                if (error) throw error;
+
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No logs yet</td></tr>';
+                } else {
+                    data.forEach(log => {
+                        const time = new Date(log.created_at).toLocaleString();
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${log.question}">${log.question}</td>
+                            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted);">${log.answer_summary || '-'}</td>
+                            <td style="white-space:nowrap; font-size:12px; color:var(--text-muted);">${time}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                const totalPages = Math.ceil((count || 0) / DECODE_LOGS_PER_PAGE);
+                document.getElementById('decode-logs-page').innerText = `Page ${decodeLogsPage + 1}${totalPages > 0 ? ' / ' + totalPages : ''}`;
+                document.getElementById('btn-decode-logs-prev').disabled = decodeLogsPage === 0;
+                document.getElementById('btn-decode-logs-next').disabled = decodeLogsPage >= totalPages - 1;
+            } catch (e) {
+                console.error('Failed to load decode logs:', e);
+                tbody.innerHTML = '<tr><td colspan="3" style="color:var(--danger);">Error loading logs</td></tr>';
+            }
+        }
+
+        // Decode event listeners
+        document.getElementById('btn-save-decode-config').addEventListener('click', saveDecodeConfig);
+        document.getElementById('btn-refresh-decode-logs').addEventListener('click', loadDecodeLogs);
+        document.getElementById('btn-decode-logs-prev').addEventListener('click', () => { decodeLogsPage = Math.max(0, decodeLogsPage - 1); loadDecodeLogs(); });
+        document.getElementById('btn-decode-logs-next').addEventListener('click', () => { decodeLogsPage++; loadDecodeLogs(); });
+        document.getElementById('decode-max-tokens').addEventListener('input', (e) => {
+            document.getElementById('decode-tokens-val').innerText = e.target.value;
+        });
+        document.getElementById('decode-temperature').addEventListener('input', (e) => {
+            document.getElementById('decode-temp-val').innerText = e.target.value;
+        });
+
+        // =====================
+        // KOREA CONCIERGE
+        // =====================
+        let conciergeLogsPage = 0;
+        const CONCIERGE_LOGS_PER_PAGE = 20;
+
+        async function loadConciergeConfig() {
+            try {
+                const { data, error } = await supabase
+                    .from('ai_config')
+                    .select('*')
+                    .eq('feature_name', 'korea_concierge')
+                    .single();
+
+                if (error) throw error;
+                if (!data) return;
+
+                document.getElementById('concierge-system-prompt').value = data.system_prompt || '';
+                document.getElementById('concierge-active').checked = data.is_active !== false;
+                document.getElementById('concierge-model').value = data.model || 'gemini-2.0-flash';
+
+                const maxTokens = data.max_tokens || 4000;
+                document.getElementById('concierge-max-tokens').value = maxTokens;
+                document.getElementById('concierge-tokens-val').innerText = maxTokens;
+
+                const temp = data.temperature ?? 0.7;
+                document.getElementById('concierge-temperature').value = temp;
+                document.getElementById('concierge-temp-val').innerText = temp;
+            } catch (e) {
+                console.error('Failed to load concierge config:', e);
+            }
+        }
+
+        async function saveConciergeConfig() {
+            const systemPrompt = document.getElementById('concierge-system-prompt').value.trim();
+            const isActive = document.getElementById('concierge-active').checked;
+            const model = document.getElementById('concierge-model').value;
+            const maxTokens = parseInt(document.getElementById('concierge-max-tokens').value);
+            const temperature = parseFloat(document.getElementById('concierge-temperature').value);
+
+            try {
+                const { error } = await supabase
+                    .from('ai_config')
+                    .update({
+                        system_prompt: systemPrompt,
+                        is_active: isActive,
+                        model: model,
+                        max_tokens: maxTokens,
+                        temperature: temperature,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('feature_name', 'korea_concierge');
+
+                if (error) throw error;
+                alert('Concierge config saved!');
+            } catch (e) {
+                alert('Error saving config: ' + e.message);
+            }
+        }
+
+        async function loadConciergeCategories() {
+            const container = document.getElementById('concierge-categories-list');
+            container.innerHTML = '<div style="color:var(--text-muted);">Loading...</div>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('concierge_categories')
+                    .select('*')
+                    .order('display_order');
+
+                if (error) throw error;
+                container.innerHTML = '';
+
+                (data || []).forEach(cat => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 12px; border:1px solid var(--border); margin-bottom:6px; border-radius:6px; background:var(--bg-input);';
+                    row.innerHTML = `
+                        <span style="font-size:1.3rem;">${cat.emoji}</span>
+                        <span style="flex:1; font-weight:500;">${cat.name}</span>
+                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+                            <input type="checkbox" ${cat.is_active ? 'checked' : ''} data-cat-id="${cat.id}" class="cat-toggle" style="accent-color:var(--accent);">
+                            Active
+                        </label>
+                        <button class="btn btn-outline cat-delete" data-cat-id="${cat.id}" style="padding:4px 8px; font-size:12px; color:var(--danger); border-color:var(--danger);">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    `;
+                    container.appendChild(row);
+                });
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No categories yet.</div>';
+                }
+
+                // Attach toggle/delete listeners
+                container.querySelectorAll('.cat-toggle').forEach(cb => {
+                    cb.addEventListener('change', async (e) => {
+                        await supabase.from('concierge_categories').update({ is_active: e.target.checked }).eq('id', e.target.dataset.catId);
+                    });
+                });
+                container.querySelectorAll('.cat-delete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (!confirm('Delete this category?')) return;
+                        await supabase.from('concierge_categories').delete().eq('id', btn.dataset.catId);
+                        loadConciergeCategories();
+                    });
+                });
+            } catch (e) {
+                container.innerHTML = '<div style="color:var(--danger);">Error loading categories.</div>';
+            }
+        }
+
+        async function addConciergeCategory() {
+            const emoji = document.getElementById('concierge-new-cat-emoji').value.trim();
+            const name = document.getElementById('concierge-new-cat-name').value.trim();
+            if (!name) return alert('Enter a category name');
+
+            try {
+                const { error } = await supabase.from('concierge_categories').insert({
+                    name,
+                    emoji: emoji || '📌',
+                    is_active: true,
+                    display_order: 99,
+                });
+                if (error) throw error;
+                document.getElementById('concierge-new-cat-emoji').value = '';
+                document.getElementById('concierge-new-cat-name').value = '';
+                loadConciergeCategories();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function loadConciergeAffiliates() {
+            const container = document.getElementById('concierge-affiliate-list');
+            container.innerHTML = '<div style="color:var(--text-muted);">Loading...</div>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('affiliate_links')
+                    .select('*')
+                    .order('city')
+                    .order('display_order');
+
+                if (error) throw error;
+                container.innerHTML = '';
+
+                (data || []).forEach(link => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); margin-bottom:6px; border-radius:6px; background:var(--bg-input); font-size:13px;';
+                    row.innerHTML = `
+                        <span>${link.icon}</span>
+                        <span style="color:var(--accent); font-weight:600; min-width:50px;">${link.city}</span>
+                        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${link.label}</span>
+                        <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+                            <input type="checkbox" ${link.is_active ? 'checked' : ''} data-aff-id="${link.id}" class="aff-toggle" style="accent-color:var(--accent);">
+                        </label>
+                        <button class="btn btn-outline aff-delete" data-aff-id="${link.id}" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger);">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    `;
+                    container.appendChild(row);
+                });
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No affiliate links yet.</div>';
+                }
+
+                // Attach toggle/delete listeners
+                container.querySelectorAll('.aff-toggle').forEach(cb => {
+                    cb.addEventListener('change', async (e) => {
+                        await supabase.from('affiliate_links').update({ is_active: e.target.checked }).eq('id', e.target.dataset.affId);
+                    });
+                });
+                container.querySelectorAll('.aff-delete').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (!confirm('Delete this affiliate link?')) return;
+                        await supabase.from('affiliate_links').delete().eq('id', btn.dataset.affId);
+                        loadConciergeAffiliates();
+                    });
+                });
+            } catch (e) {
+                container.innerHTML = '<div style="color:var(--danger);">Error loading affiliate links.</div>';
+            }
+        }
+
+        async function addAffiliateLink() {
+            const city = document.getElementById('aff-city').value.trim();
+            const label = document.getElementById('aff-label').value.trim();
+            const url = document.getElementById('aff-url').value.trim();
+            const icon = document.getElementById('aff-icon').value.trim() || '📌';
+
+            if (!city || !label || !url) return alert('City, label, and URL are required');
+
+            try {
+                const { error } = await supabase.from('affiliate_links').insert({
+                    city, label, url, icon,
+                    is_active: true,
+                    display_order: 99,
+                });
+                if (error) throw error;
+                document.getElementById('aff-city').value = '';
+                document.getElementById('aff-label').value = '';
+                document.getElementById('aff-url').value = '';
+                loadConciergeAffiliates();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function loadConciergeLogs() {
+            const tbody = document.getElementById('concierge-logs-list');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+
+            try {
+                const from = conciergeLogsPage * CONCIERGE_LOGS_PER_PAGE;
+                const to = from + CONCIERGE_LOGS_PER_PAGE - 1;
+
+                const { data, error, count } = await supabase
+                    .from('ai_concierge_logs')
+                    .select('*', { count: 'exact' })
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+
+                if (error) throw error;
+
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No logs yet</td></tr>';
+                } else {
+                    data.forEach(log => {
+                        const time = new Date(log.created_at).toLocaleString();
+                        let vibes = '-';
+                        try {
+                            const parsed = typeof log.vibes === 'string' ? JSON.parse(log.vibes) : log.vibes;
+                            if (Array.isArray(parsed)) vibes = parsed.join(', ');
+                        } catch (e) { vibes = log.vibes || '-'; }
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px;" title="${vibes}">${vibes}</td>
+                            <td style="font-size:13px;">${log.city || '-'}</td>
+                            <td style="font-size:13px;">${log.duration || '-'}</td>
+                            <td style="font-size:13px;">${log.budget || '-'}</td>
+                            <td style="white-space:nowrap; font-size:12px; color:var(--text-muted);">${time}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                const totalPages = Math.ceil((count || 0) / CONCIERGE_LOGS_PER_PAGE);
+                document.getElementById('concierge-logs-page').innerText = `Page ${conciergeLogsPage + 1}${totalPages > 0 ? ' / ' + totalPages : ''}`;
+                document.getElementById('btn-concierge-logs-prev').disabled = conciergeLogsPage === 0;
+                document.getElementById('btn-concierge-logs-next').disabled = conciergeLogsPage >= totalPages - 1;
+            } catch (e) {
+                console.error('Failed to load concierge logs:', e);
+                tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger);">Error loading logs</td></tr>';
+            }
+        }
+
+        // Concierge event listeners
+        document.getElementById('btn-save-concierge-config').addEventListener('click', saveConciergeConfig);
+        document.getElementById('btn-add-concierge-cat').addEventListener('click', addConciergeCategory);
+        document.getElementById('btn-add-affiliate').addEventListener('click', addAffiliateLink);
+        document.getElementById('btn-refresh-concierge-logs').addEventListener('click', loadConciergeLogs);
+        document.getElementById('btn-concierge-logs-prev').addEventListener('click', () => { conciergeLogsPage = Math.max(0, conciergeLogsPage - 1); loadConciergeLogs(); });
+        document.getElementById('btn-concierge-logs-next').addEventListener('click', () => { conciergeLogsPage++; loadConciergeLogs(); });
+        document.getElementById('concierge-max-tokens').addEventListener('input', (e) => {
+            document.getElementById('concierge-tokens-val').innerText = e.target.value;
+        });
+        document.getElementById('concierge-temperature').addEventListener('input', (e) => {
+            document.getElementById('concierge-temp-val').innerText = e.target.value;
+        });
+
+        // =====================
+        // USAGE STATS
+        // =====================
+        async function loadUsageStats() {
+            try {
+                const [decodeRes, conciergeRes] = await Promise.all([
+                    supabase.from('ai_decode_logs').select('created_at', { count: 'exact', head: true }),
+                    supabase.from('ai_concierge_logs').select('created_at', { count: 'exact', head: true })
+                ]);
+
+                const decodeTotal = decodeRes.count || 0;
+                const conciergeTotal = conciergeRes.count || 0;
+
+                document.getElementById('stat-decode-total').innerText = decodeTotal.toLocaleString();
+                document.getElementById('stat-concierge-total').innerText = conciergeTotal.toLocaleString();
+
+                // Today's count
+                const todayStart = new Date();
+                todayStart.setHours(0, 0, 0, 0);
+                const todayISO = todayStart.toISOString();
+
+                const [decodeTodayRes, conciergeTodayRes] = await Promise.all([
+                    supabase.from('ai_decode_logs').select('created_at', { count: 'exact', head: true }).gte('created_at', todayISO),
+                    supabase.from('ai_concierge_logs').select('created_at', { count: 'exact', head: true }).gte('created_at', todayISO)
+                ]);
+
+                const todayTotal = (decodeTodayRes.count || 0) + (conciergeTodayRes.count || 0);
+                document.getElementById('stat-today-total').innerText = todayTotal.toLocaleString();
+            } catch (e) {
+                console.error('Failed to load usage stats:', e);
+            }
+        }
+
+        async function loadDailyChart() {
+            const chart = document.getElementById('usage-chart');
+            chart.innerHTML = '<div style="color:var(--text-muted); width:100%; text-align:center;">Loading...</div>';
+
+            try {
+                const since = new Date();
+                since.setDate(since.getDate() - 14);
+                const sinceISO = since.toISOString();
+
+                const [decodeRes, conciergeRes] = await Promise.all([
+                    supabase.from('ai_decode_logs').select('created_at').gte('created_at', sinceISO),
+                    supabase.from('ai_concierge_logs').select('created_at').gte('created_at', sinceISO)
+                ]);
+
+                // Group by date
+                const decodeCounts = {};
+                const conciergeCounts = {};
+
+                (decodeRes.data || []).forEach(row => {
+                    const day = row.created_at.substring(0, 10);
+                    decodeCounts[day] = (decodeCounts[day] || 0) + 1;
+                });
+
+                (conciergeRes.data || []).forEach(row => {
+                    const day = row.created_at.substring(0, 10);
+                    conciergeCounts[day] = (conciergeCounts[day] || 0) + 1;
+                });
+
+                // Build 14-day range
+                const days = [];
+                for (let i = 13; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    days.push(d.toISOString().substring(0, 10));
+                }
+
+                const maxVal = Math.max(
+                    ...days.map(d => (decodeCounts[d] || 0) + (conciergeCounts[d] || 0)),
+                    1
+                );
+
+                chart.innerHTML = '';
+                days.forEach(day => {
+                    const dc = decodeCounts[day] || 0;
+                    const cc = conciergeCounts[day] || 0;
+                    const dh = Math.max((dc / maxVal) * 150, dc > 0 ? 4 : 0);
+                    const ch = Math.max((cc / maxVal) * 150, cc > 0 ? 4 : 0);
+                    const label = day.substring(5); // MM-DD
+
+                    chart.innerHTML += `
+                        <div class="chart-bar-group">
+                            <div class="chart-bars" style="height:150px; align-items:flex-end;">
+                                <div class="chart-bar decode" style="height:${dh}px;" title="Decode: ${dc}"></div>
+                                <div class="chart-bar concierge" style="height:${ch}px;" title="Concierge: ${cc}"></div>
+                            </div>
+                            <div class="chart-label">${label}</div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                console.error('Failed to load daily chart:', e);
+                chart.innerHTML = '<div style="color:var(--danger); width:100%; text-align:center;">Error loading chart</div>';
+            }
+        }
+
+        async function loadTopQuestions() {
+            const tbody = document.getElementById('top-questions-list');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('ai_decode_logs')
+                    .select('question')
+                    .order('created_at', { ascending: false })
+                    .limit(500);
+
+                if (error) throw error;
+
+                // Count frequency
+                const counts = {};
+                (data || []).forEach(row => {
+                    const q = (row.question || '').trim().toLowerCase();
+                    if (q) counts[q] = (counts[q] || { question: row.question, count: 0 }), counts[q].count++;
+                });
+
+                // Sort and take top 10
+                const sorted = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 10);
+
+                tbody.innerHTML = '';
+                if (sorted.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No questions yet</td></tr>';
+                } else {
+                    sorted.forEach((item, i) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td style="font-weight:600; color:var(--accent);">${i + 1}</td>
+                            <td style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${item.question}">${item.question}</td>
+                            <td style="text-align:right; font-weight:700;">${item.count}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load top questions:', e);
+                tbody.innerHTML = '<tr><td colspan="3" style="color:var(--danger);">Error loading questions</td></tr>';
+            }
+        }
+
+        // --- INITIAL LOAD ---
+        loadDecodeConfig();
+        loadDecodeLogs();
+        loadConciergeConfig();
+        loadConciergeCategories();
+        loadConciergeAffiliates();
+        loadConciergeLogs();
+    </script>
+</body>
+</html>
