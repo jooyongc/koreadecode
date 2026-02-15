@@ -166,6 +166,7 @@
             <div class="nav-item" data-view="automation"><i class="ph ph-robot"></i> Automation</div>
             <div class="nav-item" data-view="posts"><i class="ph ph-article"></i> All Posts</div>
             <div class="nav-item" data-view="decode-config"><i class="ph ph-brain"></i> Decode AI</div>
+            <div class="nav-item" data-view="concierge-config"><i class="ph ph-compass"></i> Concierge</div>
             <div class="nav-item" data-view="migration" style="color: #f59e0b;"><i class="ph ph-database"></i> Migration</div>
             <div class="nav-item" data-view="settings"><i class="ph ph-gear"></i> Settings</div>
         </nav>
@@ -707,6 +708,104 @@
             </div>
         </div>
 
+        <!-- CONCIERGE CONFIG -->
+        <div id="view-concierge-config" class="view-section">
+            <h1 style="margin-bottom: 24px;">Korea Concierge — Config</h1>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Left: AI Settings -->
+                <div>
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">AI Settings</h3>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <span style="font-size: 13px; color: var(--text-muted);">Active</span>
+                                <input type="checkbox" id="concierge-active" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">System Prompt</label>
+                            <textarea id="concierge-system-prompt" class="form-textarea" rows="10" style="font-family: monospace; font-size: 13px;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">AI Model</label>
+                                <select id="concierge-model" class="form-select">
+                                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Max Tokens: <span id="concierge-tokens-val">2000</span></label>
+                                <input type="range" id="concierge-max-tokens" min="500" max="4000" step="100" value="2000" style="width: 100%; accent-color: var(--accent);">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Temperature: <span id="concierge-temp-val">0.7</span></label>
+                            <input type="range" id="concierge-temperature" min="0" max="1" step="0.1" value="0.7" style="width: 100%; accent-color: var(--accent);">
+                        </div>
+                        <button id="btn-save-concierge-config" class="btn btn-primary" style="width: 100%;">
+                            <i class="ph ph-floppy-disk"></i> Save Config
+                        </button>
+                    </div>
+
+                    <!-- Categories Management -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">Vibe Categories</h3>
+                        </div>
+                        <div id="concierge-categories-list" style="margin-bottom: 16px;"></div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="concierge-new-cat-emoji" class="form-input" placeholder="Emoji" style="width: 60px;">
+                            <input type="text" id="concierge-new-cat-name" class="form-input" placeholder="Category name" style="flex: 1;">
+                            <button id="btn-add-concierge-cat" class="btn btn-primary" style="padding: 8px 16px;"><i class="ph ph-plus"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Affiliate Links + Usage Logs -->
+                <div>
+                    <!-- Affiliate Links -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">Affiliate Links</h3>
+                        </div>
+                        <div id="concierge-affiliate-list" style="margin-bottom: 16px;"></div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <input type="text" id="aff-city" class="form-input" placeholder="City" style="width: 80px;">
+                            <input type="text" id="aff-label" class="form-input" placeholder="Label" style="flex: 1;">
+                            <input type="text" id="aff-url" class="form-input" placeholder="URL" style="flex: 2;">
+                            <input type="text" id="aff-icon" class="form-input" placeholder="Icon" style="width: 50px;" value="📌">
+                            <button id="btn-add-affiliate" class="btn btn-primary" style="padding: 8px 16px;"><i class="ph ph-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Usage Logs -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 style="margin: 0;">Usage Logs</h3>
+                            <button id="btn-refresh-concierge-logs" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
+                                <i class="ph ph-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table class="auto-table">
+                                <thead><tr><th>Vibes</th><th>City</th><th>Duration</th><th>Budget</th><th>Time</th></tr></thead>
+                                <tbody id="concierge-logs-list">
+                                    <tr><td colspan="5" style="text-align:center; color: var(--text-muted);">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 12px;">
+                            <button id="btn-concierge-logs-prev" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;" disabled>&lt; Prev</button>
+                            <span id="concierge-logs-page" style="font-size: 13px; color: var(--text-muted); line-height: 32px;">Page 1</span>
+                            <button id="btn-concierge-logs-next" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;">Next &gt;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- MODALS -->
@@ -743,6 +842,6 @@
     </div>
 
     <!-- All scripts are now loaded as modules from within admin.js -->
-    <script type="module" src="/admin/admin.js?v=24"></script>
+    <script type="module" src="/admin/admin.js?v=25"></script>
 </body>
 </html>

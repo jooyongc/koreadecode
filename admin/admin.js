@@ -161,6 +161,20 @@ async function init() {
     });
     document.getElementById('btn-start-migration').addEventListener('click', startMigration);
 
+    // Concierge config listeners
+    document.getElementById('btn-save-concierge-config').addEventListener('click', saveConciergeConfig);
+    document.getElementById('btn-add-concierge-cat').addEventListener('click', addConciergeCategory);
+    document.getElementById('btn-add-affiliate').addEventListener('click', addAffiliateLink);
+    document.getElementById('btn-refresh-concierge-logs').addEventListener('click', loadConciergeLogs);
+    document.getElementById('btn-concierge-logs-prev').addEventListener('click', () => { conciergeLogsPage = Math.max(0, conciergeLogsPage - 1); loadConciergeLogs(); });
+    document.getElementById('btn-concierge-logs-next').addEventListener('click', () => { conciergeLogsPage++; loadConciergeLogs(); });
+    document.getElementById('concierge-max-tokens').addEventListener('input', (e) => {
+        document.getElementById('concierge-tokens-val').innerText = e.target.value;
+    });
+    document.getElementById('concierge-temperature').addEventListener('input', (e) => {
+        document.getElementById('concierge-temp-val').innerText = e.target.value;
+    });
+
     document.getElementById('btn-insert-body-img').addEventListener('click', openUnsplashForBody);
     document.getElementById('btn-unsplash-modal-search').addEventListener('click', searchUnsplashModal);
     document.getElementById('unsplash-modal-search').addEventListener('keydown', (e) => {
@@ -203,6 +217,7 @@ const switchView = (viewName) => {
     if (viewName === 'automation') loadQueue();
     if (viewName === 'settings') loadPersonas();
     if (viewName === 'decode-config') { loadDecodeConfig(); loadDecodeLogs(); }
+    if (viewName === 'concierge-config') { loadConciergeConfig(); loadConciergeCategories(); loadConciergeAffiliates(); loadConciergeLogs(); }
     if (viewName === 'ai-writer') {
         if (!editingPostId) resetAI();
         refreshPersonaSelect();
@@ -1531,6 +1546,258 @@ async function loadDecodeLogs() {
     } catch (e) {
         console.error('Failed to load decode logs:', e);
         tbody.innerHTML = '<tr><td colspan="3" style="color:var(--danger);">Error loading logs</td></tr>';
+    }
+}
+
+// --- CONCIERGE AI CONFIG ---
+let conciergeLogsPage = 0;
+const CONCIERGE_LOGS_PER_PAGE = 20;
+
+async function loadConciergeConfig() {
+    try {
+        const { data, error } = await supabase
+            .from('ai_config')
+            .select('*')
+            .eq('feature_name', 'korea_concierge')
+            .single();
+
+        if (error) throw error;
+        if (!data) return;
+
+        document.getElementById('concierge-system-prompt').value = data.system_prompt || '';
+        document.getElementById('concierge-active').checked = data.is_active !== false;
+        document.getElementById('concierge-model').value = data.model || 'gemini-2.0-flash';
+
+        const maxTokens = data.max_tokens || 2000;
+        document.getElementById('concierge-max-tokens').value = maxTokens;
+        document.getElementById('concierge-tokens-val').innerText = maxTokens;
+
+        const temp = data.temperature ?? 0.7;
+        document.getElementById('concierge-temperature').value = temp;
+        document.getElementById('concierge-temp-val').innerText = temp;
+
+    } catch (e) {
+        console.error('Failed to load concierge config:', e);
+    }
+}
+
+async function saveConciergeConfig() {
+    const systemPrompt = document.getElementById('concierge-system-prompt').value.trim();
+    const isActive = document.getElementById('concierge-active').checked;
+    const model = document.getElementById('concierge-model').value;
+    const maxTokens = parseInt(document.getElementById('concierge-max-tokens').value);
+    const temperature = parseFloat(document.getElementById('concierge-temperature').value);
+
+    try {
+        const { error } = await supabase
+            .from('ai_config')
+            .update({
+                system_prompt: systemPrompt,
+                is_active: isActive,
+                model: model,
+                max_tokens: maxTokens,
+                temperature: temperature,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('feature_name', 'korea_concierge');
+
+        if (error) throw error;
+        alert('Concierge config saved!');
+    } catch (e) {
+        alert('Error saving config: ' + e.message);
+    }
+}
+
+async function loadConciergeCategories() {
+    const container = document.getElementById('concierge-categories-list');
+    container.innerHTML = '<div style="color:var(--text-muted);">Loading...</div>';
+
+    try {
+        const { data, error } = await supabase
+            .from('concierge_categories')
+            .select('*')
+            .order('display_order');
+
+        if (error) throw error;
+        container.innerHTML = '';
+
+        (data || []).forEach(cat => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 12px; border:1px solid var(--border); margin-bottom:6px; border-radius:6px; background:var(--bg-input);';
+            row.innerHTML = `
+                <span style="font-size:1.3rem;">${cat.emoji}</span>
+                <span style="flex:1; font-weight:500;">${cat.name}</span>
+                <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+                    <input type="checkbox" ${cat.is_active ? 'checked' : ''} onchange="toggleConciergeCategory(${cat.id}, this.checked)" style="accent-color:var(--accent);">
+                    Active
+                </label>
+                <button class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="deleteConciergeCategory(${cat.id})">
+                    <i class="ph ph-trash"></i>
+                </button>
+            `;
+            container.appendChild(row);
+        });
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No categories yet.</div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div style="color:var(--danger);">Error loading categories.</div>';
+    }
+}
+
+window.toggleConciergeCategory = async (id, active) => {
+    await supabase.from('concierge_categories').update({ is_active: active }).eq('id', id);
+};
+
+window.deleteConciergeCategory = async (id) => {
+    if (!confirm('Delete this category?')) return;
+    await supabase.from('concierge_categories').delete().eq('id', id);
+    loadConciergeCategories();
+};
+
+async function addConciergeCategory() {
+    const emoji = document.getElementById('concierge-new-cat-emoji').value.trim();
+    const name = document.getElementById('concierge-new-cat-name').value.trim();
+    if (!name) return alert('Enter a category name');
+
+    try {
+        const { error } = await supabase.from('concierge_categories').insert({
+            name,
+            emoji: emoji || '📌',
+            is_active: true,
+            display_order: 99,
+        });
+        if (error) throw error;
+        document.getElementById('concierge-new-cat-emoji').value = '';
+        document.getElementById('concierge-new-cat-name').value = '';
+        loadConciergeCategories();
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function loadConciergeAffiliates() {
+    const container = document.getElementById('concierge-affiliate-list');
+    container.innerHTML = '<div style="color:var(--text-muted);">Loading...</div>';
+
+    try {
+        const { data, error } = await supabase
+            .from('affiliate_links')
+            .select('*')
+            .order('city')
+            .order('display_order');
+
+        if (error) throw error;
+        container.innerHTML = '';
+
+        (data || []).forEach(link => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 12px; border:1px solid var(--border); margin-bottom:6px; border-radius:6px; background:var(--bg-input); font-size:13px;';
+            row.innerHTML = `
+                <span>${link.icon}</span>
+                <span style="color:var(--accent); font-weight:600; min-width:50px;">${link.city}</span>
+                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${link.label}</span>
+                <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+                    <input type="checkbox" ${link.is_active ? 'checked' : ''} onchange="toggleAffiliate(${link.id}, this.checked)" style="accent-color:var(--accent);">
+                </label>
+                <button class="btn btn-outline" style="padding:4px 8px; font-size:11px; color:var(--danger); border-color:var(--danger);" onclick="deleteAffiliate(${link.id})">
+                    <i class="ph ph-trash"></i>
+                </button>
+            `;
+            container.appendChild(row);
+        });
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No affiliate links yet.</div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div style="color:var(--danger);">Error loading affiliate links.</div>';
+    }
+}
+
+window.toggleAffiliate = async (id, active) => {
+    await supabase.from('affiliate_links').update({ is_active: active }).eq('id', id);
+};
+
+window.deleteAffiliate = async (id) => {
+    if (!confirm('Delete this affiliate link?')) return;
+    await supabase.from('affiliate_links').delete().eq('id', id);
+    loadConciergeAffiliates();
+};
+
+async function addAffiliateLink() {
+    const city = document.getElementById('aff-city').value.trim();
+    const label = document.getElementById('aff-label').value.trim();
+    const url = document.getElementById('aff-url').value.trim();
+    const icon = document.getElementById('aff-icon').value.trim() || '📌';
+
+    if (!city || !label || !url) return alert('City, label, and URL are required');
+
+    try {
+        const { error } = await supabase.from('affiliate_links').insert({
+            city, label, url, icon,
+            is_active: true,
+            display_order: 99,
+        });
+        if (error) throw error;
+        document.getElementById('aff-city').value = '';
+        document.getElementById('aff-label').value = '';
+        document.getElementById('aff-url').value = '';
+        loadConciergeAffiliates();
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function loadConciergeLogs() {
+    const tbody = document.getElementById('concierge-logs-list');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
+
+    try {
+        const from = conciergeLogsPage * CONCIERGE_LOGS_PER_PAGE;
+        const to = from + CONCIERGE_LOGS_PER_PAGE - 1;
+
+        const { data, error, count } = await supabase
+            .from('ai_concierge_logs')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+        if (error) throw error;
+
+        tbody.innerHTML = '';
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No logs yet</td></tr>';
+        } else {
+            data.forEach(log => {
+                const time = new Date(log.created_at).toLocaleString();
+                let vibes = '-';
+                try {
+                    const parsed = typeof log.vibes === 'string' ? JSON.parse(log.vibes) : log.vibes;
+                    if (Array.isArray(parsed)) vibes = parsed.join(', ');
+                } catch (e) { vibes = log.vibes || '-'; }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px;" title="${vibes}">${vibes}</td>
+                    <td style="font-size:13px;">${log.city || '-'}</td>
+                    <td style="font-size:13px;">${log.duration || '-'}</td>
+                    <td style="font-size:13px;">${log.budget || '-'}</td>
+                    <td style="white-space:nowrap; font-size:12px; color:var(--text-muted);">${time}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        const totalPages = Math.ceil((count || 0) / CONCIERGE_LOGS_PER_PAGE);
+        document.getElementById('concierge-logs-page').innerText = `Page ${conciergeLogsPage + 1}${totalPages > 0 ? ' / ' + totalPages : ''}`;
+        document.getElementById('btn-concierge-logs-prev').disabled = conciergeLogsPage === 0;
+        document.getElementById('btn-concierge-logs-next').disabled = conciergeLogsPage >= totalPages - 1;
+
+    } catch (e) {
+        console.error('Failed to load concierge logs:', e);
+        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger);">Error loading logs</td></tr>';
     }
 }
 

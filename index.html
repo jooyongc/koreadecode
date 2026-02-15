@@ -376,6 +376,235 @@
         }
         .decode-related a:hover { border-color: var(--accent); color: var(--accent); }
 
+        /* --- [Korea Concierge Section] --- */
+        .concierge-section {
+            border: var(--border); margin-bottom: 100px; padding: 60px;
+            background: var(--bg-sec); position: relative; overflow: hidden;
+        }
+        .concierge-section::before {
+            content: '///'; position: absolute; top: 20px; right: 30px;
+            font-family: 'Syncopate', sans-serif; font-size: 1.2rem;
+            color: rgba(204, 255, 0, 0.2); letter-spacing: 4px;
+        }
+        .concierge-title {
+            font-family: 'Syncopate', sans-serif; font-size: 2.5rem;
+            text-transform: uppercase; margin-bottom: 10px; line-height: 1;
+        }
+        .concierge-title span { color: var(--accent); }
+        .concierge-sub { color: var(--text-gray); font-size: 0.95rem; margin-bottom: 30px; max-width: 600px; }
+
+        /* Steps indicator */
+        .concierge-steps {
+            display: flex; gap: 0; margin-bottom: 30px;
+        }
+        .concierge-step-indicator {
+            flex: 1; padding: 12px 16px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem;
+            color: var(--text-gray); font-weight: 500; transition: 0.3s;
+            position: relative;
+        }
+        .concierge-step-indicator.active {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(204, 255, 0, 0.05);
+        }
+        .concierge-step-indicator.done {
+            border-color: rgba(204, 255, 0, 0.3); color: var(--accent);
+            background: rgba(204, 255, 0, 0.03);
+        }
+
+        /* Step panels */
+        .concierge-panel { display: none; animation: fadeInUp 0.4s ease; }
+        .concierge-panel.active { display: block; }
+
+        /* Vibe chips */
+        .vibe-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+        }
+        .vibe-chip {
+            padding: 14px 12px; border: 1px solid rgba(255,255,255,0.15);
+            background: transparent; color: var(--text-gray); font-size: 0.9rem;
+            cursor: pointer; transition: 0.2s; font-family: inherit;
+            text-align: center; display: flex; flex-direction: column;
+            align-items: center; gap: 6px;
+        }
+        .vibe-chip:hover { border-color: var(--accent); color: var(--text-white); }
+        .vibe-chip.selected {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(204, 255, 0, 0.08);
+            box-shadow: 0 0 12px rgba(204, 255, 0, 0.15);
+        }
+        .vibe-emoji { font-size: 1.5rem; }
+
+        /* Trip options */
+        .trip-option-group { margin-bottom: 20px; }
+        .trip-option-label {
+            color: var(--accent); font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; font-size: 0.8rem; margin-bottom: 10px;
+        }
+        .trip-options { display: flex; gap: 8px; flex-wrap: wrap; }
+        .trip-option {
+            padding: 10px 20px; border: 1px solid rgba(255,255,255,0.15);
+            background: transparent; color: var(--text-gray); font-size: 0.9rem;
+            cursor: pointer; transition: 0.2s; font-family: inherit;
+        }
+        .trip-option:hover { border-color: var(--accent); color: var(--text-white); }
+        .trip-option.selected {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(204, 255, 0, 0.08);
+        }
+
+        /* Extra input */
+        .concierge-extra-input {
+            width: 100%; background: #0a0a0a; border: 1px solid rgba(255,255,255,0.15);
+            color: var(--text-white); font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem; padding: 14px 16px; outline: none;
+            transition: 0.3s; resize: vertical; min-height: 60px;
+        }
+        .concierge-extra-input:focus { border-color: var(--accent); }
+        .concierge-extra-input::placeholder { color: #555; }
+
+        /* Action buttons */
+        .concierge-btn {
+            padding: 14px 28px; font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem; font-weight: 700; border: none; cursor: pointer;
+            transition: 0.3s; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .concierge-btn-primary {
+            background: var(--accent); color: #000;
+        }
+        .concierge-btn-primary:hover {
+            box-shadow: var(--accent-glow); transform: translateY(-1px);
+        }
+        .concierge-btn-primary:disabled {
+            opacity: 0.5; cursor: not-allowed; transform: none;
+            box-shadow: none;
+        }
+        .concierge-btn-outline {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-gray);
+        }
+        .concierge-btn-outline:hover { border-color: var(--text-white); color: var(--text-white); }
+        .concierge-btn-row {
+            display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end;
+        }
+
+        /* Result cards */
+        .concierge-result { display: none; margin-top: 30px; animation: fadeInUp 0.4s ease; }
+        .concierge-result.active { display: block; }
+        .concierge-result-header {
+            border: 1px solid rgba(204, 255, 0, 0.2); padding: 24px;
+            background: #0a0a0a; margin-bottom: 20px; position: relative;
+        }
+        .concierge-result-label {
+            position: absolute; top: -10px; left: 20px; background: #0a0a0a;
+            padding: 0 10px; color: var(--accent); font-size: 0.75rem;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+        }
+        .concierge-result-title {
+            font-family: 'Syncopate', sans-serif; font-size: 1.3rem;
+            text-transform: uppercase; margin-bottom: 8px;
+        }
+        .concierge-budget-summary {
+            color: var(--accent); font-size: 0.9rem; font-weight: 600;
+        }
+
+        /* Day cards */
+        .day-card {
+            border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px;
+            background: #0a0a0a; overflow: hidden;
+        }
+        .day-card-header {
+            padding: 16px 20px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer; transition: 0.2s;
+        }
+        .day-card-header:hover { background: rgba(204, 255, 0, 0.03); }
+        .day-number {
+            font-family: 'Syncopate', sans-serif; font-size: 0.9rem;
+            color: var(--accent); font-weight: 700;
+        }
+        .day-theme { color: var(--text-white); font-weight: 600; font-size: 0.95rem; }
+        .day-card-body { padding: 20px; }
+        .day-card-body.collapsed { display: none; }
+
+        /* Activity items */
+        .activity-item {
+            display: flex; gap: 16px; padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-time {
+            color: var(--accent); font-weight: 700; font-size: 0.85rem;
+            min-width: 80px; padding-top: 2px;
+        }
+        .activity-details { flex: 1; }
+        .activity-place { font-weight: 700; color: var(--text-white); margin-bottom: 4px; }
+        .activity-neighborhood {
+            font-size: 0.8rem; color: var(--text-gray);
+            display: inline-block; margin-left: 8px;
+        }
+        .activity-desc { color: #bbb; font-size: 0.9rem; line-height: 1.6; margin-bottom: 4px; }
+        .activity-meta {
+            display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-gray);
+        }
+        .activity-meta span { display: flex; align-items: center; gap: 4px; }
+        .day-pro-tip {
+            margin-top: 12px; padding: 12px 16px;
+            border-left: 3px solid var(--accent);
+            background: rgba(204, 255, 0, 0.03);
+            font-size: 0.85rem; color: #ccc;
+        }
+        .day-pro-tip strong { color: var(--accent); }
+
+        /* Packing essentials */
+        .packing-section {
+            border: 1px solid rgba(255,255,255,0.1); padding: 20px;
+            background: #0a0a0a; margin-top: 16px;
+        }
+        .packing-title {
+            color: var(--accent); font-weight: 700; font-size: 0.85rem;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+        }
+        .packing-list {
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .packing-item {
+            padding: 6px 14px; border: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.85rem; color: var(--text-gray);
+        }
+
+        /* Affiliate links */
+        .affiliate-section {
+            border: 1px solid rgba(204, 255, 0, 0.15); padding: 20px;
+            background: rgba(204, 255, 0, 0.03); margin-top: 16px;
+        }
+        .affiliate-title {
+            color: var(--accent); font-weight: 700; font-size: 0.85rem;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+        }
+        .affiliate-links { display: flex; flex-wrap: wrap; gap: 10px; }
+        .affiliate-link {
+            padding: 10px 18px; border: 1px solid var(--accent);
+            color: var(--accent); font-size: 0.9rem; font-weight: 600;
+            transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .affiliate-link:hover {
+            background: var(--accent); color: #000;
+            box-shadow: var(--accent-glow);
+        }
+
+        /* Result action buttons */
+        .result-actions {
+            display: flex; gap: 10px; margin-top: 20px;
+        }
+        .result-action-btn {
+            padding: 10px 20px; border: 1px solid rgba(255,255,255,0.15);
+            background: transparent; color: var(--text-gray); font-size: 0.85rem;
+            cursor: pointer; transition: 0.2s; font-family: inherit;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .result-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
         /* --- [6. Responsive] --- */
         @media (max-width: 1024px) {
             .hero-box { grid-template-columns: 1fr; }
@@ -427,6 +656,22 @@
             .decode-chips { gap: 6px; }
             .decode-chip { font-size: 0.78rem; padding: 6px 12px; }
             .decode-response { padding: 20px; }
+            .concierge-section { padding: 30px 20px; margin-bottom: 50px; }
+            .concierge-title { font-size: 1.5rem; }
+            .concierge-sub { font-size: 0.85rem; }
+            .vibe-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .vibe-chip { padding: 10px 8px; font-size: 0.8rem; }
+            .trip-options { gap: 6px; }
+            .trip-option { padding: 8px 14px; font-size: 0.8rem; }
+            .concierge-steps { flex-wrap: wrap; }
+            .concierge-step-indicator { font-size: 0.75rem; padding: 8px 10px; }
+            .concierge-result-title { font-size: 1rem; }
+            .activity-item { flex-direction: column; gap: 4px; }
+            .activity-time { min-width: auto; }
+            .activity-meta { flex-wrap: wrap; }
+            .result-actions { flex-wrap: wrap; }
+            .affiliate-links { flex-direction: column; }
+            .concierge-btn-row { flex-wrap: wrap; }
             .view-inner { padding: 60px 20px 100px; }
             .close-btn { top: 20px; right: 20px; width: 40px; height: 40px; font-size: 1.5rem; }
             #v-title { font-size: 2rem !important; }
@@ -518,6 +763,58 @@
                     <div class="decode-answer" id="decode-answer"></div>
                     <div class="decode-related" id="decode-related" style="display:none;"></div>
                 </div>
+            </div>
+
+            <!-- Korea Concierge Section -->
+            <div id="concierge-section" class="concierge-section">
+                <div class="concierge-title">Korea <span>Concierge_</span></div>
+                <div class="concierge-sub">Your AI-powered Korea trip planner. Pick your vibes, set your trip, and get a personalized day-by-day itinerary.</div>
+
+                <!-- Step Indicators -->
+                <div class="concierge-steps">
+                    <div class="concierge-step-indicator active" data-step="1">1. Pick Your Vibes</div>
+                    <div class="concierge-step-indicator" data-step="2">2. Trip Settings</div>
+                    <div class="concierge-step-indicator" data-step="3">3. Generate</div>
+                </div>
+
+                <!-- Step 1: Vibes -->
+                <div id="concierge-step-1" class="concierge-panel active">
+                    <div id="concierge-vibes" class="vibe-grid">
+                        <!-- Loaded from Supabase -->
+                    </div>
+                    <div class="concierge-btn-row">
+                        <button class="concierge-btn concierge-btn-primary" onclick="conciergeNextStep(2)" id="concierge-btn-to-2">Next &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Trip Settings -->
+                <div id="concierge-step-2" class="concierge-panel">
+                    <div id="concierge-trip-options">
+                        <!-- Loaded from Supabase -->
+                    </div>
+                    <div class="concierge-btn-row">
+                        <button class="concierge-btn concierge-btn-outline" onclick="conciergeNextStep(1)">&larr; Back</button>
+                        <button class="concierge-btn concierge-btn-primary" onclick="conciergeNextStep(3)">Next &rarr;</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Extra + Generate -->
+                <div id="concierge-step-3" class="concierge-panel">
+                    <div style="margin-bottom: 16px;">
+                        <div class="trip-option-label">Anything Else? (Optional)</div>
+                        <textarea id="concierge-extra" class="concierge-extra-input" placeholder="e.g. I'm vegetarian, traveling with kids, want nightlife spots..." maxlength="300"></textarea>
+                    </div>
+                    <div id="concierge-summary" style="padding: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; font-size: 0.9rem; color: var(--text-gray);"></div>
+                    <div class="concierge-btn-row">
+                        <button class="concierge-btn concierge-btn-outline" onclick="conciergeNextStep(2)">&larr; Back</button>
+                        <button class="concierge-btn concierge-btn-primary" onclick="submitConcierge()" id="concierge-generate-btn">
+                            Generate My Itinerary
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div id="concierge-result" class="concierge-result"></div>
             </div>
 
             <!-- Magazine Grid -->
@@ -834,6 +1131,301 @@
             if (e.key === 'Enter') submitDecode();
         });
 
+        // --- Korea Concierge Feature ---
+        let conciergeState = { vibes: [], duration: '', city: '', budget: '' };
+
+        async function loadConciergeData() {
+            try {
+                // Check if feature is active
+                const { data: configData } = await supabase
+                    .from('ai_config')
+                    .select('is_active')
+                    .eq('feature_name', 'korea_concierge')
+                    .single();
+
+                const section = document.getElementById('concierge-section');
+                if (!configData || configData.is_active === false) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                // Load categories (vibes)
+                const { data: cats } = await supabase
+                    .from('concierge_categories')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('display_order');
+
+                const vibeGrid = document.getElementById('concierge-vibes');
+                vibeGrid.innerHTML = '';
+                (cats || []).forEach(cat => {
+                    const btn = document.createElement('button');
+                    btn.className = 'vibe-chip';
+                    btn.innerHTML = `<span class="vibe-emoji">${cat.emoji}</span>${cat.name}`;
+                    btn.onclick = () => {
+                        btn.classList.toggle('selected');
+                        if (btn.classList.contains('selected')) {
+                            conciergeState.vibes.push(cat.name);
+                        } else {
+                            conciergeState.vibes = conciergeState.vibes.filter(v => v !== cat.name);
+                        }
+                    };
+                    vibeGrid.appendChild(btn);
+                });
+
+                // Load options (duration, city, budget)
+                const { data: opts } = await supabase
+                    .from('concierge_options')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('display_order');
+
+                const container = document.getElementById('concierge-trip-options');
+                container.innerHTML = '';
+
+                const grouped = {};
+                (opts || []).forEach(o => {
+                    if (!grouped[o.option_type]) grouped[o.option_type] = [];
+                    grouped[o.option_type].push(o);
+                });
+
+                const typeLabels = { duration: 'How Long?', city: 'Where?', budget: 'Budget Level' };
+                ['duration', 'city', 'budget'].forEach(type => {
+                    if (!grouped[type]) return;
+                    const group = document.createElement('div');
+                    group.className = 'trip-option-group';
+                    group.innerHTML = `<div class="trip-option-label">${typeLabels[type]}</div>`;
+                    const row = document.createElement('div');
+                    row.className = 'trip-options';
+                    grouped[type].forEach(opt => {
+                        const btn = document.createElement('button');
+                        btn.className = 'trip-option';
+                        btn.textContent = opt.label;
+                        btn.onclick = () => {
+                            row.querySelectorAll('.trip-option').forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                            conciergeState[type] = opt.label;
+                        };
+                        row.appendChild(btn);
+                    });
+                    group.appendChild(row);
+                    container.appendChild(group);
+                });
+
+            } catch (e) {
+                console.warn('Concierge load failed:', e);
+            }
+        }
+
+        window.conciergeNextStep = function(step) {
+            // Validation
+            if (step === 2 && conciergeState.vibes.length === 0) {
+                return alert('Pick at least one vibe!');
+            }
+            if (step === 3) {
+                if (!conciergeState.duration || !conciergeState.city || !conciergeState.budget) {
+                    return alert('Please select duration, city, and budget.');
+                }
+                // Show summary
+                const summary = document.getElementById('concierge-summary');
+                summary.innerHTML = `
+                    <strong style="color:var(--accent);">Your Trip:</strong>
+                    ${conciergeState.vibes.join(', ')} &bull;
+                    ${conciergeState.duration} in ${conciergeState.city} &bull;
+                    ${conciergeState.budget} budget
+                `;
+            }
+
+            // Switch panels
+            document.querySelectorAll('.concierge-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`concierge-step-${step}`).classList.add('active');
+
+            // Update step indicators
+            document.querySelectorAll('.concierge-step-indicator').forEach(ind => {
+                const s = parseInt(ind.dataset.step);
+                ind.classList.remove('active', 'done');
+                if (s === step) ind.classList.add('active');
+                else if (s < step) ind.classList.add('done');
+            });
+        };
+
+        window.submitConcierge = async function() {
+            const btn = document.getElementById('concierge-generate-btn');
+            const extra = document.getElementById('concierge-extra').value.trim();
+            const resultBox = document.getElementById('concierge-result');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner" style="animation:spin 1s linear infinite;display:inline-block;"></i> Generating...';
+            resultBox.classList.add('active');
+            resultBox.innerHTML = `
+                <div class="concierge-result-header">
+                    <div class="concierge-result-label">/// PLANNING</div>
+                    <div style="color:var(--text-gray);">Creating your personalized itinerary<span class="decode-cursor"></span></div>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/api/concierge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        vibes: conciergeState.vibes,
+                        duration: conciergeState.duration,
+                        city: conciergeState.city,
+                        budget: conciergeState.budget,
+                        extra,
+                    }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    resultBox.innerHTML = `
+                        <div class="concierge-result-header">
+                            <div class="concierge-result-label">/// ERROR</div>
+                            <div style="color:#ef4444;">${data.error}</div>
+                        </div>`;
+                    return;
+                }
+
+                renderConciergeResult(data.itinerary, data.affiliateLinks || []);
+
+                // GA4 event
+                if (typeof gtag === 'function') {
+                    gtag('event', 'concierge_generate', {
+                        vibes: conciergeState.vibes.join(','),
+                        city: conciergeState.city,
+                        duration: conciergeState.duration,
+                        budget: conciergeState.budget,
+                    });
+                }
+
+            } catch (e) {
+                resultBox.innerHTML = `
+                    <div class="concierge-result-header">
+                        <div class="concierge-result-label">/// ERROR</div>
+                        <div style="color:#ef4444;">Connection error. Please try again.</div>
+                    </div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Generate My Itinerary';
+            }
+        };
+
+        function renderConciergeResult(itin, affiliateLinks) {
+            const resultBox = document.getElementById('concierge-result');
+            let html = '';
+
+            // Header
+            html += `
+                <div class="concierge-result-header">
+                    <div class="concierge-result-label">/// YOUR ITINERARY</div>
+                    <div class="concierge-result-title">${itin.title || 'Your Korea Trip'}</div>
+                    ${itin.budgetSummary ? `<div class="concierge-budget-summary">${itin.budgetSummary}</div>` : ''}
+                </div>
+            `;
+
+            // Day cards
+            if (itin.days && itin.days.length > 0) {
+                itin.days.forEach((day, idx) => {
+                    const isFirst = idx === 0;
+                    html += `
+                        <div class="day-card">
+                            <div class="day-card-header" onclick="this.nextElementSibling.classList.toggle('collapsed')">
+                                <div>
+                                    <span class="day-number">DAY ${day.day || idx + 1}</span>
+                                    <span class="day-theme">${day.theme || ''}</span>
+                                </div>
+                                <i class="ph ph-caret-down" style="color:var(--text-gray);"></i>
+                            </div>
+                            <div class="day-card-body${isFirst ? '' : ' collapsed'}">
+                    `;
+
+                    if (day.activities && day.activities.length > 0) {
+                        day.activities.forEach(act => {
+                            html += `
+                                <div class="activity-item">
+                                    <div class="activity-time">${act.time || ''}</div>
+                                    <div class="activity-details">
+                                        <div class="activity-place">
+                                            ${act.place || ''}
+                                            ${act.neighborhood ? `<span class="activity-neighborhood">${act.neighborhood}</span>` : ''}
+                                        </div>
+                                        <div class="activity-desc">${act.description || ''}</div>
+                                        <div class="activity-meta">
+                                            ${act.tip ? `<span><i class="ph ph-lightbulb"></i> ${act.tip}</span>` : ''}
+                                            ${act.cost ? `<span><i class="ph ph-wallet"></i> ${act.cost}</span>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    if (day.proTip) {
+                        html += `<div class="day-pro-tip"><strong>Pro Tip:</strong> ${day.proTip}</div>`;
+                    }
+
+                    html += `</div></div>`;
+                });
+            }
+
+            // Packing essentials
+            if (itin.packingEssentials && itin.packingEssentials.length > 0) {
+                html += `
+                    <div class="packing-section">
+                        <div class="packing-title">Packing Essentials</div>
+                        <div class="packing-list">
+                            ${itin.packingEssentials.map(item => `<span class="packing-item">${item}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Affiliate links
+            if (affiliateLinks.length > 0) {
+                html += `
+                    <div class="affiliate-section">
+                        <div class="affiliate-title">Book Your Trip</div>
+                        <div class="affiliate-links">
+                            ${affiliateLinks.map(l => `
+                                <a href="${l.url}" target="_blank" rel="noopener" class="affiliate-link"
+                                   onclick="typeof gtag==='function'&&gtag('event','affiliate_click',{label:'${l.label}',city:'${l.city}'})">
+                                    <span>${l.icon}</span> ${l.label}
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Action buttons
+            html += `
+                <div class="result-actions">
+                    <button class="result-action-btn" onclick="submitConcierge()">
+                        <i class="ph ph-arrow-clockwise"></i> Regenerate
+                    </button>
+                    <button class="result-action-btn" onclick="copyConciergeResult()">
+                        <i class="ph ph-copy"></i> Copy to Clipboard
+                    </button>
+                </div>
+            `;
+
+            resultBox.innerHTML = html;
+        }
+
+        window.copyConciergeResult = function() {
+            const resultBox = document.getElementById('concierge-result');
+            const text = resultBox.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = resultBox.querySelector('.result-action-btn:nth-child(2)');
+                if (btn) {
+                    btn.innerHTML = '<i class="ph ph-check"></i> Copied!';
+                    setTimeout(() => { btn.innerHTML = '<i class="ph ph-copy"></i> Copy to Clipboard'; }, 2000);
+                }
+            });
+        };
+
+        loadConciergeData();
         loadDecodeConfig();
         init();
     </script>
