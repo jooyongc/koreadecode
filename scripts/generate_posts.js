@@ -119,6 +119,21 @@ function generateHtml(post, catName) {
     // SEO description (stripped content)
     const excerpt = post.excerpt.rendered.replace(/<[^>]*>?/gm, '').slice(0, 160).trim();
 
+    const isoDate = new Date(post.date).toISOString();
+    const jsonLd = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": title,
+        "description": excerpt,
+        "datePublished": isoDate,
+        "dateModified": isoDate,
+        "author": { "@type": "Organization", "name": "Korea Decode" },
+        "publisher": { "@type": "Organization", "name": "Korea Decode", "url": "https://koreadecode.com/" },
+        "mainEntityOfPage": { "@type": "WebPage", "@id": `https://koreadecode.com/posts/${slug}.html` },
+        "image": imgUrl,
+        "articleSection": catName
+    }, null, 8);
+
     return `<!DOCTYPE html>
 <html lang="en-US">
 <head>
@@ -127,13 +142,13 @@ function generateHtml(post, catName) {
     <title>${title} | Korea Decode</title>
     <meta name="description" content="${excerpt}">
     <link rel="canonical" href="https://koreadecode.com/posts/${slug}.html">
-    
+
     <!-- Open Graph -->
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${excerpt}">
     <meta property="og:image" content="${imgUrl}">
     <meta property="og:type" content="article">
-    
+
     <!-- Google Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -146,9 +161,14 @@ function generateHtml(post, catName) {
       gtag('js', new Date());
       gtag('config', 'G-487F519VEM');
     </script>
-    
+
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660181512354238" crossorigin="anonymous"></script>
+
+    <!-- Article JSON-LD -->
+    <script type="application/ld+json">
+    ${jsonLd}
+    </script>
 
     <style>
         ${STYLES}
@@ -158,7 +178,7 @@ function generateHtml(post, catName) {
 
     <div class="post-wrapper">
         <a href="/" class="back-btn"><i class="ph ph-arrow-left"></i> BACK TO FEED</a>
-        
+
         <div>
             <span class="post-cat">${catName}</span>
             <h1 class="post-title">${title}</h1>
@@ -172,11 +192,18 @@ function generateHtml(post, catName) {
         </div>
 
         <!-- Ad Banner -->
-        <iframe class="responsive-iframe" src="https://www.trip.com/partners/ad/S9752059?Allianceid=4817513&amp;SID=76470416&amp;trip_sub1=" frameborder="0" scrolling="no"></iframe>
-        
+        <iframe class="responsive-iframe" src="https://www.trip.com/partners/ad/S9752059?Allianceid=4817513&amp;SID=76470416&amp;trip_sub1=" frameborder="0" scrolling="no" loading="lazy"></iframe>
+
         <!-- Footer -->
         <div style="margin-top: 80px; border-top: 1px solid #333; padding-top: 40px; text-align: center; color: #666;">
-            <p>&copy; 2026 Korea Decode. <a href="/" style="color:#aaa">Home</a></p>
+            <div style="margin-bottom: 20px;">
+                <a href="/" style="color: #ccc; margin: 0 10px; text-decoration: none;">Home</a>
+                <a href="/about.html" style="color: #ccc; margin: 0 10px; text-decoration: none;">About Us</a>
+                <a href="/contact.html" style="color: #ccc; margin: 0 10px; text-decoration: none;">Contact</a>
+                <a href="/privacy-policy.html" style="color: #ccc; margin: 0 10px; text-decoration: none;">Privacy Policy</a>
+                <a href="/terms.html" style="color: #ccc; margin: 0 10px; text-decoration: none;">Terms of Service</a>
+            </div>
+            <p>&copy; 2026 Korea Decode. All rights reserved.</p>
         </div>
     </div>
 

@@ -55,11 +55,4 @@ Disallow: /
 
 # END Cloudflare Managed Content
 
-# START YOAST BLOCK
-# ---------------------------
-User-agent: *
-Disallow:
-
-Sitemap: http://koreadecode.com/sitemap_index.xml
-# ---------------------------
-# END YOAST BLOCK
+Sitemap: https://koreadecode.com/sitemap.xml

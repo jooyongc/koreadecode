@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loading... - Korea Decode</title>
+    <meta name="robots" content="noindex, follow">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-487F519VEM"></script>
     <script>
@@ -59,7 +60,10 @@
     </nav>
 
     <div id="app" class="post-container">
-        <div class="loading">Loading content...</div>
+        <div class="loading">
+            <p>Loading article content&hellip;</p>
+            <p style="font-size:0.85rem; color:#999; margin-top:10px;">This page loads content dynamically. For the best reading experience, please visit the <a href="/" style="color:#3b82f6;">Korea Decode homepage</a> or browse our articles directly in the <a href="/posts/" style="color:#3b82f6;">articles archive</a>.</p>
+        </div>
     </div>
 
     <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Scroll to top">
@@ -123,6 +127,37 @@
                     </article>
                 `;
                 document.getElementById('app').innerHTML = html;
+
+                // Inject Article JSON-LD
+                const description = (post.content || '').replace(/<[^>]*>/g, '').slice(0, 160).trim();
+                const jsonLd = {
+                    "@context": "https://schema.org",
+                    "@type": "Article",
+                    "headline": post.title,
+                    "datePublished": post.created_at,
+                    "dateModified": post.updated_at || post.created_at,
+                    "author": {
+                        "@type": "Person",
+                        "name": post.writer_name || "Korea Decode Editorial"
+                    },
+                    "publisher": {
+                        "@type": "Organization",
+                        "name": "Korea Decode",
+                        "url": "https://koreadecode.com/"
+                    },
+                    "description": description,
+                    "mainEntityOfPage": {
+                        "@type": "WebPage",
+                        "@id": window.location.href
+                    }
+                };
+                if (post.image) jsonLd.image = post.image;
+                if (post.category) jsonLd.articleSection = post.category;
+
+                const scriptEl = document.createElement('script');
+                scriptEl.type = 'application/ld+json';
+                scriptEl.textContent = JSON.stringify(jsonLd);
+                document.head.appendChild(scriptEl);
             } else {
                 document.getElementById('app').innerHTML = '<p class="text-center">Post not found.</p>';
             }

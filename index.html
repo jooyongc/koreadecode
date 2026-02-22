@@ -6,14 +6,14 @@
     
     <!-- SEO & Meta Tags -->
     <title>Korea Decode | The Future Edit</title>
-    <meta name="description" content="Korea Decode | The Future Edit LOADING_ BREAKING: DISCOVER SEOUL’S HIDDEN GEMS /// TRENDING: K-POP COMEBACK NEWS /// GUIDE: BEST K-FOOD SPOTS 2025">
-    <link rel="canonical" href="/">
+    <meta name="description" content="Korea Decode is your premier English-language guide to South Korean culture. Discover expert articles on K-Pop, K-Beauty skincare routines, Korean food recipes, Seoul travel tips, and Hallyu culture trends — updated weekly.">
+    <link rel="canonical" href="https://koreadecode.com/">
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Korea Decode | The Future Edit">
-    <meta property="og:description" content="Your Daily Source for K-Trends & News. K-POP, K-Beauty, Travel, and more.">
-    <meta property="og:url" content="/">
-    <meta property="og:site_name" content="koreadecode">
+    <meta property="og:title" content="Korea Decode | Your Guide to Korean Culture, K-Pop, Travel & Food">
+    <meta property="og:description" content="Korea Decode is your premier English-language guide to South Korean culture. Expert articles on K-Pop, K-Beauty, Korean food, Seoul travel, and Hallyu trends.">
+    <meta property="og:url" content="https://koreadecode.com/">
+    <meta property="og:site_name" content="Korea Decode">
     
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-487F519VEM"></script>
@@ -30,7 +30,33 @@
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://www.booking.com/affiliate/prelanding_sdk"></script>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebSite",
+                "@id": "https://koreadecode.com/#website",
+                "url": "https://koreadecode.com/",
+                "name": "Korea Decode",
+                "description": "Your premier English-language guide to South Korean culture, K-Pop, K-Beauty, Korean food, travel, and Hallyu trends.",
+                "publisher": { "@id": "https://koreadecode.com/#organization" },
+                "inLanguage": "en-US"
+            },
+            {
+                "@type": "Organization",
+                "@id": "https://koreadecode.com/#organization",
+                "name": "Korea Decode",
+                "url": "https://koreadecode.com/",
+                "description": "Korea Decode is an English-language digital media brand dedicated to decoding South Korean culture for a global audience.",
+                "foundingDate": "2026",
+                "sameAs": []
+            }
+        ]
+    }
+    </script>
 
     <style>
         /* --- [1. Neo Trend Variables (Acid & Dark)] --- */
@@ -683,6 +709,58 @@
             .ad-banner-wrapper { justify-content: center; }
         }
         
+        /* Static Editorial Section */
+        #static-editorial {
+            padding: 0 0 60px;
+        }
+        .editorial-intro { margin-bottom: 40px; }
+        .editorial-intro h2 {
+            font-family: 'Syncopate', sans-serif; font-size: 1.8rem;
+            text-transform: uppercase; margin-bottom: 20px; color: var(--text-white);
+        }
+        .editorial-intro p {
+            color: var(--text-gray); font-size: 1.05rem; line-height: 1.8;
+            max-width: 900px; margin-bottom: 16px;
+        }
+        .category-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px; margin-bottom: 50px;
+        }
+        .category-card {
+            border: var(--border); padding: 24px; background: var(--bg-sec);
+            transition: 0.3s;
+        }
+        .category-card:hover { border-color: var(--accent); }
+        .category-card h3 {
+            color: var(--accent); font-size: 1.1rem; font-weight: 700;
+            text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;
+        }
+        .category-card p { color: var(--text-gray); font-size: 0.9rem; line-height: 1.6; }
+        .featured-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+            border-top: var(--border); border-left: var(--border);
+        }
+        .featured-item {
+            border-right: var(--border); border-bottom: var(--border);
+            padding: 24px; transition: 0.3s; display: block;
+        }
+        .featured-item:hover { background: #1a1a1a; }
+        .featured-item .fi-cat {
+            color: var(--accent); font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
+        }
+        .featured-item .fi-title {
+            font-size: 1.1rem; font-weight: 600; line-height: 1.3;
+            color: var(--text-white); transition: 0.3s;
+        }
+        .featured-item:hover .fi-title { color: var(--accent); }
+        @media (max-width: 768px) {
+            .featured-grid { grid-template-columns: 1fr; border-left: none; }
+            .featured-item { border-left: none; }
+            .category-grid { grid-template-columns: 1fr 1fr; }
+            .editorial-intro h2 { font-size: 1.3rem; }
+        }
+
         #loader {
             position: fixed; inset: 0; background: #000; z-index: 9999;
             display: flex; align-items: center; justify-content: center;
@@ -732,6 +810,67 @@
             <div class="big-header">
                 <div style="color:var(--accent); font-weight:700; margin-bottom:10px;">THE PULSE OF KOREA</div>
                 <h1 class="headline">Korea<br><span>Decode</span></h1>
+            </div>
+
+            <!-- Static Editorial Content (visible before JS loads, hidden after) -->
+            <div id="static-editorial">
+                <div class="editorial-intro">
+                    <h2>Welcome to Korea Decode</h2>
+                    <p>Korea Decode is an independent English-language digital magazine dedicated to helping a global audience explore and understand South Korean culture. Whether you are planning your first trip to Seoul, building a K-Beauty skincare routine, learning about the stories behind your favorite K-Pop groups, or discovering authentic Korean recipes to cook at home, our editorial team delivers well-researched, in-depth articles every week.</p>
+                    <p>Founded by a team of writers, translators, and cultural enthusiasts based in Seoul, we go beyond surface-level trends. Our mission is to decode the "why" behind Korean culture — the traditions, the innovations, and the everyday moments that make Korea one of the most exciting cultural forces on the planet. From deep dives into Hallyu history to practical travel guides with local insider tips, Korea Decode is your trusted companion for everything Korean.</p>
+                    <p>Explore our content categories below, or scroll down to read our latest articles.</p>
+                </div>
+
+                <div class="category-grid">
+                    <div class="category-card">
+                        <h3>Travel</h3>
+                        <p>City guides, hidden gems, seasonal itineraries, and practical tips for exploring South Korea beyond the tourist trail — from Seoul to Busan, Jeju, and the countryside.</p>
+                    </div>
+                    <div class="category-card">
+                        <h3>Food</h3>
+                        <p>Authentic Korean recipes, restaurant reviews, street food guides, and deep dives into the culture and history behind iconic dishes like kimchi, bibimbap, and tteokbokki.</p>
+                    </div>
+                    <div class="category-card">
+                        <h3>K-Beauty</h3>
+                        <p>Expert skincare routines, product reviews, brand spotlights, and trend analysis from the global epicenter of beauty innovation — South Korea's booming cosmetics industry.</p>
+                    </div>
+                    <div class="category-card">
+                        <h3>K-Pop</h3>
+                        <p>Comeback news, artist profiles, concert guides, fan culture explainers, and in-depth coverage of the music industry that's reshaping global pop culture.</p>
+                    </div>
+                    <div class="category-card">
+                        <h3>Culture</h3>
+                        <p>Language tips, etiquette guides, Hallyu history, K-Drama insights, and cultural context that helps you truly understand Korean society and its global influence.</p>
+                    </div>
+                </div>
+
+                <h2 style="font-size:1.5rem; margin-bottom:20px; font-family:'Syncopate',sans-serif; text-transform:uppercase;">Featured <span style="color:var(--accent);">Articles</span></h2>
+                <div class="featured-grid">
+                    <a href="/posts/seoul-searching-discover-the-citys-true-gems.html" class="featured-item">
+                        <div class="fi-cat">Travel</div>
+                        <div class="fi-title">Seoul Searching: Discover the City's True Gems</div>
+                    </a>
+                    <a href="/posts/your-essential-guide-to-traveling-south-korea.html" class="featured-item">
+                        <div class="fi-cat">Travel</div>
+                        <div class="fi-title">Your Essential Guide to Traveling South Korea</div>
+                    </a>
+                    <a href="/posts/unlock-glass-skin-your-guide-to-korean-skincares-best-brands.html" class="featured-item">
+                        <div class="fi-cat">K-Beauty</div>
+                        <div class="fi-title">Unlock Glass Skin: Your Guide to Korean Skincare's Best Brands</div>
+                    </a>
+                    <a href="/posts/your-seoul-culinary-bucket-list-top-10-restaurants.html" class="featured-item">
+                        <div class="fi-cat">Food</div>
+                        <div class="fi-title">Your Seoul Culinary Bucket List: Top 10 Restaurants</div>
+                    </a>
+                    <a href="/posts/ultimate-samgyeopsal-guide-how-to-grill-korean-pork-belly-%ec%82%bc%ea%b2%b9%ec%82%b4-at-home.html" class="featured-item">
+                        <div class="fi-cat">Food</div>
+                        <div class="fi-title">Ultimate Samgyeopsal Guide: How to Grill Korean Pork Belly at Home</div>
+                    </a>
+                    <a href="/posts/k-pop-popup-paradise-how-to-survive-the-merch-madness-in-seoul.html" class="featured-item">
+                        <div class="fi-cat">K-Pop</div>
+                        <div class="fi-title">K-Pop Pop-Up Paradise: How to Survive the Merch Madness in Seoul</div>
+                    </a>
+                </div>
             </div>
 
             <!-- Hero Section -->
@@ -847,7 +986,7 @@
 
             <!-- Ad Banner -->
             <div class="ad-banner-wrapper">
-                <iframe class="responsive-iframe" src="https://www.trip.com/partners/ad/S9752059?Allianceid=4817513&amp;SID=76470416&amp;trip_sub1=" frameborder="0" scrolling="no" id="S9752059_home"></iframe>
+                <iframe class="responsive-iframe" src="https://www.trip.com/partners/ad/S9752059?Allianceid=4817513&amp;SID=76470416&amp;trip_sub1=" frameborder="0" scrolling="no" loading="lazy" id="S9752059_home"></iframe>
             </div>
 
             <!-- Footer -->
@@ -941,6 +1080,8 @@
         function renderAll(posts) {
             const heroSlot = document.getElementById('hero-slot');
             const gridSlot = document.getElementById('grid-slot');
+            const staticEditorial = document.getElementById('static-editorial');
+            if (staticEditorial) staticEditorial.style.display = 'none';
 
             heroSlot.innerHTML = '';
             gridSlot.innerHTML = '';
