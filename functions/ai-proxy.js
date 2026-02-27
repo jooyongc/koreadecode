@@ -22,23 +22,46 @@ export async function onRequest(context) {
 
   try {
     const body = await request.json();
-    const { prompt, userGeminiKey } = body;
+    const { prompt, userGeminiKey, model, generationConfig } = body;
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: "No prompt provided" }), { status: 400, headers: corsHeaders });
     }
 
-    const GEMINI_KEY = userGeminiKey || env.GEMINI_KEY || '';
+    const GEMINI_KEY = userGeminiKey || env.GEMINI_API_KEY || env.GEMINI_KEY || '';
     if (!GEMINI_KEY) {
       return new Response(JSON.stringify({ error: "No Gemini API key configured" }), { status: 400, headers: corsHeaders });
     }
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
+    // Model selection with default
+    const allowedModels = [
+      'gemini-2.5-flash', 'gemini-2.5-pro',
+      'gemini-2.0-flash',
+      'gemini-1.5-pro', 'gemini-1.5-flash'
+    ];
+    const selectedModel = (model && allowedModels.includes(model)) ? model : 'gemini-2.5-flash';
+
+    // Build request body
+    const requestBody = {
+      contents: [{ parts: [{ text: prompt }] }]
+    };
+
+    // Whitelist generationConfig params
+    if (generationConfig && typeof generationConfig === 'object') {
+      const allowed = {};
+      if (typeof generationConfig.temperature === 'number') allowed.temperature = generationConfig.temperature;
+      if (typeof generationConfig.maxOutputTokens === 'number') allowed.maxOutputTokens = generationConfig.maxOutputTokens;
+      if (typeof generationConfig.topP === 'number') allowed.topP = generationConfig.topP;
+      if (typeof generationConfig.topK === 'number') allowed.topK = generationConfig.topK;
+      if (Object.keys(allowed).length > 0) {
+        requestBody.generationConfig = allowed;
+      }
+    }
+
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
+      body: JSON.stringify(requestBody)
     });
 
     const data = await resp.json();

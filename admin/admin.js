@@ -1,31 +1,27 @@
 import { supabase } from '/js/supabase-config.js';
 
-const UNSPLASH_ACCESS_KEY = 'Ikq6GOeQuWc_77ydvsODR4GFqahyl7mdL6YCQRGqPIg';
-
-// --- AI CALL: Direct Gemini API from browser ---
-async function callAI(prompt) {
-    const geminiKey = localStorage.getItem('gemini_key');
-    if (!geminiKey) {
-        throw new Error("Gemini API Key가 설정되지 않았습니다. Settings에서 키를 입력해주세요.");
-    }
-
-    console.log("[AI] Calling Gemini directly...");
+// --- AI CALL: via server-side proxy (functions/ai-proxy.js) ---
+async function callAI(prompt, options = {}) {
+    console.log("[AI] Calling AI via proxy...");
     try {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+        const body = { prompt };
+        const userKey = localStorage.getItem('gemini_key');
+        if (userKey) body.userGeminiKey = userKey;
+        if (options.model) body.model = options.model;
+        if (options.generationConfig) body.generationConfig = options.generationConfig;
+
+        const resp = await fetch('/ai-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
+            body: JSON.stringify(body)
         });
         const data = await resp.json();
-        if (data.error) throw new Error(data.error.message);
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error("Empty response from Gemini");
-        console.log("[AI] Gemini success");
-        return text;
+        if (data.error) throw new Error(data.error);
+        if (!data.text) throw new Error("Empty response from AI");
+        console.log("[AI] Proxy success");
+        return data.text;
     } catch (e) {
-        console.error("[AI] Gemini failed:", e);
+        console.error("[AI] Proxy failed:", e);
         throw new Error("AI Error: " + e.message);
     }
 }
@@ -581,11 +577,20 @@ window.runAIPhase1 = async () => {
     let persona = availablePersonas.find(p => p.id === personaId);
     let personaContext = '';
     if (persona) {
+        const voiceGuide = getVoiceGuide(persona.nationality);
+        const jobVoice = getJobVoice(persona.job);
+        const likesAngle = persona.likes ? `\n- Since this writer is passionate about "${persona.likes}", angle the titles to connect the topic with that interest where possible. For example, if their interest is "Spicy food" and the topic is "Myeongdong", lean into the spicy food angle.` : '';
         personaContext = `
 **Writer Persona Context (titles MUST reflect this voice):**
 - Name: ${persona.name}, a ${persona.age} ${persona.gender} ${persona.nationality} ${persona.job}
-- Passionate about: ${persona.likes}
-- Voice: ${persona.nationality === 'USA' ? 'Casual American English, uses slang and pop-culture references' : persona.nationality === 'UK' ? 'Witty British English, dry humor' : persona.nationality === 'Australia' ? 'Laid-back Australian tone, friendly slang' : persona.nationality === 'France' ? 'Sophisticated European perspective, refined taste' : persona.nationality === 'Germany' ? 'Precise, detail-oriented, practical perspective' : persona.nationality === 'Singapore' ? 'Southeast Asian perspective, multicultural awareness' : persona.nationality === 'Japan' ? 'Attention to aesthetics and detail, cultural bridge perspective' : 'International perspective with unique cultural lens'}
+- Passionate about: ${persona.likes}${likesAngle}
+
+**VOICE GUIDE (follow this carefully for title tone):**
+${voiceGuide}
+
+**PROFESSIONAL ANGLE:**
+${jobVoice}
+
 - The titles should sound like something THIS specific person would write — not generic blog titles.
 `;
     }
@@ -615,7 +620,9 @@ Provide your response in a clean JSON format, like this:
 Ensure the titles are captivating, reflect the writer's unique personality and expertise, and the keywords are highly relevant for ranking on Google.
 `;
 
-        let rawText = await callAI(prompt);
+        let rawText = await callAI(prompt, {
+            generationConfig: { temperature: 0.4, topP: 0.85 }
+        });
         rawText = cleanJSONResponse(rawText);
         const data = JSON.parse(rawText);
 
@@ -681,44 +688,69 @@ window.runAIPhase2 = async () => {
         };
     }
 
-    // 1. Fetch Images from Unsplash
+    // 1. Fetch Images from multi-source (Unsplash + Pexels via proxy)
     let allImages = [];
-    const searchQuery = encodeURIComponent(`${topic} ${keywords.slice(0, 2).join(' ')} korea`);
     try {
-        console.log("[Unsplash] Searching:", searchQuery);
-        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=5&query=${searchQuery}&orientation=landscape&client_id=${UNSPLASH_ACCESS_KEY}`);
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
-            allImages = data.results.map(img => ({
-                url: img.urls.regular,
-                alt: img.alt_description || title,
-                user: img.user.name,
-                user_link: img.user.links.html
-            }));
+        // Generate diverse image search queries via AI
+        let imageQueries = [
+            `${topic} ${keywords.slice(0, 2).join(' ')} korea`,
+            topic
+        ];
+        try {
+            const iqPrompt = `Generate 3 diverse image search queries for a blog post about "${topic}" in Korea. Return JSON array only: ["food closeup query", "street/scenery query", "cultural activity query"]. Short queries (2-4 words each). No explanation.`;
+            const iqRaw = await callAI(iqPrompt, { generationConfig: { temperature: 0.3 } });
+            const iqParsed = JSON.parse(cleanJSONResponse(iqRaw));
+            if (Array.isArray(iqParsed) && iqParsed.length >= 2) imageQueries = iqParsed;
+        } catch (e) {
+            console.warn("[Images] AI query generation failed, using defaults:", e);
         }
+
+        console.log("[Images] Queries:", imageQueries);
+
+        // Fetch from Unsplash (first 2 queries) and Pexels (3rd query) in parallel
+        const fetchPromises = [];
+        imageQueries.slice(0, 2).forEach(q => {
+            fetchPromises.push(
+                fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(q)}&count=3`)
+                    .then(r => r.json()).catch(() => ({ images: [] }))
+            );
+        });
+        if (imageQueries.length >= 3) {
+            fetchPromises.push(
+                fetch(`/image-proxy?source=pexels&query=${encodeURIComponent(imageQueries[2])}&count=3`)
+                    .then(r => r.json()).catch(() => ({ images: [] }))
+            );
+        }
+
+        const results = await Promise.all(fetchPromises);
+        const seenUrls = new Set();
+        // Interleave sources for diversity
+        const maxLen = Math.max(...results.map(r => (r.images || []).length));
+        for (let i = 0; i < maxLen; i++) {
+            for (const result of results) {
+                const imgs = result.images || [];
+                if (i < imgs.length && !seenUrls.has(imgs[i].url)) {
+                    seenUrls.add(imgs[i].url);
+                    allImages.push(imgs[i]);
+                }
+            }
+        }
+        console.log(`[Images] Found ${allImages.length} unique images from ${results.length} sources`);
     } catch (e) {
-        console.error("Unsplash Error:", e);
+        console.error("Image fetch error:", e);
     }
 
+    // Fallback: try simple Unsplash proxy search if we got nothing
     if (allImages.length < 3) {
         try {
-            const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=5&query=${encodeURIComponent(topic)}&orientation=landscape&client_id=${UNSPLASH_ACCESS_KEY}`);
+            const res = await fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(topic + ' korea')}&count=5`);
             const data = await res.json();
-            if (data.results) {
-                const existingUrls = new Set(allImages.map(i => i.url));
-                data.results.forEach(img => {
-                    if (!existingUrls.has(img.urls.regular)) {
-                        allImages.push({
-                            url: img.urls.regular,
-                            alt: img.alt_description || title,
-                            user: img.user.name,
-                            user_link: img.user.links.html
-                        });
-                    }
-                });
-            }
+            const existingUrls = new Set(allImages.map(i => i.url));
+            (data.images || []).forEach(img => {
+                if (!existingUrls.has(img.url)) allImages.push(img);
+            });
         } catch (e) {
-            console.error("Unsplash fallback error:", e);
+            console.error("Image fallback error:", e);
         }
     }
 
@@ -737,6 +769,10 @@ window.runAIPhase2 = async () => {
     try {
         const voiceGuide = getVoiceGuide(persona.nationality);
         const jobVoice = getJobVoice(persona.job);
+        const personaConfig = getPersonaConfig(persona);
+        const exampleOpening = getExampleOpening(persona);
+
+        const likesIntegration = persona.likes ? `\n5. **PERSONAL INTERESTS:** Naturally weave "${persona.likes}" into the article. Don't force it — find organic connections between the topic and this interest. Maybe a comparison, a personal anecdote, or a specific recommendation related to it.` : '';
 
         const prompt = `
 **You ARE ${persona.name}. Stay in character for the ENTIRE article.**
@@ -748,7 +784,12 @@ window.runAIPhase2 = async () => {
 
 **YOUR UNIQUE VOICE (CRITICAL — follow strictly):**
 ${voiceGuide}
+
+**YOUR PROFESSIONAL LENS:**
 ${jobVoice}
+
+**EXAMPLE OPENING (match this energy and style, but DO NOT copy it verbatim):**
+"${exampleOpening}"
 
 **Task:** Write a blog post for 'Korea Decode'.
 
@@ -759,15 +800,17 @@ ${jobVoice}
 **RULES:**
 1. **Voice:** First person ("I", "my"). Share personal opinions, experiences, and reactions that fit YOUR background. A ${persona.nationality} ${persona.job} would notice different things than other writers — highlight THOSE unique observations. NEVER sound like a generic AI blog post.
 2. **Structure:**
-   - Hook intro (NO self-introduction like "Hello, I'm..."). Jump straight into an engaging opening.
+   - Hook intro (NO self-introduction like "Hello, I'm..."). Jump straight into an engaging opening that matches the example style above.
    - 3-5 sections with <h2>/<h3> tags. Use <ul><li> for lists, <strong> for key terms, <blockquote> for personal tips.
    - Strong conclusion with call-to-action.
 3. **IMAGES — MANDATORY:** You MUST place exactly **${imgCount}** image markers in the article. Write the text **[IMG]** alone on its own line, wrapped in a paragraph tag like this: <p>[IMG]</p>. Space them evenly through the article (roughly every 2-3 paragraphs). This is REQUIRED — do not skip this.
-4. **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <blockquote>.
+4. **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <blockquote>.${likesIntegration}
 
 **Output:** Only the article HTML body. No explanations before or after.`;
 
-        let rawContent = await callAI(prompt);
+        let rawContent = await callAI(prompt, {
+            generationConfig: { temperature: personaConfig.temperature, topP: personaConfig.topP }
+        });
 
         // Clean markdown code blocks from response
         rawContent = rawContent.trim();
@@ -777,9 +820,16 @@ ${jobVoice}
             rawContent = rawContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
         }
 
-        // Replace image placeholders with actual Unsplash images
+        // Replace image placeholders with actual images (multi-source attribution)
         contentImages.forEach(img => {
-            const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
+            const sourceName = img.source === 'pexels' ? 'Pexels' : 'Unsplash';
+            const sourceUrl = img.source === 'pexels'
+                ? 'https://www.pexels.com/'
+                : 'https://unsplash.com/?utm_source=korea_decode&utm_medium=referral';
+            const userLink = img.source === 'pexels'
+                ? img.user_link
+                : `${img.user_link}?utm_source=korea_decode&utm_medium=referral`;
+            const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${userLink}" target="_blank">${img.user}</a> on <a href="${sourceUrl}" target="_blank">${sourceName}</a></figcaption></figure>`;
             // Match multiple placeholder formats
             if (rawContent.includes('<p>[IMG]</p>')) {
                 rawContent = rawContent.replace('<p>[IMG]</p>', imgHtml);
@@ -875,27 +925,47 @@ async function searchUnsplashModal() {
     container.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Searching...</div>';
     document.getElementById('modal-unsplash').style.display = 'flex';
     try {
-        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=12&query=${encodeURIComponent(q)}&client_id=${UNSPLASH_ACCESS_KEY}`);
-        const data = await res.json();
+        // Fetch from both Unsplash and Pexels via proxy
+        const [unsplashRes, pexelsRes] = await Promise.all([
+            fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(q)}&count=8`).then(r => r.json()).catch(() => ({ images: [] })),
+            fetch(`/image-proxy?source=pexels&query=${encodeURIComponent(q)}&count=4`).then(r => r.json()).catch(() => ({ images: [] }))
+        ]);
+
+        // Interleave: 2 unsplash, 1 pexels, repeat
+        const combined = [];
+        const uImgs = unsplashRes.images || [];
+        const pImgs = pexelsRes.images || [];
+        let ui = 0, pi = 0;
+        while (ui < uImgs.length || pi < pImgs.length) {
+            if (ui < uImgs.length) combined.push(uImgs[ui++]);
+            if (ui < uImgs.length) combined.push(uImgs[ui++]);
+            if (pi < pImgs.length) combined.push(pImgs[pi++]);
+        }
+
         container.innerHTML = '';
-        if (!data.results || data.results.length === 0) {
+        if (combined.length === 0) {
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);">No results found</div>';
             return;
         }
-        data.results.forEach(img => {
+        combined.forEach(img => {
             const el = document.createElement('img');
-            el.src = img.urls.small;
+            el.src = img.thumb || img.url;
             el.className = 'modal-img-item';
+            el.title = `${img.user} (${img.source === 'pexels' ? 'Pexels' : 'Unsplash'})`;
             el.onclick = () => {
                 if (unsplashMode === 'body') {
                     insertImageIntoBody({
-                        url: img.urls.regular,
-                        alt: img.alt_description || q,
-                        user: img.user.name,
-                        user_link: img.user.links.html
+                        url: img.url,
+                        alt: img.alt || q,
+                        user: img.user,
+                        user_link: img.user_link,
+                        source: img.source
                     });
                 } else {
-                    selectFeaturedImage(img);
+                    activeImage = img.url;
+                    document.getElementById('selected-ai-img').src = activeImage;
+                    document.getElementById('selected-ai-img').style.display = 'block';
+                    document.getElementById('ai-img-placeholder').style.display = 'none';
                 }
                 document.getElementById('modal-unsplash').style.display = 'none';
             };
@@ -916,7 +986,14 @@ function selectFeaturedImage(img) {
 function insertImageIntoBody(img) {
     const range = quill.getSelection(true);
     const index = range ? range.index : quill.getLength() - 1;
-    const figureHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
+    const sourceName = img.source === 'pexels' ? 'Pexels' : 'Unsplash';
+    const sourceUrl = img.source === 'pexels'
+        ? 'https://www.pexels.com/'
+        : 'https://unsplash.com/?utm_source=korea_decode&utm_medium=referral';
+    const userLink = img.source === 'pexels'
+        ? img.user_link
+        : `${img.user_link}?utm_source=korea_decode&utm_medium=referral`;
+    const figureHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${userLink}" target="_blank">${img.user}</a> on <a href="${sourceUrl}" target="_blank">${sourceName}</a></figcaption></figure>`;
     quill.insertText(index, '\n');
     quill.clipboard.dangerouslyPasteHTML(index + 1, figureHtml);
     quill.setSelection(index + 2);
@@ -924,24 +1001,146 @@ function insertImageIntoBody(img) {
 
 // --- SHARED VOICE GUIDE FUNCTIONS ---
 function getVoiceGuide(nationality) {
-    if (nationality === 'USA') return 'Write in casual American English. Use modern slang, pop-culture references, and enthusiastic energy. Say things like "honestly," "literally," "game-changer," "vibe check." Be upbeat and relatable like a popular American vlogger.';
-    if (nationality === 'UK') return 'Write in British English with dry wit and understated humor. Use phrases like "rather brilliant," "spot on," "quite frankly." Be charming but not over-the-top. Think educated British travel writer.';
-    if (nationality === 'Australia') return 'Write in laid-back Australian English. Use phrases like "no worries," "heaps of," "reckon," "arvo." Be friendly, adventurous, and down-to-earth like a backpacker sharing stories at a hostel.';
-    if (nationality === 'France') return 'Write with a sophisticated European sensibility. Compare Korean culture to French equivalents. Appreciate aesthetics, food quality, and craftsmanship. Use occasional French expressions naturally.';
-    if (nationality === 'Germany') return 'Write with precision and thoroughness. Be practical and detail-oriented. Include specific facts, prices, and logistics. Compare efficiency and systems to German standards.';
-    if (nationality === 'Singapore') return 'Write from a Southeast Asian multicultural perspective. Draw comparisons with Singaporean culture, food, and lifestyle. Use Singlish-flavored expressions occasionally. Be warm and community-oriented.';
-    if (nationality === 'Japan') return 'Write with attention to aesthetics and cultural nuance. Draw comparisons between Korean and Japanese culture. Appreciate the subtle details. Be polite yet personal.';
-    if (nationality === 'Canada') return 'Write in friendly Canadian English. Be polite, inclusive, and warm. Compare to Canadian multicultural experience. Use phrases like "for sure," "pretty solid." Be genuine and approachable.';
-    return 'Write with a unique international perspective. Share how Korean culture looks through your cultural lens. Be authentic and personal.';
+    const guides = {
+        'USA': `**VOCABULARY:** Use "honestly," "literally," "game-changer," "vibe check," "I'm obsessed," "low-key," "no cap." Comfortable with internet slang and Gen Z/millennial crossover language.
+**STRUCTURE:** Mix short punchy sentences with longer stream-of-consciousness ones. Use rhetorical questions ("Is it just me or...?"). Love em-dashes and parenthetical asides.
+**CULTURAL LENS:** Compare Korean experiences to American equivalents — Target vs Daiso, Starbucks vs Korean cafes, NYC subway vs Seoul metro. Reference American pop culture naturally.
+**QUIRKS:** Start sentences with "Okay so," "Listen," "Not gonna lie." Tend to hype things up. Use capitalization for emphasis ("THIS place").
+**EXAMPLE PHRASES:** "Okay so hear me out—", "This might be controversial but...", "I literally cannot stress this enough", "If you know, you know (IYKYK)"`,
+
+        'UK': `**VOCABULARY:** Use "rather," "spot on," "proper," "brilliant," "cheeky," "dodgy," "sorted." Comfortable with understatement and irony. Occasional "bloody" for emphasis.
+**STRUCTURE:** Longer, more complex sentences with subordinate clauses. Dry observations followed by a wry aside. Build up to the point with gentle preamble.
+**CULTURAL LENS:** Compare to British institutions — Greggs vs Korean bakeries, the Tube vs Seoul metro, pub culture vs Korean drinking culture. Reference British weather as universal benchmark.
+**QUIRKS:** Understate strong emotions ("not entirely terrible" = amazing). Self-deprecating humor. Hedge opinions with "one might argue" or "I dare say."
+**EXAMPLE PHRASES:** "I'd heard the claims, of course—", "Right then, let's get into it", "which, frankly, is no small feat", "I was pleasantly surprised, if I'm being honest"`,
+
+        'Australia': `**VOCABULARY:** Use "heaps," "reckon," "arvo," "brekkie," "no worries," "keen," "suss out," "chucked." Drop the g in -ing occasionally ("goin'," "lovin'").
+**STRUCTURE:** Casual, conversational flow. Short sentences mixed with friendly run-ons. Pose questions to the reader as if chatting at a pub.
+**CULTURAL LENS:** Compare to Australian outdoors/beach culture, BBQ vs Korean BBQ, Australian coffee culture vs Korean cafes. Reference distance and travel ("back home you'd drive 4 hours for this").
+**QUIRKS:** Abbreviate everything — "defs," "arvo," "brekkie." Call everyone "mate." Play down impressive things ("yeah it was alright" = incredible).
+**EXAMPLE PHRASES:** "Look, I'm not gonna sugarcoat it—", "Mate, you absolutely have to try this", "Reckon this is one of the best I've had", "No worries if that's not your thing, but—"`,
+
+        'France': `**VOCABULARY:** Naturally weave in French words — "ambiance," "je ne sais quoi," "quartier," "rapport qualité-prix." Use refined adjectives like "exquisite," "nuanced," "sophisticated."
+**STRUCTURE:** Elegant longer sentences with multiple clauses. Build atmosphere before delivering opinions. Philosophical observations woven into practical content.
+**CULTURAL LENS:** Compare Korean aesthetics and cuisine to French standards — patisserie vs Korean desserts, fashion sensibility, cafe culture. Always note quality and craftsmanship.
+**QUIRKS:** Strong opinions about food quality and presentation. Appreciate artistry in everyday things. Slightly skeptical first, then won over.
+**EXAMPLE PHRASES:** "One must admit, the attention to detail here is remarkable—", "As a Parisian, I was initially skeptical, but...", "There's a certain je ne sais quoi about this place", "The presentation alone deserves recognition"`,
+
+        'Germany': `**VOCABULARY:** Use precise language — "specifically," "particularly noteworthy," "efficiently organized," "practical." Occasional German terms like "Gemütlichkeit," "Wanderlust."
+**STRUCTURE:** Well-organized with clear progression. Topic sentences followed by supporting evidence. Include specifics — prices, hours, distances, transit details.
+**CULTURAL LENS:** Compare systems and efficiency — Korean transit punctuality, organizational methods, recycling systems, work culture. Appreciate engineering and infrastructure.
+**QUIRKS:** Include practical logistics that other writers skip. Rate value-for-money. Appreciate well-designed systems. Slightly structured even in casual writing.
+**EXAMPLE PHRASES:** "What immediately stands out is the efficiency of—", "From a practical standpoint, here's what you need to know", "The attention to systematic organization here is impressive", "At approximately 15,000 KRW, this represents excellent value"`,
+
+        'Singapore': `**VOCABULARY:** Use Singlish-flavored expressions — "shiok," "can lah," "wah," "damn power," "not bad leh." Mix formal English with casual Singlish naturally.
+**STRUCTURE:** Conversational and warm. Short exclamatory sentences mixed with detailed descriptions. Direct comparisons and food-focused observations.
+**CULTURAL LENS:** Compare Korean hawker/street food to Singapore's, MRT systems, multicultural neighborhoods, shopping culture. Note the Asian similarities and surprising differences.
+**QUIRKS:** Food-centric observations in every post. Note cleanliness and organization. Appreciate good deals and value. Community-oriented perspective.
+**EXAMPLE PHRASES:** "Wah, this one really not bad—", "Okay this is like our hawker center but level up sia", "Damn shiok, must try when you go", "Can lah, very worth the trip one"`,
+
+        'Japan': `**VOCABULARY:** Use precise, aesthetically-minded language. Occasional Japanese terms — "kawaii," "sugoi," "oishii." Appreciate "wabi-sabi" beauty and subtle details.
+**STRUCTURE:** Balanced, measured sentences. Observe small details that others miss. Build narrative through sensory descriptions — sight, sound, taste, texture.
+**CULTURAL LENS:** Korean-Japanese cultural bridge — similar yet different customs, food similarities (ramen vs ramyeon), aesthetic sensibilities, convenience store culture, fashion subcultures.
+**QUIRKS:** Notice textures, presentation, packaging. Appreciate seasonality. Quiet enthusiasm rather than loud excitement. Thoughtful comparisons that show deep cultural understanding.
+**EXAMPLE PHRASES:** "What struck me first was the delicate balance of—", "There's a quiet beauty to this place that reminded me of...", "The level of care in the presentation is something I truly appreciate", "As someone from Japan, the subtle differences are fascinating"`,
+
+        'Canada': `**VOCABULARY:** Use "for sure," "pretty solid," "eh," "toonie/loonie" references. Polite qualifiers like "I think," "in my experience." Comfortable multicultural vocabulary.
+**STRUCTURE:** Warm, inclusive, and well-balanced. Mix personal experience with helpful advice. Acknowledging multiple perspectives before sharing own opinion.
+**CULTURAL LENS:** Compare to Canadian multiculturalism — diverse food scenes, winter gear needs, politeness culture, nature appreciation, Tim Hortons vs Korean coffee chains.
+**QUIRKS:** Apologize unnecessarily. Compare weather constantly. Appreciate inclusivity and accessibility. Mention poutine at least once in food posts.
+**EXAMPLE PHRASES:** "Sorry, but I have to gush about this for a second—", "If you're coming from Canada, you'll really appreciate", "Pretty solid experience overall, I'd say", "This might remind you of home, but with a Korean twist"`
+    };
+
+    return guides[nationality] || `**VOCABULARY:** Use natural expressions from your cultural background. Be authentic to your linguistic heritage.
+**STRUCTURE:** Write with your natural rhythm — let your cultural background shape sentence patterns.
+**CULTURAL LENS:** Compare Korean experiences to what you know from home. Highlight surprising similarities and fascinating differences.
+**QUIRKS:** Let your unique perspective shine through. The most interesting observations come from unexpected cultural angles.
+**EXAMPLE PHRASES:** Share your genuine reactions. Write as you would naturally tell a friend about your Korea experience.`;
 }
 
 function getJobVoice(job) {
-    if (job.includes('Blogger') || job.includes('Nomad')) return 'Write like an experienced travel content creator — practical tips, hidden gems, budget advice, personal anecdotes from the road.';
-    if (job.includes('Beauty') || job.includes('Skincare')) return 'Write like a beauty industry insider — ingredient knowledge, product comparisons, application techniques, before/after experiences.';
-    if (job.includes('Food') || job.includes('Critic')) return 'Write like a food journalist — flavor descriptions, cooking techniques, restaurant atmosphere, cultural context of dishes.';
-    if (job.includes('K-Pop') || job.includes('Stan')) return 'Write like a passionate K-Pop fan with deep knowledge — fandom terminology, comeback analysis, concert experiences, idol culture insights.';
-    if (job.includes('Student')) return 'Write like a young student abroad — budget-conscious, discovering things for the first time, relatable struggles and excitement.';
-    return 'Write with professional authority in your field while keeping it accessible to general readers.';
+    if (job.includes('Blogger') || job.includes('Nomad')) return `**EXPERTISE:** Travel logistics, hidden gems, budget optimization, destination comparison. Years of road-tested knowledge.
+**WRITING PATTERN:** Open with a hook from personal experience. Organize by practical sections (Getting There, What to Do, Budget Tips). End with "insider tip" that shows real expertise.
+**CONTENT FOCUS:** Actionable travel advice, honest cost breakdowns, off-the-beaten-path discoveries, "what I wish I knew before going" insights.`;
+
+    if (job.includes('Beauty') || job.includes('Skincare')) return `**EXPERTISE:** Ingredient science, product formulation, Korean beauty innovation, skincare routines, before/after analysis.
+**WRITING PATTERN:** Lead with the product/trend discovery moment. Break down technical details accessibly. Include personal skin journey and results.
+**CONTENT FOCUS:** Product deep-dives, ingredient breakdowns, K-Beauty vs Western beauty comparisons, routine building, shopping guides for beauty districts.`;
+
+    if (job.includes('Food') || job.includes('Critic')) return `**EXPERTISE:** Flavor profiling, cooking technique analysis, ingredient sourcing, restaurant ambiance assessment, food history and cultural context.
+**WRITING PATTERN:** Set the scene with atmosphere description. Analyze dishes systematically — appearance, aroma, taste, texture. Use precise culinary vocabulary. Rate with nuanced judgment, not simple stars.
+**CONTENT FOCUS:** Detailed dish analysis, restaurant reviews with context, street food deep-dives, regional cuisine differences, cooking class experiences, market tours.`;
+
+    if (job.includes('K-Pop') || job.includes('Stan')) return `**EXPERTISE:** Fandom culture, comeback analysis, idol training system, concert/fan event logistics, K-Pop industry business, music show voting.
+**WRITING PATTERN:** High energy opening that matches fandom excitement. Mix deep industry knowledge with personal fan reactions. Use fandom terminology naturally. Shift between analytical and emotional.
+**CONTENT FOCUS:** Concert venue reviews, fan pilgrimage locations, album/merch shopping, entertainment district guides, fandom meet-up culture, trainee life insights.`;
+
+    if (job.includes('Student')) return `**EXPERTISE:** Student life hacks, budget survival, campus culture, language learning journey, making Korean friends, navigating bureaucracy as a young foreigner.
+**WRITING PATTERN:** Relatable "figuring it out" narrative. Mix struggles with discoveries. Honest about challenges. Excited about small wins. Write like texting a friend back home about your day.
+**CONTENT FOCUS:** Affordable eats, student neighborhoods, language exchange tips, university culture, nightlife on a budget, dorm/housing reality, study cafe culture.`;
+
+    return `**EXPERTISE:** Professional knowledge in your field applied to Korean cultural context.
+**WRITING PATTERN:** Authoritative but accessible. Lead with unique professional insight, then broaden to general reader appeal.
+**CONTENT FOCUS:** Niche expertise applied to Korean experiences, professional observations that casual visitors would miss.`;
+}
+
+function getPersonaConfig(persona) {
+    const job = persona.job || '';
+    if (job.includes('K-Pop') || job.includes('Stan')) return { temperature: 0.9, topP: 0.95 };
+    if (job.includes('Food') || job.includes('Critic')) return { temperature: 0.6, topP: 0.9 };
+    if (job.includes('Student')) return { temperature: 0.85, topP: 0.92 };
+    if (job.includes('Beauty') || job.includes('Skincare')) return { temperature: 0.7, topP: 0.9 };
+    if (job.includes('Blogger') || job.includes('Nomad')) return { temperature: 0.75, topP: 0.92 };
+    return { temperature: 0.75, topP: 0.9 };
+}
+
+function getExampleOpening(persona) {
+    const nat = persona.nationality || '';
+    const job = persona.job || '';
+
+    const openings = {
+        'USA|Travel Blogger': "Okay, so I know literally everyone says you HAVE to visit this place — but hear me out, because there's a side of it nobody talks about.",
+        'USA|Digital Nomad': "Real talk: I've worked from cafes in 23 countries, and Korea just completely reset my standards for what a workspace can be.",
+        'USA|K-Pop Stan': "NOT ME literally screaming in the middle of the street when I realized where I was standing — this is THE spot, you guys.",
+        'USA|Food Critic': "I'll be honest — I walked in expecting the usual tourist trap situation. What I got instead completely changed my mind.",
+        'USA|Student': "So I'm sitting in my dorm room at 2am, scrolling through my photos from today, and I still can't believe this is my actual life right now.",
+        'UK|Travel Blogger': "I'll confess I arrived with a healthy dose of British skepticism — which lasted approximately forty-five minutes.",
+        'UK|Food Critic': "I'd heard the claims, of course — 'life-changing,' 'best you'll ever have,' the usual hyperbole. Reader, they were not exaggerating.",
+        'UK|Student': "Right, so nobody warned me that studying abroad in Korea would basically rewire my entire understanding of what 'going out' means.",
+        'UK|K-Pop Stan': "I flew twelve hours for a concert and an overpriced lightstick, and I'd do it again tomorrow without a moment's hesitation.",
+        'UK|Digital Nomad': "Finding a proper workspace abroad is rather like finding a decent cup of tea — far more difficult than it has any right to be. Until Seoul.",
+        'Australia|Travel Blogger': "Look, I've backpacked through most of Southeast Asia, but Korea hit different and I need to talk about why.",
+        'Australia|Food Critic': "Mate, I thought I knew good BBQ — we practically invented the thing in Australia. Then Seoul absolutely humbled me.",
+        'Australia|Student': "So my mates back home keep asking if I've gone 'full Korean' yet, and honestly? Yeah, kind of.",
+        'Australia|K-Pop Stan': "I dragged my travel mate to three different fan merch shops before breakfast and no, I do not feel bad about it.",
+        'France|Travel Blogger': "There are places that charm you slowly, and then there are places that seduce you immediately. This was undeniably the latter.",
+        'France|Food Critic': "As someone raised on French cuisine, I approach foreign kitchens with both curiosity and — I'll admit — a certain standard. This exceeded it.",
+        'Germany|Travel Blogger': "I'll start with what impressed me most: the infrastructure. Then we'll get to everything else, which was equally remarkable.",
+        'Germany|Food Critic': "I approached this with a systematic plan — five restaurants, three markets, two cooking classes. Here's my comprehensive assessment.",
+        'Singapore|Travel Blogger': "Wah, okay — coming from Singapore, I thought I knew Asian city life. Korea is like a parallel universe version that keeps surprising me.",
+        'Singapore|Food Critic': "As someone who grew up in Singapore's hawker culture, I have strong opinions about street food. Korea's street food scene? Damn shiok.",
+        'Japan|Travel Blogger': "The similarities between Korean and Japanese culture make the differences even more fascinating — and this experience perfectly illustrated why.",
+        'Japan|Food Critic': "There's a precision in Korean cooking that resonates deeply with Japanese culinary philosophy, yet the approach is entirely its own.",
+        'Canada|Travel Blogger': "Sorry in advance for how long this post is going to be — I just have SO many things to share about this experience.",
+        'Canada|Food Critic': "As a Canadian, I thought nothing could beat our multicultural food scene. Korea has entered the chat, and it's a serious contender."
+    };
+
+    // Try exact match
+    const key = `${nat}|${job}`;
+    if (openings[key]) return openings[key];
+
+    // Try partial job match
+    for (const [k, v] of Object.entries(openings)) {
+        const [oNat, oJob] = k.split('|');
+        if (oNat === nat && job.includes(oJob.split(' ')[0])) return v;
+    }
+
+    // Fallback by nationality
+    for (const [k, v] of Object.entries(openings)) {
+        if (k.startsWith(nat + '|')) return v;
+    }
+
+    return "There's something about Korea that gets under your skin — not all at once, but in small, unforgettable moments.";
 }
 
 // --- AUTOMATION PROFILES ---
@@ -1024,34 +1223,47 @@ function refreshAutoPersonaSelect() {
 async function generateAutomationSEOPlan(topic, persona) {
     let personaContext = '';
     if (persona && persona.name !== 'Korea Decode Editor') {
-        personaContext = `Writer: ${persona.name}, a ${persona.age} ${persona.gender} ${persona.nationality} ${persona.job}. Titles must reflect their voice.`;
+        const voiceGuide = getVoiceGuide(persona.nationality);
+        const likesAngle = persona.likes && persona.likes !== 'everything' ? `\nAngle the title to connect with their interest in "${persona.likes}" where natural.` : '';
+        personaContext = `Writer: ${persona.name}, a ${persona.age} ${persona.gender} ${persona.nationality} ${persona.job}.
+Voice summary: ${voiceGuide.split('\n')[0]}${likesAngle}
+Titles must reflect their unique voice — not generic blog titles.`;
     }
     const prompt = `Generate an SEO plan for a Korea Decode blog post.
 Topic: "${topic}"
 ${personaContext}
 Return JSON only: { "title": "SEO-optimized engaging title", "keywords": ["kw1","kw2","kw3","kw4","kw5"] }`;
-    const raw = await callAI(prompt);
+    const raw = await callAI(prompt, {
+        generationConfig: { temperature: 0.4, topP: 0.85 }
+    });
     return JSON.parse(cleanJSONResponse(raw));
 }
 
 async function fetchAutomationImages(topic, keywords, count) {
     const images = [];
-    const q = encodeURIComponent(`${topic} ${(keywords || []).slice(0, 2).join(' ')} korea`);
+    const q1 = `${topic} ${(keywords || []).slice(0, 2).join(' ')} korea`;
+    const q2 = topic + ' korea';
     try {
-        const res = await fetch(`https://api.unsplash.com/search/photos?page=1&per_page=${count + 1}&query=${q}&orientation=landscape&client_id=${UNSPLASH_ACCESS_KEY}`);
-        const data = await res.json();
-        if (data.results) {
-            data.results.forEach(img => {
-                images.push({
-                    url: img.urls.regular,
-                    alt: img.alt_description || topic,
-                    user: img.user.name,
-                    user_link: img.user.links.html
-                });
-            });
+        // Fetch from Unsplash and Pexels in parallel via proxy
+        const [unsplashRes, pexelsRes] = await Promise.all([
+            fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(q1)}&count=${count}`).then(r => r.json()).catch(() => ({ images: [] })),
+            fetch(`/image-proxy?source=pexels&query=${encodeURIComponent(q2)}&count=${Math.ceil(count / 2)}`).then(r => r.json()).catch(() => ({ images: [] }))
+        ]);
+        const seenUrls = new Set();
+        // Interleave: 2 unsplash, 1 pexels
+        const uImgs = unsplashRes.images || [];
+        const pImgs = pexelsRes.images || [];
+        let ui = 0, pi = 0;
+        while (images.length < count + 1 && (ui < uImgs.length || pi < pImgs.length)) {
+            if (ui < uImgs.length && !seenUrls.has(uImgs[ui].url)) { seenUrls.add(uImgs[ui].url); images.push(uImgs[ui]); }
+            ui++;
+            if (ui < uImgs.length && !seenUrls.has(uImgs[ui].url)) { seenUrls.add(uImgs[ui].url); images.push(uImgs[ui]); }
+            ui++;
+            if (pi < pImgs.length && !seenUrls.has(pImgs[pi].url)) { seenUrls.add(pImgs[pi].url); images.push(pImgs[pi]); }
+            pi++;
         }
     } catch (e) {
-        console.error('Automation Unsplash error:', e);
+        console.error('Automation image fetch error:', e);
     }
     return images;
 }
@@ -1059,8 +1271,12 @@ async function fetchAutomationImages(topic, keywords, count) {
 async function generateAutomationArticle(topic, title, keywords, persona, wordCount, imgCount, toneOverride, images) {
     const voiceGuide = getVoiceGuide(persona.nationality);
     const jobVoice = getJobVoice(persona.job);
+    const personaConfig = getPersonaConfig(persona);
+    const exampleOpening = getExampleOpening(persona);
     const contentImages = images.slice(1, imgCount + 1);
     const actualImgCount = contentImages.length;
+
+    const likesIntegration = persona.likes && persona.likes !== 'everything' ? `\n6. **PERSONAL INTERESTS:** Naturally weave "${persona.likes}" into the article where it fits organically.` : '';
 
     const prompt = `
 **You ARE ${persona.name}. Stay in character for the ENTIRE article.**
@@ -1071,8 +1287,13 @@ async function generateAutomationArticle(topic, title, keywords, persona, wordCo
 
 **YOUR UNIQUE VOICE:**
 ${voiceGuide}
+
+**YOUR PROFESSIONAL LENS:**
 ${jobVoice}
 ${toneOverride ? `**TONE OVERRIDE:** ${toneOverride}` : ''}
+
+**EXAMPLE OPENING (match this energy and style, but DO NOT copy verbatim):**
+"${exampleOpening}"
 
 **Task:** Write a ~${wordCount}-word blog post for 'Korea Decode'.
 **Topic:** "${title}"
@@ -1084,18 +1305,27 @@ ${toneOverride ? `**TONE OVERRIDE:** ${toneOverride}` : ''}
 2. Structure: Hook intro (NO self-intro). 3-5 sections with <h2>/<h3>. Use <ul><li>, <strong>, <blockquote>.
 3. Place exactly **${actualImgCount}** image markers: <p>[IMG]</p> spaced evenly through the article.
 4. HTML only. No <html>, <body>, <h1>, or markdown.
-5. Strong conclusion with call-to-action.
+5. Strong conclusion with call-to-action.${likesIntegration}
 
 **Output:** Only the article HTML body.`;
 
-    let rawContent = await callAI(prompt);
+    let rawContent = await callAI(prompt, {
+        generationConfig: { temperature: personaConfig.temperature, topP: personaConfig.topP }
+    });
     rawContent = rawContent.trim();
     if (rawContent.startsWith('```html')) rawContent = rawContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
     else if (rawContent.startsWith('```')) rawContent = rawContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
 
-    // Replace [IMG] with actual images
+    // Replace [IMG] with actual images (multi-source attribution)
     contentImages.forEach(img => {
-        const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${img.user_link}?utm_source=korea_decode&utm_medium=referral" target="_blank">${img.user}</a> on <a href="https://unsplash.com/?utm_source=korea_decode&utm_medium=referral" target="_blank">Unsplash</a></figcaption></figure>`;
+        const sourceName = img.source === 'pexels' ? 'Pexels' : 'Unsplash';
+        const sourceUrl = img.source === 'pexels'
+            ? 'https://www.pexels.com/'
+            : 'https://unsplash.com/?utm_source=korea_decode&utm_medium=referral';
+        const userLink = img.source === 'pexels'
+            ? img.user_link
+            : `${img.user_link}?utm_source=korea_decode&utm_medium=referral`;
+        const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${userLink}" target="_blank">${img.user}</a> on <a href="${sourceUrl}" target="_blank">${sourceName}</a></figcaption></figure>`;
         if (rawContent.includes('<p>[IMG]</p>')) rawContent = rawContent.replace('<p>[IMG]</p>', imgHtml);
         else if (rawContent.includes('[IMG]')) rawContent = rawContent.replace('[IMG]', imgHtml);
     });
