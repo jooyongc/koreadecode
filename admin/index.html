@@ -694,20 +694,33 @@
             <h3>Insert Affiliate Widget</h3>
             <button id="btn-close-affiliate" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
         </div>
-        <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">
-            Paste the full affiliate HTML code below (including &lt;script&gt; tags). It will be saved and rendered properly on the live blog.
-        </p>
+
+        <!-- Saved Presets -->
+        <div id="aff-presets" style="margin-bottom:16px;">
+            <label class="form-label">Saved Presets</label>
+            <div id="aff-preset-list" style="display:flex; gap:8px; flex-wrap:wrap;">
+                <span style="color:var(--text-muted); font-size:13px;">No saved presets yet</span>
+            </div>
+        </div>
+
+        <div style="height:1px; background:var(--border); margin-bottom:16px;"></div>
+
         <div class="form-group">
-            <label class="form-label">Widget Label (optional)</label>
+            <label class="form-label">Widget Label</label>
             <input id="aff-label" class="form-input" placeholder="e.g. Klook Seoul Tours" value="Klook Widget">
         </div>
         <div class="form-group">
             <label class="form-label">Affiliate HTML Code</label>
-            <textarea id="aff-code-input" class="form-input" rows="8" placeholder='<ins class="klk-aff-widget" ...></ins>&#10;<script>...</script>' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
+            <textarea id="aff-code-input" class="form-input" rows="6" placeholder='<ins class="klk-aff-widget" ...></ins>&#10;<script>...</script>' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
         </div>
-        <button id="btn-confirm-affiliate" class="btn btn-primary w-full" style="margin-top:8px;">
-            <i class="ph ph-plus-circle"></i> Insert into Editor
-        </button>
+        <div style="display:flex; gap:8px;">
+            <button id="btn-save-aff-preset" class="btn btn-outline" style="flex:1;">
+                <i class="ph ph-floppy-disk"></i> Save as Preset
+            </button>
+            <button id="btn-confirm-affiliate" class="btn btn-primary" style="flex:1;">
+                <i class="ph ph-plus-circle"></i> Insert into Editor
+            </button>
+        </div>
     </div>
 </div>
 

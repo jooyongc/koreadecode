@@ -250,6 +250,7 @@ async function init() {
     document.getElementById('btn-close-preview').addEventListener('click', () => closeModal('modal-preview'));
     document.getElementById('btn-insert-affiliate').addEventListener('click', openAffiliateModal);
     document.getElementById('btn-confirm-affiliate').addEventListener('click', insertAffiliateCode);
+    document.getElementById('btn-save-aff-preset').addEventListener('click', saveAffiliatePreset);
     document.getElementById('btn-close-affiliate').addEventListener('click', () => closeModal('modal-affiliate'));
 
     const personaList = document.getElementById('persona-list');
@@ -755,6 +756,11 @@ window.editPost = async (id) => {
     document.getElementById('writer-heading').innerText = "Edit Post";
     document.getElementById('btn-save-post').innerHTML = '<i class="ph ph-floppy-disk"></i> Update';
 
+    // Reset HTML mode if active
+    if (isHtmlMode) {
+        toggleHtmlSource();
+    }
+
     const { data: p, error } = await supabase.from('posts').select('*').eq('id', id).single();
     if (error || !p) return;
 
@@ -766,6 +772,9 @@ window.editPost = async (id) => {
     if (slugInput) {
         slugInput.value = p.slug || generateSlug(p.title);
     }
+
+    // Clear editor before loading new content
+    quill.setContents([]);
 
     // Pre-process affiliate blocks before loading into Quill
     const editorContent = processContentForEdit(p.content || '');
@@ -1799,7 +1808,62 @@ function calculateSEOScore() {
 function openAffiliateModal() {
     document.getElementById('aff-label').value = 'Klook Widget';
     document.getElementById('aff-code-input').value = '';
+    renderAffiliatePresets();
     document.getElementById('modal-affiliate').style.display = 'flex';
+}
+
+function getAffiliatePresets() {
+    return JSON.parse(localStorage.getItem('aff_presets') || '[]');
+}
+
+function saveAffiliatePreset() {
+    const label = document.getElementById('aff-label').value.trim();
+    const code = document.getElementById('aff-code-input').value.trim();
+    if (!label || !code) return alert('Label and code are both required to save a preset.');
+    const presets = getAffiliatePresets();
+    // Replace if same label exists
+    const idx = presets.findIndex(p => p.label === label);
+    if (idx >= 0) presets[idx].code = code;
+    else presets.push({ label, code });
+    localStorage.setItem('aff_presets', JSON.stringify(presets));
+    renderAffiliatePresets();
+    alert('Preset saved!');
+}
+
+function renderAffiliatePresets() {
+    const container = document.getElementById('aff-preset-list');
+    const presets = getAffiliatePresets();
+    if (presets.length === 0) {
+        container.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">No saved presets yet</span>';
+        return;
+    }
+    container.innerHTML = presets.map((p, i) => `
+        <button class="btn btn-outline btn-sm aff-preset-btn" data-idx="${i}" style="position:relative;">
+            <i class="ph ph-link"></i> ${escHtml(p.label)}
+            <span class="aff-preset-del" data-idx="${i}" title="Delete preset" style="margin-left:6px;color:var(--danger);cursor:pointer;">&times;</span>
+        </button>
+    `).join('');
+
+    // Click to fill
+    container.querySelectorAll('.aff-preset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (e.target.classList.contains('aff-preset-del')) {
+                // Delete preset
+                const idx = parseInt(e.target.dataset.idx);
+                const pr = getAffiliatePresets();
+                pr.splice(idx, 1);
+                localStorage.setItem('aff_presets', JSON.stringify(pr));
+                renderAffiliatePresets();
+                return;
+            }
+            const idx = parseInt(btn.dataset.idx);
+            const preset = getAffiliatePresets()[idx];
+            if (preset) {
+                document.getElementById('aff-label').value = preset.label;
+                document.getElementById('aff-code-input').value = preset.code;
+            }
+        });
+    });
 }
 
 function insertAffiliateCode() {
@@ -1878,8 +1942,15 @@ window.toggleHtmlSource = () => {
         btn.innerHTML = '<i class="ph ph-eye"></i> Visual';
         isHtmlMode = true;
     } else {
+        // Warn if HTML contains script tags that Quill will strip
+        const htmlContent = htmlEditor.value;
+        if (/<script[\s>]/i.test(htmlContent)) {
+            if (!confirm('Warning: Switching to Visual mode will strip <script> tags (affiliate widgets, embeds). Your content will be saved correctly if you publish while staying in HTML mode.\n\nSwitch anyway?')) {
+                return;
+            }
+        }
         // Switch back to visual mode
-        quill.root.innerHTML = htmlEditor.value;
+        quill.root.innerHTML = htmlContent;
         htmlEditor.style.display = 'none';
         quillContainer.style.display = 'flex';
         btn.classList.remove('active');
