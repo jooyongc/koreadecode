@@ -28,33 +28,30 @@ export async function onRequest(context) {
       return new Response(JSON.stringify({ error: "No prompt provided" }), { status: 400, headers: corsHeaders });
     }
 
-    // --- Cloudflare Workers AI (지역 제한 없음) ---
+    // --- 1순위: Cloudflare Workers AI (무료, 지역 제한 없음) ---
     if (env.AI) {
-      const cfModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
-      const messages = [{ role: 'user', content: prompt }];
-
-      const aiOptions = {};
-      if (generationConfig) {
-        if (typeof generationConfig.temperature === 'number') aiOptions.temperature = generationConfig.temperature;
-        if (typeof generationConfig.maxOutputTokens === 'number') aiOptions.max_tokens = generationConfig.maxOutputTokens;
-        if (typeof generationConfig.topP === 'number') aiOptions.top_p = generationConfig.topP;
-        if (typeof generationConfig.topK === 'number') aiOptions.top_k = generationConfig.topK;
+      try {
+        const cfModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+        const messages = [{ role: 'user', content: prompt }];
+        const aiOptions = {};
+        if (generationConfig) {
+          if (typeof generationConfig.temperature === 'number') aiOptions.temperature = generationConfig.temperature;
+          if (typeof generationConfig.maxOutputTokens === 'number') aiOptions.max_tokens = generationConfig.maxOutputTokens;
+          if (typeof generationConfig.topP === 'number') aiOptions.top_p = generationConfig.topP;
+        }
+        const result = await env.AI.run(cfModel, { messages, ...aiOptions });
+        if (result.response) {
+          return new Response(JSON.stringify({ text: result.response }), { headers: corsHeaders });
+        }
+      } catch (aiErr) {
+        console.error("[Workers AI] Failed, falling back to Gemini:", aiErr.message);
       }
-
-      const result = await env.AI.run(cfModel, { messages, ...aiOptions });
-      const text = result.response;
-
-      if (!text) {
-        return new Response(JSON.stringify({ error: "Empty response from Workers AI" }), { status: 500, headers: corsHeaders });
-      }
-
-      return new Response(JSON.stringify({ text }), { headers: corsHeaders });
     }
 
-    // --- Gemini API Fallback (Workers AI 바인딩 없을 때) ---
+    // --- 2순위: Gemini API (직접 호출) ---
     const GEMINI_KEY = userGeminiKey || env.GEMINI_API_KEY || env.GEMINI_KEY || '';
     if (!GEMINI_KEY) {
-      return new Response(JSON.stringify({ error: "No AI provider configured. Add Workers AI binding or Gemini API key." }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "No Gemini API key configured" }), { status: 400, headers: corsHeaders });
     }
 
     const allowedModels = [
@@ -79,15 +76,22 @@ export async function onRequest(context) {
       }
     }
 
-    const CF_ACCOUNT_ID = '17e57edaae05b0482ff770f37a54812d';
-    const CF_GATEWAY = 'koreadecode';
-    const resp = await fetch(`https://gateway.ai.cloudflare.com/v1/${CF_ACCOUNT_ID}/${CF_GATEWAY}/google-ai-studio/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_KEY}`, {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_KEY}`;
+    const resp = await fetch(geminiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
-    const data = await resp.json();
+    // 응답이 JSON인지 확인
+    const respText = await resp.text();
+    let data;
+    try {
+      data = JSON.parse(respText);
+    } catch (parseErr) {
+      return new Response(JSON.stringify({ error: "Gemini returned invalid response (HTTP " + resp.status + ")" }), { status: 500, headers: corsHeaders });
+    }
+
     if (data.error) {
       return new Response(JSON.stringify({ error: data.error.message }), { status: 500, headers: corsHeaders });
     }
