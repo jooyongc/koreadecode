@@ -240,12 +240,23 @@ async function loadHeroSettings() {
             .eq('key', 'hero')
             .single();
 
+        // Defaults if site_settings fails
+        const defaults = {
+            label: 'Welcome to Korea Decode',
+            title_before: 'Decoding',
+            title_highlight: 'Korea',
+            title_after: ', One Story at a Time',
+            description: 'Your English-language guide to Korean culture, food, beauty, travel, and trends.',
+            cta_primary_text: 'Read Blog',
+            cta_primary_url: '/blog',
+            cta_secondary_text: 'Try Decode This',
+            cta_secondary_url: '/decode'
+        };
+
+        const h = (error || !data) ? defaults : { ...defaults, ...data.value };
         if (error || !data) {
             console.warn('[Home] No hero settings found, using defaults:', error?.message);
-            return;
         }
-
-        const h = data.value;
 
         // Apply hero background image
         const heroImg = document.getElementById('hero-bg-img');
@@ -255,38 +266,40 @@ async function loadHeroSettings() {
 
         // Apply hero label
         const heroLabel = document.querySelector('.hero-label');
-        if (heroLabel && h.label) {
-            heroLabel.textContent = h.label;
-        }
+        if (heroLabel) heroLabel.textContent = h.label;
 
         // Apply hero title
         const heroH1 = document.querySelector('.hero-content h1');
-        if (heroH1 && (h.title_before || h.title_highlight || h.title_after)) {
-            heroH1.innerHTML = `${h.title_before || ''} <span class="highlight">${h.title_highlight || ''}</span>${h.title_after || ''}`;
-        }
+        if (heroH1) heroH1.innerHTML = `${h.title_before} <span class="highlight">${h.title_highlight}</span>${h.title_after}`;
 
         // Apply hero description
         const heroDesc = document.querySelector('.hero-description');
-        if (heroDesc && h.description) {
-            heroDesc.textContent = h.description;
-        }
+        if (heroDesc) heroDesc.textContent = h.description;
 
         // Apply CTA buttons
         const actions = document.querySelector('.hero-actions');
         if (actions) {
             const primaryBtn = actions.querySelector('.btn-primary');
             const secondaryBtn = actions.querySelector('.btn-outline');
-            if (primaryBtn && h.cta_primary_text) {
+            if (primaryBtn) {
                 primaryBtn.textContent = h.cta_primary_text;
-                if (h.cta_primary_url) primaryBtn.href = h.cta_primary_url;
+                primaryBtn.href = h.cta_primary_url;
             }
-            if (secondaryBtn && h.cta_secondary_text) {
+            if (secondaryBtn) {
                 secondaryBtn.textContent = h.cta_secondary_text;
-                if (h.cta_secondary_url) secondaryBtn.href = h.cta_secondary_url;
+                secondaryBtn.href = h.cta_secondary_url;
             }
         }
+
+        // Fade in hero content
+        const heroContent = document.querySelector('.hero-content');
+        if (heroContent) heroContent.style.opacity = '1';
+
     } catch (err) {
         console.error('[Home] Failed to load hero settings:', err);
+        // Still show hero with empty content visible
+        const heroContent = document.querySelector('.hero-content');
+        if (heroContent) heroContent.style.opacity = '1';
     }
 }
 
