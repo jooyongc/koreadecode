@@ -19,7 +19,8 @@ async function callAI(prompt, options = {}) {
         if (data.error) throw new Error(data.error);
         if (!data.text) throw new Error("Empty response from AI");
         console.log("[AI] Proxy success");
-        return data.text;
+        // Ensure we always return a string
+        return typeof data.text === 'string' ? data.text : JSON.stringify(data.text);
     } catch (e) {
         console.error("[AI] Proxy failed:", e);
         throw new Error("AI Error: " + e.message);
@@ -27,6 +28,7 @@ async function callAI(prompt, options = {}) {
 }
 
 function cleanJSONResponse(text) {
+    if (typeof text !== 'string') text = JSON.stringify(text);
     text = text.trim();
     if (text.startsWith("```json")) {
         text = text.replace(/^```json\s*/, "").replace(/\s*```$/, "");
@@ -41,6 +43,7 @@ function cleanJSONResponse(text) {
  * Fixes unterminated strings, missing brackets/braces, trailing commas.
  */
 function repairJSON(text) {
+    if (typeof text !== 'string') text = JSON.stringify(text);
     text = text.trim();
 
     // Remove trailing comma before attempting to close
