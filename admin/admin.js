@@ -115,6 +115,7 @@ async function init() {
     document.getElementById('btn-search-unsplash').addEventListener('click', searchUnsplashAI);
     document.getElementById('btn-save-post').addEventListener('click', publishPost);
     document.getElementById('btn-show-preview').addEventListener('click', showMobilePreview);
+    document.getElementById('btn-toggle-html').addEventListener('click', toggleHtmlSource);
 
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
     document.getElementById('btn-remove-duplicates').addEventListener('click', removeDuplicates);
@@ -549,6 +550,11 @@ window.resetAI = () => {
     editingPostId = null;
     document.getElementById('writer-heading').innerText = "AI Content Creator";
     document.getElementById('btn-save-post').innerHTML = '<i class="ph ph-paper-plane-right"></i> Publish';
+
+    // Reset HTML mode if active
+    if (isHtmlMode) {
+        toggleHtmlSource();
+    }
 
     document.getElementById('step-1').classList.add('active');
     document.getElementById('step-2').style.opacity = '0.5';
@@ -1539,19 +1545,54 @@ function calculateSEOScore() {
     document.getElementById('seo-score-text').innerText = score + '%';
 }
 
+// --- HTML Source Toggle ---
+let isHtmlMode = false;
+window.toggleHtmlSource = () => {
+    const btn = document.getElementById('btn-toggle-html');
+    const quillContainer = document.querySelector('#editor-container');
+    const htmlEditor = document.getElementById('html-source-editor');
+
+    if (!isHtmlMode) {
+        // Switch to HTML source mode
+        htmlEditor.value = quill.root.innerHTML;
+        quillContainer.style.display = 'none';
+        htmlEditor.style.display = 'block';
+        btn.classList.add('active');
+        btn.innerHTML = '<i class="ph ph-eye"></i> Visual';
+        isHtmlMode = true;
+    } else {
+        // Switch back to visual mode
+        quill.root.innerHTML = htmlEditor.value;
+        htmlEditor.style.display = 'none';
+        quillContainer.style.display = 'flex';
+        btn.classList.remove('active');
+        btn.innerHTML = '<i class="ph ph-code"></i> HTML';
+        isHtmlMode = false;
+        calculateSEOScore();
+    }
+};
+
+// Helper: get current editor content (works in both visual and HTML mode)
+function getEditorContent() {
+    if (isHtmlMode) {
+        return document.getElementById('html-source-editor').value;
+    }
+    return quill.root.innerHTML;
+}
+
 window.showMobilePreview = () => {
     document.getElementById('prev-cat').innerText = document.getElementById('ai-category').value;
     document.getElementById('prev-title').innerText = document.getElementById('ai-suggested-title').value;
     document.getElementById('prev-img').src = activeImage;
     document.getElementById('prev-img').style.display = activeImage ? 'block' : 'none';
-    document.getElementById('prev-content').innerHTML = quill.root.innerHTML;
+    document.getElementById('prev-content').innerHTML = getEditorContent();
     document.getElementById('modal-preview').style.display = 'flex';
 };
 
 window.publishPost = async () => {
     const title = document.getElementById('ai-suggested-title').value;
     const category = document.getElementById('ai-category').value;
-    const content = quill.root.innerHTML;
+    const content = getEditorContent();
     const scheduleStr = document.getElementById('post-schedule').value;
 
     if (!title) return alert("Title is required");
