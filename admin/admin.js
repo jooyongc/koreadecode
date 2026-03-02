@@ -36,6 +36,64 @@ function cleanJSONResponse(text) {
     return text;
 }
 
+/**
+ * Attempt to repair truncated JSON from AI responses.
+ * Fixes unterminated strings, missing brackets/braces, trailing commas.
+ */
+function repairJSON(text) {
+    text = text.trim();
+
+    // Remove trailing comma before attempting to close
+    text = text.replace(/,\s*$/, '');
+
+    // Count open/close brackets and braces
+    let inString = false;
+    let escape = false;
+    let openBraces = 0;
+    let openBrackets = 0;
+    let lastCharWasBackslash = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (escape) { escape = false; continue; }
+        if (ch === '\\') { escape = true; continue; }
+        if (ch === '"') { inString = !inString; continue; }
+        if (inString) continue;
+        if (ch === '{') openBraces++;
+        if (ch === '}') openBraces--;
+        if (ch === '[') openBrackets++;
+        if (ch === ']') openBrackets--;
+    }
+
+    // If we're inside an unterminated string, close it
+    if (inString) {
+        text += '"';
+    }
+
+    // Remove trailing comma after fixing string
+    text = text.replace(/,\s*$/, '');
+
+    // Close any open brackets and braces
+    for (let i = 0; i < openBrackets; i++) text += ']';
+    for (let i = 0; i < openBraces; i++) text += '}';
+
+    return text;
+}
+
+/**
+ * Parse JSON from AI with automatic repair on failure.
+ */
+function parseAIJSON(rawText) {
+    const cleaned = cleanJSONResponse(rawText);
+    try {
+        return JSON.parse(cleaned);
+    } catch (e) {
+        console.warn("[AI] JSON parse failed, attempting repair:", e.message);
+        const repaired = repairJSON(cleaned);
+        return JSON.parse(repaired);
+    }
+}
+
 // --- SLUG GENERATION ---
 function generateSlug(title) {
     if (!title) return '';
@@ -812,8 +870,7 @@ Ensure the titles are captivating, reflect the writer's unique personality and e
         let rawText = await callAI(prompt, {
             generationConfig: { temperature: 0.4, topP: 0.85 }
         });
-        rawText = cleanJSONResponse(rawText);
-        const data = JSON.parse(rawText);
+        const data = parseAIJSON(rawText);
 
         document.getElementById('ai-suggested-title').value = data.suggested_titles[0] || `Guide to ${topic}`;
 
@@ -893,7 +950,7 @@ window.runAIPhase2 = async () => {
         try {
             const iqPrompt = `Generate 3 diverse image search queries for a blog post about "${topic}" in Korea. Return JSON array only: ["food closeup query", "street/scenery query", "cultural activity query"]. Short queries (2-4 words each). No explanation.`;
             const iqRaw = await callAI(iqPrompt, { generationConfig: { temperature: 0.3 } });
-            const iqParsed = JSON.parse(cleanJSONResponse(iqRaw));
+            const iqParsed = parseAIJSON(iqRaw);
             if (Array.isArray(iqParsed) && iqParsed.length >= 2) imageQueries = iqParsed;
         } catch (e) {
             console.warn("[Images] AI query generation failed, using defaults:", e);
@@ -1432,7 +1489,7 @@ Return JSON only: { "title": "SEO-optimized engaging title", "keywords": ["kw1",
     const raw = await callAI(prompt, {
         generationConfig: { temperature: 0.4, topP: 0.85 }
     });
-    return JSON.parse(cleanJSONResponse(raw));
+    return parseAIJSON(raw);
 }
 
 async function fetchAutomationImages(topic, keywords, count) {

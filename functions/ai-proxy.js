@@ -33,7 +33,7 @@ export async function onRequest(context) {
       try {
         const cfModel = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
         const messages = [{ role: 'user', content: prompt }];
-        const aiOptions = {};
+        const aiOptions = { max_tokens: 4096 };
         if (generationConfig) {
           if (typeof generationConfig.temperature === 'number') aiOptions.temperature = generationConfig.temperature;
           if (typeof generationConfig.maxOutputTokens === 'number') aiOptions.max_tokens = generationConfig.maxOutputTokens;
