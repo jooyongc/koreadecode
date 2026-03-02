@@ -552,22 +552,109 @@ const resetPersonaForm = () => {
 };
 
 function generateRandomPersona() {
-    const names = ["Emma", "Liam", "Sophia", "Noah", "Olivia", "James", "Ava", "William"];
-    const jobs = ["Travel Blogger", "K-Beauty Editor", "Food Critic", "K-Pop Stan", "Digital Nomad", "Student"];
-    const countries = ["USA", "UK", "Canada", "Australia", "France", "Germany", "Singapore"];
-    const likesList = ["Spicy tteokbokki", "Hidden cafes", "Indie music", "Skincare routines", "History", "Street food"];
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
-    const rName = names[Math.floor(Math.random() * names.length)] + " " + ["Smith", "Kim", "Lee", "Johnson", "Brown"][Math.floor(Math.random() * 5)];
-    const rJob = jobs[Math.floor(Math.random() * jobs.length)];
-    const rCountry = countries[Math.floor(Math.random() * countries.length)];
-    const rLikes = likesList[Math.floor(Math.random() * likesList.length)];
+    // --- First Names by region/gender ---
+    const firstNames = {
+        western_f: ["Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Charlotte", "Harper", "Amelia", "Ella", "Chloe", "Grace", "Lily", "Zoe", "Hannah", "Natalie", "Victoria", "Audrey", "Claire", "Scarlett", "Lucy", "Nora", "Stella", "Violet", "Ruby"],
+        western_m: ["Liam", "Noah", "James", "William", "Oliver", "Benjamin", "Lucas", "Henry", "Alexander", "Daniel", "Matthew", "Sebastian", "Jack", "Owen", "Ethan", "Ryan", "Nathan", "Dylan", "Samuel", "Caleb", "Leo", "Max", "Theo", "Miles", "Finn"],
+        korean_f: ["Jiyeon", "Minji", "Soojin", "Yuna", "Haeun", "Soyeon", "Dahyun", "Eunbi", "Chaeyoung", "Nayeon", "Seulgi", "Jisoo", "Yeji", "Hyejin", "Subin"],
+        korean_m: ["Minjun", "Jiwoo", "Seohan", "Hyunwoo", "Taeyang", "Dongwook", "Junhyuk", "Siwon", "Jaehyun", "Seojun", "Doyoon", "Yoonho", "Jihoon", "Wonjin", "Hajun"],
+        japanese_f: ["Yuki", "Sakura", "Hana", "Aoi", "Mei", "Rin", "Mio", "Saki", "Nanami", "Koharu"],
+        japanese_m: ["Haruto", "Ren", "Sota", "Yuto", "Kaito", "Riku", "Hinata", "Takumi", "Kenta", "Daichi"],
+        chinese_f: ["Mei Lin", "Xiao Wei", "Li Na", "Jing Yi", "Xin Yue", "Yan Yan", "Zi Han", "Yu Xin", "Shu Qi", "Wen Xin"],
+        chinese_m: ["Wei", "Jun", "Hao", "Zhi Yuan", "Yi Fan", "Tian Yu", "Chen Xi", "Ming Hao", "Zi Xuan", "Bo Wen"],
+        southeast_asian_f: ["Priya", "Ananya", "Nurul", "Putri", "Mai", "Thao", "Arisa", "Kamala", "Siti", "Nadia"],
+        southeast_asian_m: ["Arjun", "Raj", "Ahmad", "Rizky", "Duc", "Minh", "Kiran", "Ravi", "Budi", "Tariq"],
+        european_f: ["Léa", "Camille", "Lena", "Freya", "Elsa", "Chiara", "Marta", "Ingrid", "Katya", "Petra", "Amelie", "Bianca", "Sofie", "Astrid", "Elena"],
+        european_m: ["Hugo", "Louis", "Matteo", "Lars", "Erik", "Marco", "Pablo", "Andrei", "Niklas", "Felix", "Anton", "Luca", "Sven", "Pierre", "Dmitri"],
+        latin_f: ["Valentina", "Camila", "Luciana", "Gabriela", "Mariana", "Fernanda", "Daniela", "Renata", "Isabela", "Paloma"],
+        latin_m: ["Santiago", "Mateo", "Diego", "Alejandro", "Carlos", "Miguel", "Rafael", "Andrés", "Gabriel", "Felipe"],
+        african_f: ["Amara", "Zara", "Nia", "Aisha", "Fatima", "Kemi", "Thandiwe", "Amina", "Chioma", "Naledi"],
+        african_m: ["Kwame", "Emeka", "Tariq", "Jabari", "Kofi", "Chidi", "Oluwaseun", "Tendai", "Amadi", "Sekou"]
+    };
+
+    // --- Last Names by region ---
+    const lastNames = {
+        western: ["Smith", "Johnson", "Williams", "Brown", "Jones", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson", "Clark", "Harris", "Lewis", "Walker", "Hall", "Allen", "Young", "King", "Wright"],
+        korean: ["Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Yoon", "Jang", "Lim", "Han", "Oh", "Seo", "Shin", "Kwon", "Hwang", "Song", "Ahn", "Ryu", "Bae", "Moon"],
+        japanese: ["Tanaka", "Suzuki", "Watanabe", "Ito", "Yamamoto", "Nakamura", "Kobayashi", "Sato", "Kato", "Yoshida"],
+        chinese: ["Wang", "Li", "Zhang", "Liu", "Chen", "Yang", "Huang", "Wu", "Zhou", "Xu"],
+        european: ["Müller", "Schmidt", "Dubois", "Martin", "García", "Rossi", "Silva", "Andersen", "Johansson", "Petrov", "Larsson", "Bernard", "Meyer", "Moreau", "Ferreira"],
+        latin: ["García", "Rodríguez", "Martínez", "López", "Hernández", "González", "Pérez", "Sánchez", "Ramírez", "Torres"],
+        southeast_asian: ["Patel", "Sharma", "Nguyen", "Tran", "Pham", "Rahman", "Singh", "Tan", "Wong", "Das"],
+        african: ["Okafor", "Mensah", "Adeyemi", "Nkosi", "Diallo", "Osei", "Kamara", "Mwangi", "Abara", "Dlamini"]
+    };
+
+    // --- Jobs (expanded) ---
+    const jobs = [
+        "Travel Blogger", "K-Beauty Editor", "Food Critic", "K-Pop Journalist", "Digital Nomad",
+        "Expat Living in Seoul", "Culture Columnist", "Lifestyle Vlogger", "Skincare Researcher",
+        "Korean Food Recipe Developer", "K-Drama Reviewer", "Language Learning Coach",
+        "Photography Enthusiast", "Fashion & Style Writer", "Hallyu Culture Analyst",
+        "Freelance Journalist", "Study Abroad Student", "ESL Teacher in Korea",
+        "Seoul City Guide", "Wellness & Health Writer", "K-Pop Fan Community Leader",
+        "Travel Photographer", "Street Food Explorer", "Cultural Anthropologist",
+        "Korean History Researcher", "Sustainable Travel Advocate"
+    ];
+
+    // --- Countries (expanded) ---
+    const countries = [
+        "USA", "UK", "Canada", "Australia", "France", "Germany", "Singapore", "Japan",
+        "South Korea", "Philippines", "Indonesia", "India", "Vietnam", "Thailand", "Malaysia",
+        "Brazil", "Mexico", "Colombia", "Spain", "Italy", "Netherlands", "Sweden", "Norway",
+        "Nigeria", "South Africa", "Kenya", "Ghana", "New Zealand", "Ireland", "Portugal",
+        "Poland", "Turkey", "UAE", "Saudi Arabia", "Argentina", "Chile", "Taiwan", "Hong Kong"
+    ];
+
+    // --- Likes (expanded) ---
+    const likesList = [
+        "Spicy tteokbokki", "Hidden cafes in Hongdae", "Indie Korean music", "Skincare routines",
+        "Korean history", "Street food markets", "K-Drama binge watching", "Soju tastings",
+        "Temple stays", "Korean BBQ", "Jeju Island hikes", "Hanbok fashion", "Night markets",
+        "Korean pottery and ceramics", "Bukchon Hanok Village walks", "Seoul subway exploration",
+        "Korean language learning", "Vintage shopping in Itaewon", "PC bang culture",
+        "Makgeolli brewing", "Cherry blossom season", "Korean fried chicken", "Jimjilbang spa days",
+        "K-Pop album collecting", "Traditional tea ceremonies", "Busan beach culture",
+        "Korean calligraphy", "Seoul rooftop bars", "Korean cooking classes"
+    ];
+
+    // --- Ages ---
+    const ages = ["20", "22", "24", "25", "27", "28", "30", "32", "33", "35", "38", "40", "42", "45", "50", "55"];
+    const genders = ["Female", "Male", "Non-binary"];
+
+    // Pick a random region group
+    const regionGroups = [
+        { first_f: 'western_f', first_m: 'western_m', last: 'western' },
+        { first_f: 'korean_f', first_m: 'korean_m', last: 'korean' },
+        { first_f: 'japanese_f', first_m: 'japanese_m', last: 'japanese' },
+        { first_f: 'chinese_f', first_m: 'chinese_m', last: 'chinese' },
+        { first_f: 'european_f', first_m: 'european_m', last: 'european' },
+        { first_f: 'latin_f', first_m: 'latin_m', last: 'latin' },
+        { first_f: 'southeast_asian_f', first_m: 'southeast_asian_m', last: 'southeast_asian' },
+        { first_f: 'african_f', first_m: 'african_m', last: 'african' }
+    ];
+
+    const region = pick(regionGroups);
+    const gender = pick(genders);
+    const isFemale = gender === 'Female';
+    const firstKey = isFemale ? region.first_f : (gender === 'Male' ? region.first_m : pick([region.first_f, region.first_m]));
+    const firstName = pick(firstNames[firstKey]);
+    const lastName = pick(lastNames[region.last]);
+    const rName = `${firstName} ${lastName}`;
+    const rJob = pick(jobs);
+    const rCountry = pick(countries);
+    const rAge = pick(ages);
+    const rLikes = pick(likesList);
 
     document.getElementById('p-name').value = rName;
     document.getElementById('p-job').value = rJob;
     document.getElementById('p-nationality').value = rCountry;
     document.getElementById('p-likes').value = rLikes;
+    document.getElementById('p-age').value = rAge;
+    document.getElementById('p-gender').value = gender;
 
-    const bio = `Hi, I'm ${rName}! I'm a ${rJob} from ${rCountry} currently exploring every corner of Korea. I'm obsessed with ${rLikes} and love sharing my honest experiences. Follow along for my local tips!`;
+    const bio = `Hi, I'm ${rName}! I'm a ${rAge}-year-old ${rJob} from ${rCountry} currently exploring every corner of Korea. I'm obsessed with ${rLikes} and love sharing my honest experiences. Follow along for my local tips!`;
     document.getElementById('p-bio').value = bio;
 }
 
