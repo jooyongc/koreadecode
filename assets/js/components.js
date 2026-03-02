@@ -8,7 +8,6 @@ const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/blog', label: 'Blog' },
   { href: '/decode', label: 'Decode' },
-  { href: '/concierge', label: 'Concierge' },
   { href: '/about', label: 'About' },
 ];
 
@@ -88,7 +87,6 @@ export function injectFooter() {
           <h4>Explore</h4>
           <a href="/blog">Blog</a>
           <a href="/decode">Decode This</a>
-          <a href="/concierge">Korea Concierge</a>
         </div>
         <div class="footer-section">
           <h4>Categories</h4>
