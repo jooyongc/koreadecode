@@ -244,9 +244,10 @@ async function loadHeroSettings() {
 
         const h = data.value;
 
-        // Apply hero background image
+        // Apply hero background image with fade-in
         const heroImg = document.querySelector('.hero-bg img');
         if (heroImg && h.bg_image) {
+            heroImg.onload = () => { heroImg.style.opacity = '1'; };
             heroImg.src = h.bg_image;
         }
 
