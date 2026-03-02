@@ -58,7 +58,10 @@ export async function onRequest(context) {
       }
     }
 
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_KEY}`, {
+    // Cloudflare AI Gateway를 통해 호출 (한국 지역 차단 우회)
+    const CF_ACCOUNT_ID = '17e57edaae05b0482ff770f37a54812d';
+    const CF_GATEWAY = 'koreadecode';
+    const resp = await fetch(`https://gateway.ai.cloudflare.com/v1/${CF_ACCOUNT_ID}/${CF_GATEWAY}/google-ai-studio/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
