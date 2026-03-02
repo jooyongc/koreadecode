@@ -105,7 +105,7 @@ export function injectFooter() {
       </div>
       <div class="footer-bottom">
         <span>&copy; ${year} ${SITE_NAME}. All rights reserved.</span>
-        <span>Powered by AI</span>
+        <span>Powered by <a href="https://localcontentslab.kr" target="_blank" rel="noopener">LocalContentsLab</a></span>
       </div>
     </div>
   `;
