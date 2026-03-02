@@ -10,7 +10,6 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-487F519VEM');
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
@@ -18,671 +17,700 @@
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <style>
-        :root {
-            --bg-body: #000000;
-            --bg-panel: #111111;
-            --bg-input: #1a1a1a;
-            --text-main: #FFFFFF;
-            --text-muted: #888888;
-            --accent: #CCFF00;
-            --accent-hover: #b8e600;
-            --border: rgba(255,255,255,0.15);
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-        }
-        * { box-sizing: border-box; }
-        body { font-family: 'Space Grotesk', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Layout */
-        .sidebar { width: 260px; background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px; }
-        .main-content { flex: 1; padding: 32px; overflow-y: auto; position: relative; }
-        
-        /* Components */
-        .brand { font-family: 'Syncopate', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 40px; color: var(--text-main); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
-        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: var(--text-muted); text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: 0.2s; cursor: pointer; font-weight: 500; }
-        .nav-item:hover { background-color: var(--bg-input); color: var(--text-main); }
-        .nav-item.active { background-color: rgba(204, 255, 0, 0.1); color: var(--accent); }
-        .nav-item i { font-size: 20px; }
-        
-        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-        
-        .form-group { margin-bottom: 20px; }
-        .form-label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-muted); }
-        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 16px; background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 15px; outline: none; transition: 0.2s; font-family: inherit; }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(204, 255, 0, 0.2); }
-        
-        .btn { padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .btn-primary { background-color: var(--accent); color: #000; font-weight: 700; }
-        .btn-primary:hover { background-color: var(--accent-hover); box-shadow: 0 0 20px rgba(204, 255, 0, 0.4); }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-        .btn-outline:hover { border-color: var(--text-muted); color: var(--text-main); background: var(--bg-input); }
-        .btn-ai { background: var(--accent); color: #000; font-weight: 700; box-shadow: 0 4px 12px rgba(204, 255, 0, 0.3); }
-        .btn-ai:hover { box-shadow: 0 0 20px rgba(204, 255, 0, 0.5); transform: translateY(-1px); }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-        /* AI Process Steps */
-        .ai-step { border-left: 2px solid var(--border); padding-left: 20px; margin-bottom: 30px; position: relative; }
-        .ai-step.active { border-left-color: var(--accent); }
-        .ai-step-badge { position: absolute; left: -11px; top: 0; width: 20px; height: 20px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 50%; color: var(--text-muted); font-size: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .ai-step.active .ai-step-badge { border-color: var(--accent); background: var(--accent); color: #000; }
-        .ai-step-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-
-        /* Generated Options */
-        .suggestion-chip { display: inline-block; padding: 6px 12px; background: var(--bg-input); border-radius: 20px; font-size: 13px; margin: 0 5px 5px 0; cursor: pointer; border: 1px solid transparent; }
-        .suggestion-chip:hover { background: var(--border); }
-        .suggestion-chip.selected { background: rgba(204, 255, 0, 0.15); border-color: var(--accent); color: var(--accent); }
-
-        /* Editor Overrides */
-        .ql-toolbar { background-color: var(--bg-input); border: 1px solid var(--border) !important; border-radius: 8px 8px 0 0; }
-        .ql-toolbar .ql-formats button:hover { background: rgba(204, 255, 0, 0.15); border-radius: 4px; }
-        .ql-container { background-color: #0a0a0a; color: var(--text-main); border: 1px solid var(--border) !important; border-top: none; border-radius: 0 0 8px 8px; font-size: 16px; flex: 1; min-height: 300px; font-family: 'Inter', sans-serif; }
-
-        /* HTML Source Editor */
-        .html-source-editor { display: none; flex: 1; min-height: 300px; width: 100%; background-color: #0a0a0a; color: #e0e0e0; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; font-family: 'Fira Code', 'Consolas', 'Monaco', monospace; font-size: 14px; line-height: 1.6; padding: 16px; resize: none; outline: none; tab-size: 2; white-space: pre-wrap; word-wrap: break-word; }
-        .html-source-editor:focus { box-shadow: inset 0 0 0 1px var(--accent); }
-        .btn-html-toggle.active { background: var(--accent); color: #000; }
-        .editor-wrapper { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-        #editor-container { display: flex; flex-direction: column; flex: 1; }
-        .ql-editor { line-height: 1.7; overflow-y: auto; }
-        .ql-editor a { color: var(--accent); }
-        .ql-stroke { stroke: var(--text-muted) !important; }
-        .ql-fill { fill: var(--text-muted) !important; }
-        .ql-picker { color: var(--text-muted) !important; }
-        .ql-picker-options { background-color: var(--bg-panel) !important; border-color: var(--border) !important; }
-        .ql-picker-item:hover { color: var(--accent) !important; }
-
-        /* Modals & Utils */
-        .login-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-body); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .modal-box { background: var(--bg-panel); width: 800px; max-height: 90vh; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-        .modal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; overflow-y: auto; padding: 4px; }
-        .modal-img-item { height: 140px; border-radius: 8px; cursor: pointer; object-fit: cover; width: 100%; transition: 0.2s; border: 2px solid transparent; }
-        .modal-img-item:hover { border-color: var(--accent); transform: scale(1.02); }
-
-        .spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        
-        .view-section { display: none; }
-        .view-section.active { display: block; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Mobile Preview */
-        .mobile-preview-container { width: 375px; height: 667px; border: 10px solid #111; border-radius: 30px; background: #fff; margin: 0 auto; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .mobile-status-bar { height: 20px; background: #111; width: 100%; }
-        .mobile-body { flex: 1; overflow-y: auto; padding: 20px; color: #333; font-size: 14px; line-height: 1.6; }
-        .mobile-body img { max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0; }
-        .mobile-body h1 { font-size: 20px; margin-bottom: 10px; line-height: 1.3; }
-
-        /* Automation Table */
-        .auto-table { width: 100%; border-collapse: collapse; }
-        .auto-table th { text-align: left; padding: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase; }
-        .auto-table td { padding: 16px 12px; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 14px; }
-
-        /* Migration Log */
-        .log-box { background: #000; color: #0f0; padding: 10px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); margin-top: 10px; }
-
-        /* Image Preview Box */
-        .img-preview-box { width: 100%; height: 200px; background-color: var(--bg-input); border: 2px dashed var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
-        .img-preview-box:hover { border-color: var(--accent); }
-        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-        .img-placeholder { text-align: center; color: var(--text-muted); font-size: 13px; }
-
-        /* Dashboard Bars */
-        .stat-bar { height: 8px; background: var(--bg-input); border-radius: 4px; overflow: hidden; margin-top: 6px; }
-        .stat-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
-        .stat-row { display: flex; justify-content: space-between; font-size: 13px; margin-top: 12px; color: var(--text-muted); }
-
-        /* Persona Card */
-        .persona-card { border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); }
-        .persona-avatar { width: 40px; height: 40px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; margin-right: 12px; }
-        .persona-details { flex: 1; }
-        .persona-name { font-weight: 600; color: var(--text-main); }
-        .persona-role { font-size: 12px; color: var(--text-muted); }
-
-    </style>
+    <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
 
-    <!-- LOGIN -->
-    <div id="login-section" class="login-wrap">
-        <div class="card" style="width: 400px; border: 1px solid var(--border);">
-            <div style="text-align: center; margin-bottom: 24px;">
-                <div class="brand" style="justify-content: center;"><span style="color: var(--accent);">K-</span>Decode Admin</div>
-                <p style="color: var(--text-muted);">Sign in to manage content</p>
-            </div>
-            <div class="form-group">
-                <input type="email" id="login-email" class="form-input" placeholder="Email address">
-            </div>
-            <div class="form-group">
-                <input type="password" id="login-password" class="form-input" placeholder="Password">
-            </div>
-            <button class="btn btn-primary" style="width: 100%;" id="btn-login">Sign In</button>
-            <p id="login-error" style="color: var(--warning); text-align: center; margin-top: 16px; font-size: 13px;"></p>
-        </div>
+<!-- ===== LOGIN OVERLAY ===== -->
+<div id="login-section" class="login-overlay" style="display:none;">
+    <div class="login-box">
+        <h2>Korea Decode</h2>
+        <p>Admin CMS Login</p>
+        <input id="login-email" type="email" class="form-input" placeholder="Email">
+        <input id="login-password" type="password" class="form-input" placeholder="Password">
+        <button id="btn-login" class="btn btn-primary w-full" style="margin-top:8px;">Sign In</button>
+        <div id="login-error" class="login-error"></div>
+    </div>
+</div>
+
+<!-- ===== SIDEBAR NAVIGATION ===== -->
+<nav class="sidebar">
+    <div class="sidebar-logo">
+        <h2>Korea Decode</h2>
+        <span>AI-Powered CMS</span>
     </div>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="brand"><span style="color: var(--accent);">K-</span>Decode</div>
-        <nav>
-            <div class="nav-item active" data-view="dashboard"><i class="ph ph-squares-four"></i> Dashboard</div>
-            <div class="nav-item" data-view="ai-writer"><i class="ph ph-magic-wand"></i> AI Writer</div>
-            <div class="nav-item" data-view="automation"><i class="ph ph-robot"></i> Automation</div>
-            <div class="nav-item" data-view="posts"><i class="ph ph-article"></i> All Posts</div>
-            <a href="/admin/ai-config.html" class="nav-item" style="text-decoration:none;"><i class="ph ph-brain"></i> AI Settings</a>
-            <div class="nav-item" data-view="migration" style="color: #f59e0b;"><i class="ph ph-database"></i> Migration</div>
-            <div class="nav-item" data-view="settings"><i class="ph ph-gear"></i> Settings</div>
-        </nav>
-        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border);">
-            <div class="nav-item" id="btn-logout" style="color: #ef4444;"><i class="ph ph-sign-out"></i> Sign Out</div>
+    <div class="nav-item active" data-view="dashboard">
+        <i class="ph ph-chart-line-up"></i>
+        <span>Dashboard</span>
+    </div>
+    <div class="nav-item" data-view="ai-writer">
+        <i class="ph ph-pen-nib"></i>
+        <span>AI Writer</span>
+    </div>
+    <div class="nav-item" data-view="posts">
+        <i class="ph ph-article"></i>
+        <span>Post Manager</span>
+    </div>
+    <div class="nav-item" data-view="personas">
+        <i class="ph ph-users-three"></i>
+        <span>Personas</span>
+    </div>
+    <div class="nav-item" data-view="automation">
+        <i class="ph ph-robot"></i>
+        <span>Automation</span>
+    </div>
+    <div class="nav-item" data-view="site-settings">
+        <i class="ph ph-browser"></i>
+        <span>Site Settings</span>
+    </div>
+    <div class="nav-item" data-view="settings">
+        <i class="ph ph-gear-six"></i>
+        <span>Settings</span>
+    </div>
+
+    <div class="sidebar-footer">
+        <button id="btn-logout" class="btn btn-outline w-full">
+            <i class="ph ph-sign-out"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+
+    <!-- ===== DASHBOARD VIEW ===== -->
+    <section id="view-dashboard" class="view-section active">
+        <div class="view-header">
+            <h1>Dashboard</h1>
+            <p>Overview of your Korea Decode blog</p>
         </div>
-    </aside>
 
-    <!-- MAIN -->
-    <main class="main-content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="ph ph-article stat-icon"></i>
+                <div class="stat-label">Total Posts</div>
+                <div class="stat-value" id="stat-posts">-</div>
+            </div>
+            <div class="stat-card">
+                <i class="ph ph-eye stat-icon"></i>
+                <div class="stat-label">Page Views (28d)</div>
+                <div class="stat-value" id="stat-views">-</div>
+            </div>
+            <div class="stat-card">
+                <i class="ph ph-users stat-icon"></i>
+                <div class="stat-label">Users (28d)</div>
+                <div class="stat-value" id="stat-users">-</div>
+            </div>
+            <div class="stat-card">
+                <i class="ph ph-calendar-check stat-icon"></i>
+                <div class="stat-label">Scheduled</div>
+                <div class="stat-value" id="stat-scheduled">-</div>
+            </div>
+        </div>
 
-        <!-- DASHBOARD -->
-        <div id="view-dashboard" class="view-section active">
-            <h1 style="margin-bottom: 24px;">Analytics Overview <span id="ga-period" style="font-size: 14px; color: var(--text-muted); font-weight: 400;">(Last 28 days)</span></h1>
-
-            <!-- Key Stats -->
-            <div class="row" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 24px;">
-                <div class="card">
-                    <div style="color: var(--text-muted); font-size: 14px;">Total Posts</div>
-                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px;" id="stat-posts">0</div>
+        <div class="grid-2">
+            <!-- Traffic Sources -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Traffic Sources</h3>
                 </div>
-                <div class="card">
-                    <div style="color: var(--text-muted); font-size: 14px;">Page Views (GA4)</div>
-                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--success);" id="stat-views">0</div>
-                </div>
-                <div class="card">
-                    <div style="color: var(--text-muted); font-size: 14px;">Users</div>
-                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--accent);" id="stat-users">0</div>
-                </div>
-                <div class="card">
-                    <div style="color: var(--text-muted); font-size: 14px;">Scheduled</div>
-                    <div style="font-size: 36px; font-weight: 700; margin-top: 8px; color: var(--warning);" id="stat-scheduled">0</div>
+                <div id="traffic-sources-container">
+                    <div style="color:var(--text-muted);">Loading...</div>
                 </div>
             </div>
 
-            <!-- Daily Trend -->
-            <div class="card" style="margin-bottom: 24px;">
-                <h3 style="margin-bottom: 16px;">Daily Trend (Last 7 days)</h3>
-                <div id="daily-trend-chart" style="display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 0 10px;"></div>
-                <div id="daily-trend-labels" style="display: flex; gap: 8px; padding: 8px 10px 0; font-size: 11px; color: var(--text-muted);"></div>
+            <!-- Top Pages -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Top Pages</h3>
+                </div>
+                <table id="dashboard-top-posts" class="data-table">
+                    <thead><tr><th>Page</th><th style="text-align:right;">Views</th></tr></thead>
+                    <tbody><tr><td colspan="2" style="color:var(--text-muted);">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Daily Trend Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Daily Trend (7 days)</h3>
+            </div>
+            <div id="daily-trend-chart" class="daily-trend-chart"></div>
+            <div id="daily-trend-labels" class="daily-trend-labels"></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Quick Actions</h3>
+            </div>
+            <div class="flex gap-8 flex-wrap">
+                <button class="btn btn-primary" onclick="switchView('ai-writer')"><i class="ph ph-pen-nib"></i> New Post</button>
+                <button id="btn-remove-duplicates" class="btn btn-outline"><i class="ph ph-copy-simple"></i> Remove Duplicates</button>
+                <button id="btn-start-migration" class="btn btn-outline"><i class="ph ph-database"></i> Run Migration</button>
+            </div>
+            <pre id="migration-log" style="display:none; margin-top:12px; background:var(--bg-input); padding:12px; border-radius:8px; font-size:12px; color:var(--text-muted); max-height:200px; overflow-y:auto;"></pre>
+        </div>
+    </section>
+
+    <!-- ===== AI WRITER VIEW ===== -->
+    <section id="view-ai-writer" class="view-section">
+        <div class="view-header">
+            <h1 id="writer-heading">AI Content Creator</h1>
+            <p>Generate SEO-optimized content with AI personas</p>
+        </div>
+
+        <!-- Step 1: Topic & Brainstorm -->
+        <div id="step-1" class="step-section active">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <div class="step-title">Topic & SEO Brainstorm</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Topic / Subject</label>
+                <input id="ai-topic" class="form-input" placeholder="e.g. Best Street Food in Myeongdong">
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select id="ai-category" class="form-select">
+                        <option value="Food & Drink">Food & Drink</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Culture">Culture</option>
+                        <option value="K-Pop">K-Pop</option>
+                        <option value="K-Beauty">K-Beauty</option>
+                        <option value="Student Life">Student Life</option>
+                        <option value="News">News</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Nightlife">Nightlife</option>
+                        <option value="Tips">Tips</option>
+                        <option value="Archive">Archive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Writer Persona</label>
+                    <select id="ai-persona-select" class="form-select">
+                        <option value="default">Default AI (Generic)</option>
+                    </select>
+                </div>
+            </div>
+            <button id="btn-run-ai-phase1" class="btn btn-ai w-full">
+                <i class="ph ph-brain"></i> Brainstorm SEO Plan
+            </button>
+        </div>
+
+        <!-- Step 2: Title, Keywords, Image, Full Article -->
+        <div id="step-2" class="step-section" style="opacity:0.5; pointer-events:none;">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <div class="step-title">Title, Keywords & Generate</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input id="ai-suggested-title" class="form-input" placeholder="AI-generated title...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Slug</label>
+                <div class="slug-field">
+                    <span class="slug-prefix">/blog/</span>
+                    <input id="ai-slug" placeholder="auto-generated-slug">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">SEO Keywords</label>
+                <div id="ai-keywords-container"></div>
+            </div>
+            <div class="image-picker">
+                <div class="image-preview">
+                    <div id="ai-img-placeholder" class="placeholder">No image selected</div>
+                    <img id="selected-ai-img" style="display:none;">
+                </div>
+                <div style="flex:1;">
+                    <div class="form-group" style="margin-bottom:8px;">
+                        <input id="ai-img-query" class="form-input" placeholder="Image search query...">
+                    </div>
+                    <button id="btn-search-unsplash" class="btn btn-outline btn-sm"><i class="ph ph-magnifying-glass"></i> Search Images</button>
+                </div>
+            </div>
+            <button id="btn-run-ai-phase2" class="btn btn-primary w-full">
+                <i class="ph ph-pen-nib"></i> Write Full Article
+            </button>
+        </div>
+
+        <!-- Step 3: Editor & Publish -->
+        <div id="step-3" class="step-section" style="opacity:0.5; pointer-events:none;">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <div class="step-title">Edit & Publish</div>
             </div>
 
-            <!-- Detailed Stats -->
-            <div class="row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div class="seo-score-wrapper">
+                <span style="font-size:13px; color:var(--text-muted);">SEO Score</span>
+                <div class="seo-bar-track">
+                    <div id="seo-bar" class="seo-bar-fill" style="width:0%;"></div>
+                </div>
+                <span id="seo-score-text" class="seo-score-label">0%</span>
+            </div>
 
-                <!-- Traffic Source (Real GA4 Data) -->
-                <div class="card">
-                    <h3 style="margin-bottom: 20px;">Traffic Sources (GA4)</h3>
-                    <div id="traffic-sources-container">
-                        <div style="color: var(--text-muted); padding: 10px;">Loading GA4 data...</div>
+            <div class="editor-actions">
+                <button id="btn-toggle-html" class="btn btn-outline btn-sm"><i class="ph ph-code"></i> HTML</button>
+                <button id="btn-insert-body-img" class="btn btn-outline btn-sm"><i class="ph ph-image"></i> Insert Image</button>
+                <button id="btn-insert-affiliate" class="btn btn-outline btn-sm"><i class="ph ph-link"></i> Affiliate</button>
+                <button id="btn-seo-polish" class="btn btn-outline btn-sm"><i class="ph ph-sparkle"></i> AI SEO Polish</button>
+                <button id="btn-show-preview" class="btn btn-outline btn-sm"><i class="ph ph-device-mobile"></i> Preview</button>
+                <button id="btn-reset-ai" class="btn btn-outline btn-sm"><i class="ph ph-arrow-counter-clockwise"></i> Reset</button>
+            </div>
+
+            <div class="editor-wrapper">
+                <div id="editor-container"></div>
+                <textarea id="html-source-editor" class="html-source-editor"></textarea>
+            </div>
+
+            <div class="grid-2 mt-16">
+                <div class="form-group">
+                    <label class="form-label">Schedule (optional)</label>
+                    <input id="post-schedule" type="datetime-local" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">&nbsp;</label>
+                    <button id="btn-save-post" class="btn btn-primary w-full">
+                        <i class="ph ph-paper-plane-right"></i> Publish
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== POST MANAGER VIEW ===== -->
+    <section id="view-posts" class="view-section">
+        <div class="view-header">
+            <h1>Post Manager</h1>
+            <p>Manage all published, draft, and scheduled posts</p>
+        </div>
+        <div id="posts-grid"></div>
+    </section>
+
+    <!-- ===== PERSONAS VIEW ===== -->
+    <section id="view-personas" class="view-section">
+        <div class="view-header">
+            <h1>Writer Personas</h1>
+            <p>Create and manage AI writer personas for diverse content</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- Persona List -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>All Personas</h3>
+                </div>
+                <div id="persona-list">Loading...</div>
+            </div>
+
+            <!-- Persona Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 id="persona-form-title">Create New Persona</h3>
+                </div>
+                <div class="persona-form">
+                    <div class="form-group">
+                        <label class="form-label">Name</label>
+                        <input id="p-name" class="form-input" placeholder="Emma Smith">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Age</label>
+                        <select id="p-age" class="form-select">
+                            <option>18-24</option>
+                            <option selected>25-34</option>
+                            <option>35-44</option>
+                            <option>45-54</option>
+                            <option>55+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select id="p-gender" class="form-select">
+                            <option>Female</option>
+                            <option>Male</option>
+                            <option>Non-binary</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nationality</label>
+                        <select id="p-nationality" class="form-select">
+                            <option>USA</option>
+                            <option>UK</option>
+                            <option>Canada</option>
+                            <option>Australia</option>
+                            <option>France</option>
+                            <option>Germany</option>
+                            <option>Singapore</option>
+                            <option>Japan</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Job / Role</label>
+                        <input id="p-job" class="form-input" placeholder="Travel Blogger">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Interests / Likes</label>
+                        <input id="p-likes" class="form-input" placeholder="Spicy food, Hidden cafes">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Bio</label>
+                        <textarea id="p-bio" class="form-textarea" rows="3" placeholder="Short bio for this persona..."></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-8 mt-16 flex-wrap">
+                    <button id="btn-save-persona" class="btn btn-primary">Add Persona</button>
+                    <button id="btn-generate-persona" class="btn btn-outline"><i class="ph ph-shuffle"></i> Random</button>
+                    <button id="btn-cancel-persona" class="btn btn-outline" style="display:none;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== AUTOMATION VIEW ===== -->
+    <section id="view-automation" class="view-section">
+        <div class="view-header">
+            <h1>Automation</h1>
+            <p>Batch generate and schedule AI content</p>
+        </div>
+
+        <div class="grid-2">
+            <!-- Automation Config -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Batch Configuration</h3>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile</label>
+                    <div class="flex gap-8">
+                        <select id="auto-profile-select" class="form-select" style="flex:1;">
+                            <option value="">New Profile</option>
+                        </select>
+                        <button id="btn-save-auto-profile" class="btn btn-outline btn-sm"><i class="ph ph-floppy-disk"></i></button>
+                        <button id="btn-delete-auto-profile" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);"><i class="ph ph-trash"></i></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Profile Name</label>
+                    <input id="auto-profile-name" class="form-input" placeholder="My Content Profile">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Topics (one per line)</label>
+                    <textarea id="auto-topics" class="form-textarea" rows="5" placeholder="Best Korean BBQ in Seoul&#10;Hidden Cafes in Hongdae&#10;Myeongdong Shopping Guide"></textarea>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Persona</label>
+                        <select id="auto-persona" class="form-select">
+                            <option value="default">Default AI (Generic)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select id="auto-category" class="form-select">
+                            <option>Food & Drink</option>
+                            <option>Travel</option>
+                            <option>Culture</option>
+                            <option>K-Pop</option>
+                            <option>K-Beauty</option>
+                            <option>Student Life</option>
+                            <option selected>News</option>
+                            <option>Shopping</option>
+                            <option>Nightlife</option>
+                            <option>Tips</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Word Count</label>
+                        <select id="auto-wordcount" class="form-select">
+                            <option>800</option>
+                            <option selected>1200</option>
+                            <option>1600</option>
+                            <option>2000</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Images per Post</label>
+                        <select id="auto-img-count" class="form-select">
+                            <option>1</option>
+                            <option selected>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Output Status</label>
+                        <select id="auto-output-status" class="form-select">
+                            <option value="draft" selected>Draft (Review)</option>
+                            <option value="published">Publish Now</option>
+                            <option value="scheduled">Scheduled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Interval (hours)</label>
+                        <select id="auto-interval" class="form-select">
+                            <option>6</option>
+                            <option>12</option>
+                            <option selected>24</option>
+                            <option>48</option>
+                            <option>72</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tone Override (optional)</label>
+                    <input id="auto-tone" class="form-input" placeholder="e.g. Extra enthusiastic, budget-focused">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Start Date</label>
+                    <input id="auto-start-date" type="datetime-local" class="form-input">
+                </div>
+                <button id="btn-run-automation" class="btn btn-ai w-full mt-16">
+                    <i class="ph ph-robot"></i> Generate All with AI
+                </button>
+
+                <!-- Progress Card -->
+                <div id="auto-progress-card" class="progress-card mt-16">
+                    <div class="flex justify-between items-center mb-16">
+                        <span style="font-weight:600;">Progress</span>
+                        <span id="auto-progress-text">0/0</span>
+                    </div>
+                    <div class="progress-bar-wrapper">
+                        <div id="auto-progress-bar" class="progress-bar-fill"></div>
+                    </div>
+                    <pre id="auto-progress-log" class="progress-log"></pre>
+                </div>
+            </div>
+
+            <!-- Queue -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Content Queue</h3>
+                </div>
+                <div class="auto-queue-tabs">
+                    <div class="auto-queue-tab active" data-tab="drafts" style="border-bottom-color:var(--accent);">
+                        Drafts <span id="auto-draft-count" style="background:var(--accent-dim); color:var(--accent); padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px;">0</span>
+                    </div>
+                    <div class="auto-queue-tab" data-tab="scheduled">
+                        Scheduled <span id="auto-sched-count" style="background:rgba(245,158,11,0.15); color:var(--warning); padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px;">0</span>
                     </div>
                 </div>
 
-                <!-- Top Pages (Real GA4 Data) -->
-                <div class="card">
-                    <h3 style="margin-bottom: 20px;">Top Pages (GA4)</h3>
-                    <table class="auto-table" id="dashboard-top-posts">
-                        <thead>
-                            <tr>
-                                <th>Page</th>
-                                <th style="text-align: right;">Views</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="2">Loading GA4 data...</td></tr>
+                <div id="auto-tab-drafts">
+                    <table class="data-table">
+                        <thead><tr><th style="width:30px;"><input type="checkbox" id="auto-select-all"></th><th>Title</th><th>Category</th><th>Actions</th></tr></thead>
+                        <tbody id="auto-drafts-list">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No drafts</td></tr>
+                        </tbody>
+                    </table>
+                    <div id="auto-batch-actions" class="auto-batch-actions">
+                        <button id="btn-batch-publish" class="btn btn-primary btn-sm"><i class="ph ph-paper-plane-right"></i> Publish Selected</button>
+                        <button id="btn-batch-delete" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);"><i class="ph ph-trash"></i> Delete Selected</button>
+                    </div>
+                </div>
+
+                <div id="auto-tab-scheduled" style="display:none;">
+                    <table class="data-table">
+                        <thead><tr><th>Status</th><th>Title</th><th>Scheduled For</th><th>Actions</th></tr></thead>
+                        <tbody id="auto-queue-list">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No scheduled posts</td></tr>
                         </tbody>
                     </table>
                 </div>
-
             </div>
         </div>
+    </section>
 
-        <!-- AI WRITER -->
-        <div id="view-ai-writer" class="view-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-                <h1 id="writer-heading">AI Content Creator</h1>
-                <div style="display: flex; gap: 10px;">
-                    <button id="btn-reset-ai" class="btn btn-outline"><i class="ph ph-plus"></i> New Post</button>
-                    <button id="btn-seo-polish" class="btn btn-ai"><i class="ph ph-sparkle"></i> AI SEO Polish</button>
-                </div>
-            </div>
-
-            <div class="row" style="display: flex; gap: 40px;">
-                <!-- Left: AI Controls -->
-                <div style="flex: 1; max-width: 400px;">
-                    
-                    <!-- Step 1: Topic -->
-                    <div class="ai-step active" id="step-1">
-                        <div class="ai-step-badge">1</div>
-                        <div class="ai-step-title">Writer &amp; Topic</div>
-                        
-                        <!-- Persona Selector -->
-                        <div class="form-group">
-                            <label class="form-label" style="color: var(--accent);">Who is writing?</label>
-                            <select id="ai-persona-select" class="form-select" style="border-color: var(--accent);">
-                                <option value="default">Default AI (Generic)</option>
-                                <!-- Loaded dynamically -->
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Category</label>
-                            <select id="ai-category" class="form-select">
-                                <option value="K-pop">K-Pop News</option>
-                                <option value="Beauty">K-Beauty &amp; Skincare</option>
-                                <option value="Travel">Travel &amp; Guides</option>
-                                <option value="Food">Korean Food</option>
-                                <option value="News">General News</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Topic Idea (Korean or English)</label>
-                            <textarea id="ai-topic" class="form-textarea" rows="3" placeholder="Example: Best Street Food in Myeongdong"></textarea>
-                        </div>
-                        <button id="btn-run-ai-phase1" class="btn btn-ai" style="width: 100%;">
-                            <i class="ph ph-brain"></i> Generate Plan
-                        </button>
-                    </div>
-
-                    <!-- Step 2: Plan -->
-                    <div class="ai-step" id="step-2" style="opacity: 0.5; pointer-events: none;">
-                        <div class="ai-step-badge">2</div>
-                        <div class="ai-step-title">SEO Strategy</div>
-                        <div class="form-group">
-                            <label class="form-label">Suggested Title (English)</label>
-                            <input type="text" id="ai-suggested-title" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Keywords</label>
-                            <div id="ai-keywords-container"></div>
-                        </div>
-                        <button id="btn-run-ai-phase2" class="btn btn-primary" style="width: 100%;">
-                            <i class="ph ph-pen-nib"></i> Write Full Article
-                        </button>
-                    </div>
-
-                    <!-- Step 3: Visuals -->
-                    <div class="ai-step" id="step-3" style="opacity: 0.5; pointer-events: none;">
-                        <div class="ai-step-badge">3</div>
-                        <div class="ai-step-title">Featured Image</div>
-                        <div class="img-preview-box" id="ai-img-preview-box">
-                            <img id="selected-ai-img" style="display: none;">
-                            <div class="img-placeholder" id="ai-img-placeholder">
-                                Auto-selected by AI<br>
-                                Click to change
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Search Replacement</label>
-                            <div style="display: flex; gap: 8px;">
-                                <input type="text" id="ai-img-query" class="form-input">
-                                <button id="btn-search-unsplash" class="btn btn-outline">Search</button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Right: Editor & Output -->
-                <div style="flex: 2; display: flex; flex-direction: column;">
-                    <div class="card" style="flex: 1; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
-                        <div style="padding: 16px; border-bottom: 1px solid var(--border); background: var(--bg-input); display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-weight: 600;">Editor</span>
-                            <div style="display: flex; gap: 8px;">
-                                <button id="btn-toggle-html" class="btn btn-outline btn-html-toggle" style="padding: 6px 12px; font-size: 12px;" title="Toggle HTML Source">
-                                    <i class="ph ph-code"></i> HTML
-                                </button>
-                                <button id="btn-insert-body-img" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
-                                    <i class="ph ph-image"></i> Insert Image
-                                </button>
-                                <button id="btn-show-preview" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
-                                    <i class="ph ph-device-mobile"></i> Preview
-                                </button>
-                                <button class="btn btn-primary" id="btn-save-post" style="padding: 6px 12px; font-size: 12px;">
-                                    <i class="ph ph-paper-plane-right"></i> Publish
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Editor Wrapper -->
-                        <div class="editor-wrapper">
-                            <div id="editor-container"></div>
-                            <textarea id="html-source-editor" class="html-source-editor" spellcheck="false" placeholder="HTML 코드를 직접 입력하세요..."></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Scheduling -->
-                    <div class="card" style="padding: 16px;">
-                        <div style="display: flex; align-items: center; gap: 16px;">
-                            <div style="flex: 1;">
-                                <label class="form-label">Schedule Publish (Optional)</label>
-                                <input type="datetime-local" id="post-schedule" class="form-input">
-                            </div>
-                            <div style="flex: 1;">
-                                <label class="form-label">SEO Score</label>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="flex: 1; height: 8px; background: var(--bg-input); border-radius: 4px; overflow: hidden;">
-                                        <div id="seo-bar" style="width: 0%; height: 100%; background: var(--warning); transition: 0.5s;"></div>
-                                    </div>
-                                    <span id="seo-score-text" style="font-size: 14px; font-weight: bold;">0%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- ===== SITE SETTINGS VIEW ===== -->
+    <section id="view-site-settings" class="view-section">
+        <div class="view-header">
+            <h1>Site Settings</h1>
+            <p>Manage homepage hero section, background image, and content</p>
         </div>
 
-        <!-- AUTOMATION -->
-        <div id="view-automation" class="view-section">
-            <h1 style="margin-bottom: 24px;">Bulk Automation</h1>
-            <div style="display: flex; gap: 24px;">
-                <!-- Left Panel: Profile Settings -->
-                <div style="flex: 1; max-width: 420px;">
-                    <div class="card">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <h3 style="margin: 0;">Automation Profile</h3>
-                            <div style="display: flex; gap: 6px;">
-                                <select id="auto-profile-select" class="form-select" style="width: 140px; padding: 6px 10px; font-size: 12px;">
-                                    <option value="">New Profile</option>
-                                </select>
-                                <button id="btn-save-auto-profile" class="btn btn-outline" style="padding: 6px 10px; font-size: 12px;" title="Save Profile"><i class="ph ph-floppy-disk"></i></button>
-                                <button id="btn-delete-auto-profile" class="btn btn-outline" style="padding: 6px 10px; font-size: 12px; color: var(--danger);" title="Delete Profile"><i class="ph ph-trash"></i></button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Profile Name</label>
-                            <input type="text" id="auto-profile-name" class="form-input" placeholder="e.g. Daily K-Pop News">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Persona</label>
-                            <select id="auto-persona" class="form-select">
-                                <option value="default">Default AI (Generic)</option>
-                            </select>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Category</label>
-                                <select id="auto-category" class="form-select">
-                                    <option value="News">News</option>
-                                    <option value="K-pop">K-Pop</option>
-                                    <option value="Food">Food</option>
-                                    <option value="Travel">Travel</option>
-                                    <option value="Beauty">Beauty</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Word Count</label>
-                                <select id="auto-wordcount" class="form-select">
-                                    <option value="800">~800 words</option>
-                                    <option value="1200" selected>~1200 words</option>
-                                    <option value="1800">~1800 words</option>
-                                    <option value="2500">~2500 words</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Inline Images</label>
-                                <select id="auto-img-count" class="form-select">
-                                    <option value="1">1 image</option>
-                                    <option value="2" selected>2 images</option>
-                                    <option value="3">3 images</option>
-                                    <option value="4">4 images</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Output Status</label>
-                                <select id="auto-output-status" class="form-select">
-                                    <option value="draft" selected>Draft (Review first)</option>
-                                    <option value="scheduled">Scheduled (Auto-publish)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Tone Override (optional)</label>
-                            <input type="text" id="auto-tone" class="form-input" placeholder="e.g. Extra sarcastic, Gen-Z slang">
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Start Date</label>
-                                <input type="datetime-local" id="auto-start-date" class="form-input">
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Interval</label>
-                                <select id="auto-interval" class="form-select">
-                                    <option value="24">Every 24h</option>
-                                    <option value="12">Every 12h</option>
-                                    <option value="48">Every 48h</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Topics (one per line)</label>
-                            <textarea id="auto-topics" class="form-textarea" rows="8" placeholder="Best Korean BBQ in Seoul&#10;Hidden Cafes in Hongdae&#10;K-Beauty Routine for Beginners"></textarea>
-                        </div>
-                        <button id="btn-run-automation" class="btn btn-ai" style="width: 100%;">
-                            <i class="ph ph-robot"></i> Generate All with AI
-                        </button>
-
-                        <!-- Progress Card -->
-                        <div id="auto-progress-card" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                <span style="font-weight: 600; font-size: 14px;">Progress</span>
-                                <span id="auto-progress-text" style="font-size: 13px; color: var(--text-muted);">0/0</span>
-                            </div>
-                            <div style="height: 6px; background: var(--bg-body); border-radius: 3px; overflow: hidden;">
-                                <div id="auto-progress-bar" style="width: 0%; height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s;"></div>
-                            </div>
-                            <div id="auto-progress-log" class="log-box" style="height: 120px; margin-top: 10px; font-size: 11px;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Panel: Queue with Tabs -->
-                <div style="flex: 2;">
-                    <div class="card">
-                        <div style="display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border);">
-                            <button class="btn btn-outline auto-queue-tab active" data-tab="drafts" style="border: none; border-bottom: 2px solid var(--accent); border-radius: 0; padding: 10px 20px; font-size: 14px;">
-                                Drafts for Review <span id="auto-draft-count" style="background: var(--accent); color: #000; font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 6px;">0</span>
-                            </button>
-                            <button class="btn btn-outline auto-queue-tab" data-tab="scheduled" style="border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 10px 20px; font-size: 14px;">
-                                Scheduled <span id="auto-sched-count" style="background: var(--bg-input); color: var(--text-muted); font-size: 11px; padding: 2px 6px; border-radius: 10px; margin-left: 6px;">0</span>
-                            </button>
-                        </div>
-
-                        <!-- Batch Actions (Drafts only) -->
-                        <div id="auto-batch-actions" style="display: flex; gap: 8px; margin-bottom: 12px;">
-                            <button id="btn-batch-publish" class="btn btn-primary" style="padding: 6px 14px; font-size: 12px;"><i class="ph ph-paper-plane-right"></i> Publish Selected</button>
-                            <button id="btn-batch-delete" class="btn btn-outline" style="padding: 6px 14px; font-size: 12px; color: var(--danger); border-color: var(--danger);"><i class="ph ph-trash"></i> Delete Selected</button>
-                            <label style="display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                <input type="checkbox" id="auto-select-all"> Select All
-                            </label>
-                        </div>
-
-                        <!-- Drafts Tab -->
-                        <div id="auto-tab-drafts">
-                            <table class="auto-table">
-                                <thead><tr><th style="width:30px;"></th><th>Title</th><th>Category</th><th>Action</th></tr></thead>
-                                <tbody id="auto-drafts-list"></tbody>
-                            </table>
-                        </div>
-
-                        <!-- Scheduled Tab -->
-                        <div id="auto-tab-scheduled" style="display: none;">
-                            <table class="auto-table">
-                                <thead><tr><th>Status</th><th>Title</th><th>Scheduled</th><th>Action</th></tr></thead>
-                                <tbody id="auto-queue-list"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- MIGRATION -->
-        <div id="view-migration" class="view-section">
-            <h1>Legacy Post Migration</h1>
+        <div class="settings-grid">
+            <!-- Hero Background Image -->
             <div class="card">
-                <div style="margin-bottom: 20px;">
-                    <button id="btn-start-migration" class="btn btn-primary">Start Migration</button>
-                    <span id="migration-status" style="margin-left: 10px; font-weight: bold;"></span>
+                <div class="card-header">
+                    <h3>Hero Background Image</h3>
                 </div>
-                <label class="form-label">Migration Log</label>
-                <div id="migration-log" class="log-box"></div>
+                <div class="hero-preview-wrapper">
+                    <div class="hero-preview" id="hero-preview">
+                        <img id="hero-preview-img" src="" alt="Hero background preview">
+                        <div class="hero-preview-overlay">
+                            <span class="hero-preview-label" id="hero-preview-label"></span>
+                            <span class="hero-preview-title" id="hero-preview-title"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:16px;">
+                    <label class="form-label">Image URL</label>
+                    <input id="hero-bg-image" class="form-input" placeholder="https://images.unsplash.com/...">
+                </div>
+                <div class="flex gap-8">
+                    <button id="btn-hero-search-img" class="btn btn-outline btn-sm"><i class="ph ph-magnifying-glass"></i> Search Image</button>
+                    <input id="hero-img-query" class="form-input" placeholder="Seoul night skyline..." style="flex:1;">
+                </div>
+                <div id="hero-img-results" class="image-grid" style="margin-top:12px;"></div>
             </div>
-        </div>
 
-        <!-- POSTS LIST -->
-        <div id="view-posts" class="view-section">
-            <h1 style="margin-bottom: 24px;">Content Library</h1>
-            <div id="posts-grid" style="display: grid; gap: 16px;"></div>
-        </div>
+            <!-- Hero Text Content -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>Hero Text Content</h3>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Top Label</label>
+                    <input id="hero-label" class="form-input" placeholder="Welcome to Korea Decode">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Title — Before Highlight</label>
+                    <input id="hero-title-before" class="form-input" placeholder="Decoding">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Title — Highlight (accent color)</label>
+                    <input id="hero-title-highlight" class="form-input" placeholder="Korea">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Title — After Highlight</label>
+                    <input id="hero-title-after" class="form-input" placeholder=", One Story at a Time">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="hero-description" class="form-textarea" rows="3" placeholder="Your English-language guide to Korean culture..."></textarea>
+                </div>
 
-        <!-- SETTINGS -->
-        <div id="view-settings" class="view-section">
-            <h1 style="margin-bottom: 24px;">Settings</h1>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                <!-- General Settings -->
-                <div class="card">
-                    <h3>General</h3>
-                    <div style="background: rgba(204, 255, 0, 0.08); border: 1px solid var(--accent); border-radius: 8px; padding: 12px; margin-bottom: 16px;">
-                        <div style="color: var(--accent); font-weight: 600; font-size: 13px;"><i class="ph ph-key"></i> Google Gemini API를 사용합니다</div>
-                        <div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;"><a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">Google AI Studio</a>에서 무료 키를 발급받아 아래에 입력하세요.</div>
+                <div class="divider" style="margin:16px 0;"></div>
+                <h4 style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">CTA Buttons</h4>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Primary Button Text</label>
+                        <input id="hero-cta1-text" class="form-input" placeholder="Read Blog">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Gemini API Key (필수)</label>
-                        <input type="password" id="setting-gemini-key" class="form-input" placeholder="AIzaSy...">
+                        <label class="form-label">Primary Button URL</label>
+                        <input id="hero-cta1-url" class="form-input" placeholder="/blog">
                     </div>
-                    <button id="btn-save-settings" class="btn btn-primary" style="width:100%;">
-                        <i class="ph ph-floppy-disk"></i> Save API Key
-                    </button>
-                    <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
-                    <h3 style="margin-bottom: 10px; color: var(--warning);">Maintenance</h3>
-                    <button id="btn-remove-duplicates" class="btn btn-outline" style="border-color: var(--warning); color: var(--warning);">Remove Duplicate Posts</button>
-                </div>
-
-                <!-- Persona Settings -->
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h3>AI Writer Personas</h3>
-                        <button class="btn btn-ai" style="padding: 6px 12px; font-size:12px;" id="btn-generate-persona">
-                            <i class="ph ph-magic-wand"></i> AI Generate
-                        </button>
+                    <div class="form-group">
+                        <label class="form-label">Secondary Button Text</label>
+                        <input id="hero-cta2-text" class="form-input" placeholder="Try Decode This">
                     </div>
-                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">Create specialized personas. Their Bio will appear at the bottom of their posts.</p>
-                    
-                    <div id="persona-list"></div>
-
-                    <div style="background: var(--bg-body); padding: 16px; border-radius: 8px; margin-top: 20px; border: 1px solid var(--border);">
-                        <h4 style="margin-top: 0; margin-bottom: 16px;" id="persona-form-title">Create New Persona</h4>
-                        <div class="form-group"><label class="form-label">Name</label><input id="p-name" class="form-input" placeholder="e.g. Jenny Kim"></div>
-                        <div style="display: flex; gap: 10px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Age</label>
-                                <select id="p-age" class="form-select">
-                                    <option value="20s">20s</option>
-                                    <option value="30s">30s</option>
-                                    <option value="40s">40s</option>
-                                    <option value="50s+">50s+</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Gender</label>
-                                <select id="p-gender" class="form-select">
-                                    <option value="Female">Female</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Non-binary">Non-binary</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Nationality</label>
-                                <select id="p-nationality" class="form-select">
-                                    <option value="USA">USA</option>
-                                    <option value="UK">UK</option>
-                                    <option value="Canada">Canada</option>
-                                    <option value="Australia">Australia</option>
-                                    <option value="France">France</option>
-                                    <option value="Germany">Germany</option>
-                                    <option value="Singapore">Singapore</option>
-                                    <option value="Japan">Japan</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Job / Role</label>
-                                <select id="p-job" class="form-select">
-                                    <option value="Travel Blogger">Travel Blogger</option>
-                                    <option value="K-Beauty Editor">K-Beauty Editor</option>
-                                    <option value="Food Critic">Food Critic</option>
-                                    <option value="K-Pop Stan">K-Pop Stan</option>
-                                    <option value="Digital Nomad">Digital Nomad</option>
-                                    <option value="Student">Student</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group"><label class="form-label">Likes / Expertise</label><input id="p-likes" class="form-input" placeholder="e.g. Spicy food, skincare, hiking"></div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Writer Bio (Auto-generated)</label>
-                            <textarea id="p-bio" class="form-textarea" rows="3" placeholder="Click 'AI Generate' or write your own..."></textarea>
-                        </div>
-
-                        <button id="btn-save-persona" class="btn btn-primary" style="width: 100%;">Add Persona</button>
-                        <button id="btn-cancel-persona" class="btn btn-outline" style="width: 100%; margin-top: 8px; display: none;">Cancel Edit</button>
+                    <div class="form-group">
+                        <label class="form-label">Secondary Button URL</label>
+                        <input id="hero-cta2-url" class="form-input" placeholder="/decode">
                     </div>
                 </div>
+
+                <button id="btn-save-hero" class="btn btn-primary w-full" style="margin-top:12px;">
+                    <i class="ph ph-floppy-disk"></i> Save Hero Settings
+                </button>
+                <div id="hero-save-status" style="margin-top:8px; font-size:12px; text-align:center;"></div>
             </div>
         </div>
+    </section>
 
+    <!-- ===== SETTINGS VIEW ===== -->
+    <section id="view-settings" class="view-section">
+        <div class="view-header">
+            <h1>Settings</h1>
+            <p>API keys, model configuration, and tools</p>
+        </div>
 
-    </main>
-
-    <!-- MODALS -->
-    <div id="modal-unsplash" class="modal-overlay">
-        <div class="modal-box">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-                <h3 style="margin: 0;" id="unsplash-modal-title">Unsplash Images</h3>
-                <button id="btn-close-unsplash" class="btn btn-outline" style="padding: 4px 10px;"><i class="ph ph-x"></i></button>
+        <div class="settings-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Gemini API Key</h3>
+                </div>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Optional: Provide your own Gemini API key for fallback AI. Primary AI uses Cloudflare Workers AI (free).</p>
+                <div class="form-group">
+                    <input id="setting-gemini-key" type="password" class="form-input" placeholder="AIzaSy...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">AI Model</label>
+                    <select id="setting-ai-model" class="form-select">
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Default)</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    </select>
+                </div>
+                <button id="btn-save-settings" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Settings</button>
             </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <input type="text" id="unsplash-modal-search" class="form-input" placeholder="Search images...">
-                <button id="btn-unsplash-modal-search" class="btn btn-primary" style="padding: 8px 16px;"><i class="ph ph-magnifying-glass"></i></button>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Persona Management</h3>
+                </div>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Manage your writer personas from the Personas tab.</p>
+                <button class="btn btn-outline" onclick="switchView('personas')"><i class="ph ph-users-three"></i> Go to Personas</button>
             </div>
-            <div id="unsplash-results" class="modal-grid"></div>
+        </div>
+    </section>
+</main>
+
+<!-- ===== MODAL: Image Search ===== -->
+<div id="modal-unsplash" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="unsplash-modal-title">Image Search</h3>
+            <button id="btn-close-unsplash" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="flex gap-8 mb-16">
+            <input id="unsplash-modal-search" class="form-input" placeholder="Search images..." style="flex:1;">
+            <button id="btn-unsplash-modal-search" class="btn btn-primary btn-sm"><i class="ph ph-magnifying-glass"></i> Search</button>
+        </div>
+        <div id="unsplash-results" class="image-grid">
+            <div style="grid-column:1/-1; text-align:center; color:var(--text-muted);">Search for an image</div>
         </div>
     </div>
+</div>
 
-    <div id="modal-preview" class="modal-overlay">
-        <div class="mobile-preview-container">
-            <div class="mobile-status-bar"></div>
-            <div class="mobile-body">
-                <div style="position: sticky; top: 0; background: #fff; padding-bottom: 10px; border-bottom: 1px solid #eee; margin-bottom: 15px;">
-                    <span style="font-size: 12px; color: #666; text-transform: uppercase; font-weight: 700;" id="prev-cat">CATEGORY</span>
-                </div>
-                <h1 id="prev-title">Post Title</h1>
-                <div style="font-size: 12px; color: #999; margin-bottom: 20px;">By Korea Decode</div>
-                <img id="prev-img" src="" style="display: none;">
-                <div id="prev-content"></div>
-            </div>
-            <div style="padding: 15px; background: #f9f9f9; text-align: center;">
-                <button id="btn-close-preview" class="btn btn-primary" style="width: 100%;">Close</button>
-            </div>
+<!-- ===== MODAL: Mobile Preview ===== -->
+<div id="modal-preview" class="modal-overlay">
+    <div class="modal-content" style="max-width:420px; padding:0; overflow:hidden;">
+        <div style="padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size:16px;">Mobile Preview</h3>
+            <button id="btn-close-preview" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="preview-frame">
+            <div id="prev-cat" style="font-size:12px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;"></div>
+            <h2 id="prev-title" style="font-size:22px; line-height:1.3; margin-bottom:16px;"></h2>
+            <img id="prev-img" style="width:100%; border-radius:8px; margin-bottom:16px; display:none;">
+            <div id="prev-content" style="font-family:'Inter', sans-serif; font-size:15px; line-height:1.7; color:#ddd;"></div>
         </div>
     </div>
+</div>
 
-    <!-- All scripts are now loaded as modules from within admin.js -->
-    <script type="module" src="/admin/admin.js?v=25"></script>
+<!-- ===== MODAL: Insert Affiliate Code ===== -->
+<div id="modal-affiliate" class="modal-overlay">
+    <div class="modal-content" style="max-width:620px;">
+        <div class="modal-header">
+            <h3>Insert Affiliate Widget</h3>
+            <button id="btn-close-affiliate" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
+        </div>
+        <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;">
+            Paste the full affiliate HTML code below (including &lt;script&gt; tags). It will be saved and rendered properly on the live blog.
+        </p>
+        <div class="form-group">
+            <label class="form-label">Widget Label (optional)</label>
+            <input id="aff-label" class="form-input" placeholder="e.g. Klook Seoul Tours" value="Klook Widget">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Affiliate HTML Code</label>
+            <textarea id="aff-code-input" class="form-input" rows="8" placeholder='<ins class="klk-aff-widget" ...></ins>&#10;<script>...</script>' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
+        </div>
+        <button id="btn-confirm-affiliate" class="btn btn-primary w-full" style="margin-top:8px;">
+            <i class="ph ph-plus-circle"></i> Insert into Editor
+        </button>
+    </div>
+</div>
+
+<script type="module" src="/admin/admin.js"></script>
 </body>
 </html>

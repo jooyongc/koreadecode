@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- SEO & Meta Tags -->
+    <title>Korea Concierge - AI Trip Planner | Korea Decode</title>
+    <meta name="description" content="Plan your perfect Korean trip with Korea Decode's AI-powered concierge. Get personalized day-by-day itineraries for Seoul, Busan, Jeju, and more based on your interests and budget.">
+    <link rel="canonical" href="https://koreadecode.com/concierge/">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Korea Concierge - AI Trip Planner | Korea Decode">
+    <meta property="og:description" content="Plan your perfect Korean trip with AI. Get personalized day-by-day itineraries for Seoul, Busan, Jeju based on your vibes, budget, and duration.">
+    <meta property="og:url" content="https://koreadecode.com/concierge/">
+    <meta property="og:site_name" content="Korea Decode">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Korea Concierge",
+        "url": "https://koreadecode.com/concierge/",
+        "description": "AI-powered trip planner for South Korea. Get personalized day-by-day itineraries for Seoul, Busan, Jeju, and Gyeongju.",
+        "applicationCategory": "TravelApplication",
+        "operatingSystem": "Web",
+        "provider": {
+            "@type": "Organization",
+            "name": "Korea Decode",
+            "url": "https://koreadecode.com/"
+        }
+    }
+    </script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/pages/concierge.css">
+</head>
+<body>
+
+    <header id="site-header" class="site-header no-print"></header>
+
+    <main class="page-content">
+        <div class="container">
+
+            <!-- Hero Section -->
+            <section class="concierge-hero">
+                <h1>Korea <span class="accent">Concierge</span></h1>
+                <p>Your AI-powered trip planner</p>
+            </section>
+
+            <!-- SEO Static Intro -->
+            <section style="text-align:center; margin-bottom: var(--space-2xl);">
+                <p style="font-size: 0.95rem; color: var(--text-muted); max-width: 600px; margin: 0 auto;">
+                    Tell us your travel style, and our AI concierge will craft a personalized day-by-day itinerary for your Korean adventure. From K-Pop pilgrimages to hidden temple hikes, we plan it all.
+                </p>
+            </section>
+
+            <!-- Multi-Step Form -->
+            <div class="concierge-form" id="concierge-form">
+
+                <!-- Step 1: Pick Your Vibes -->
+                <div class="form-step">
+                    <div class="form-step-label">
+                        <span class="form-step-number">1</span>
+                        Pick Your Vibes
+                    </div>
+                    <div class="vibe-grid" id="vibe-grid">
+                        <button class="vibe-chip" data-vibe="K-Pop & Music">
+                            <span class="vibe-emoji">🎵</span> K-Pop & Music
+                        </button>
+                        <button class="vibe-chip" data-vibe="Food & Cafes">
+                            <span class="vibe-emoji">🍜</span> Food & Cafes
+                        </button>
+                        <button class="vibe-chip" data-vibe="Shopping & Fashion">
+                            <span class="vibe-emoji">🛍️</span> Shopping & Fashion
+                        </button>
+                        <button class="vibe-chip" data-vibe="History & Temples">
+                            <span class="vibe-emoji">🏛️</span> History & Temples
+                        </button>
+                        <button class="vibe-chip" data-vibe="K-Beauty">
+                            <span class="vibe-emoji">✨</span> K-Beauty
+                        </button>
+                        <button class="vibe-chip" data-vibe="Gaming & Tech">
+                            <span class="vibe-emoji">🎮</span> Gaming & Tech
+                        </button>
+                        <button class="vibe-chip" data-vibe="Nature & Hiking">
+                            <span class="vibe-emoji">🌿</span> Nature & Hiking
+                        </button>
+                        <button class="vibe-chip" data-vibe="K-Drama Spots">
+                            <span class="vibe-emoji">📺</span> K-Drama Spots
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Duration -->
+                <div class="form-step">
+                    <div class="form-step-label">
+                        <span class="form-step-number">2</span>
+                        How Long?
+                    </div>
+                    <div class="option-grid" id="duration-grid">
+                        <button class="option-btn" data-duration="3 Days">3 Days</button>
+                        <button class="option-btn" data-duration="5 Days">5 Days</button>
+                        <button class="option-btn" data-duration="7 Days">7 Days</button>
+                        <button class="option-btn" data-duration="10 Days">10 Days</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: City -->
+                <div class="form-step">
+                    <div class="form-step-label">
+                        <span class="form-step-number">3</span>
+                        Where To?
+                    </div>
+                    <div class="option-grid" id="city-grid">
+                        <button class="option-btn" data-city="Seoul">Seoul</button>
+                        <button class="option-btn" data-city="Busan">Busan</button>
+                        <button class="option-btn" data-city="Jeju">Jeju</button>
+                        <button class="option-btn" data-city="Gyeongju">Gyeongju</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Budget -->
+                <div class="form-step">
+                    <div class="form-step-label">
+                        <span class="form-step-number">4</span>
+                        Budget Level
+                    </div>
+                    <div class="option-grid" id="budget-grid">
+                        <button class="option-btn" data-budget="Budget">Budget</button>
+                        <button class="option-btn" data-budget="Mid-Range">Mid-Range</button>
+                        <button class="option-btn" data-budget="Luxury">Luxury</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Extra Notes -->
+                <div class="form-step">
+                    <div class="form-step-label">
+                        <span class="form-step-number">5</span>
+                        Anything Else? <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-muted);">(optional)</span>
+                    </div>
+                    <div class="extra-notes">
+                        <textarea id="concierge-extra" placeholder="e.g. I'm vegetarian, traveling with kids, want to avoid crowds..." maxlength="300"></textarea>
+                    </div>
+                </div>
+
+                <!-- Step 6: Submit -->
+                <div class="concierge-submit">
+                    <button class="btn btn-primary btn-lg" id="concierge-generate">
+                        <i class="ph ph-sparkle"></i>
+                        Generate Itinerary
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="concierge-loading" id="concierge-loading">
+                <div class="spinner spinner-lg"></div>
+                <p>Crafting your perfect Korean itinerary...</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: var(--space-sm);">This may take a moment</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="concierge-error" style="display:none; text-align:center; max-width:700px; margin:0 auto var(--space-xl);">
+                <p style="color: var(--danger); font-size: 0.95rem;" id="concierge-error-text"></p>
+            </div>
+
+            <!-- Result Area -->
+            <div class="concierge-result" id="concierge-result">
+                <div class="itinerary-header">
+                    <h2>Your <span class="accent">Itinerary</span></h2>
+                    <p id="itinerary-summary" style="color: var(--text-muted); font-size: 0.9rem;"></p>
+                </div>
+                <div id="itinerary-days"></div>
+
+                <!-- Affiliate Links -->
+                <div class="affiliate-section" id="affiliate-section" style="display:none;">
+                    <h3>Book Your Trip</h3>
+                    <div class="affiliate-links" id="affiliate-links"></div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-md);">
+                        We may earn a small commission from these links at no extra cost to you.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer id="site-footer" class="site-footer no-print"></footer>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initPage } from '/assets/js/components.js';
+        import { initAnalytics } from '/assets/js/analytics.js';
+        import { initConcierge } from '/assets/js/concierge.js';
+
+        initPage();
+        initAnalytics();
+        initConcierge();
+    </script>
+</body>
+</html>

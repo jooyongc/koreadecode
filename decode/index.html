@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- SEO & Meta Tags -->
+    <title>Decode This - AI Korean Culture Interpreter | Korea Decode</title>
+    <meta name="description" content="Korea Decode's AI-powered culture interpreter helps you understand Korean customs, phrases, and traditions. Ask anything about Korean culture and get instant answers.">
+    <link rel="canonical" href="https://koreadecode.com/decode/">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Decode This - AI Korean Culture Interpreter | Korea Decode">
+    <meta property="og:description" content="Ask anything about Korean culture and get instant AI-powered answers. Understand Korean customs, phrases, traditions, and more.">
+    <meta property="og:url" content="https://koreadecode.com/decode/">
+    <meta property="og:site_name" content="Korea Decode">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Decode This",
+        "url": "https://koreadecode.com/decode/",
+        "description": "AI-powered Korean culture interpreter. Ask anything about Korean customs, phrases, and traditions.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "provider": {
+            "@type": "Organization",
+            "name": "Korea Decode",
+            "url": "https://koreadecode.com/"
+        }
+    }
+    </script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/pages/decode.css">
+</head>
+<body>
+
+    <header id="site-header" class="site-header no-print"></header>
+
+    <main class="page-content">
+        <div class="container">
+
+            <!-- Hero Section -->
+            <section class="decode-hero">
+                <h1>Decode <span class="accent">This</span></h1>
+                <p>Ask anything about Korean culture</p>
+            </section>
+
+            <!-- SEO Static Intro -->
+            <section class="decode-intro container-narrow" style="text-align:center; margin-bottom: var(--space-2xl);">
+                <p style="font-size: 0.95rem; color: var(--text-muted); max-width: 600px; margin: 0 auto;">
+                    Korea Decode's AI-powered culture interpreter helps you understand Korean customs, phrases, and traditions. Type your question below and get an instant, culturally-informed answer.
+                </p>
+            </section>
+
+            <!-- Input Box -->
+            <div class="decode-input-wrapper">
+                <div class="decode-input-box">
+                    <input type="text" id="decode-input" placeholder="e.g. Why do Koreans ask your age when you first meet?" maxlength="500" autocomplete="off">
+                    <button class="btn btn-primary" id="decode-submit" aria-label="Ask question">
+                        <i class="ph ph-paper-plane-tilt"></i>
+                        Ask
+                    </button>
+                </div>
+            </div>
+
+            <!-- Example Question Chips -->
+            <div class="decode-examples">
+                <h4>Try asking</h4>
+                <div class="example-chips">
+                    <button class="chip example-chip">What does 'fighting' mean?</button>
+                    <button class="chip example-chip">Why do Koreans eat seaweed soup on birthdays?</button>
+                    <button class="chip example-chip">What is aegyo?</button>
+                    <button class="chip example-chip">Why do Koreans use metal chopsticks?</button>
+                    <button class="chip example-chip">What's the Korean drinking etiquette?</button>
+                    <button class="chip example-chip">What is a jjimjilbang?</button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="decode-loading" id="decode-loading">
+                <div class="spinner spinner-lg"></div>
+                <p>Decoding your question...</p>
+            </div>
+
+            <!-- Error State -->
+            <div class="decode-error" id="decode-error" style="display:none; text-align:center; max-width:600px; margin:0 auto;">
+                <p style="color: var(--danger); font-size: 0.95rem;" id="decode-error-text"></p>
+            </div>
+
+            <!-- Result Area -->
+            <div class="decode-result" id="decode-result">
+                <div class="decode-answer">
+                    <div class="decode-answer-text" id="decode-answer-text"></div>
+                    <div class="decode-related" id="decode-related" style="display:none;">
+                        <h4>Related Articles</h4>
+                        <div id="decode-related-links"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer id="site-footer" class="site-footer no-print"></footer>
+
+    <!-- Scripts -->
+    <script type="module">
+        import { initPage } from '/assets/js/components.js';
+        import { initAnalytics } from '/assets/js/analytics.js';
+        import { initDecode } from '/assets/js/decode.js';
+
+        initPage();
+        initAnalytics();
+        initDecode();
+    </script>
+</body>
+</html>

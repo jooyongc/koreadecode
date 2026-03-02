@@ -70,35 +70,72 @@ export async function onRequest(context) {
     const maxTokens = config.max_tokens || 500;
     const temperature = config.temperature ?? 0.7;
 
-    // --- Call Gemini API ---
-    const geminiKey = env.GEMINI_API_KEY;
-    if (!geminiKey) {
-      return jsonResponse({ error: 'AI service not configured' }, 500, corsHeaders);
-    }
+    // --- Call AI: Workers AI first, Gemini fallback ---
+    let answer = '';
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            { role: 'user', parts: [{ text: `${systemPrompt}\n\nUser question: ${cleanQuestion}` }] }
+    // Attempt 1: Workers AI (Cloudflare)
+    if (env.AI) {
+      try {
+        const aiResponse = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: cleanQuestion },
           ],
-          generationConfig: {
-            maxOutputTokens: maxTokens,
-            temperature: temperature,
-          },
-        }),
+          max_tokens: maxTokens,
+          temperature: temperature,
+        });
+        answer = (aiResponse.response || '').trim();
+        if (answer) {
+          console.log('Decode: Workers AI succeeded');
+        }
+      } catch (aiErr) {
+        console.warn('Decode: Workers AI failed, falling back to Gemini:', aiErr.message);
       }
-    );
-
-    const geminiData = await geminiRes.json();
-    if (geminiData.error) {
-      throw new Error(geminiData.error.message || 'Gemini API error');
     }
 
-    const answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';
+    // Attempt 2: Gemini API fallback
+    if (!answer) {
+      const geminiKey = env.GEMINI_API_KEY;
+      if (!geminiKey) {
+        return jsonResponse({ error: 'AI service not configured' }, 500, corsHeaders);
+      }
+
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              { role: 'user', parts: [{ text: `${systemPrompt}\n\nUser question: ${cleanQuestion}` }] }
+            ],
+            generationConfig: {
+              maxOutputTokens: maxTokens,
+              temperature: temperature,
+            },
+          }),
+        }
+      );
+
+      const geminiText = await geminiRes.text();
+      let geminiData;
+      try {
+        geminiData = JSON.parse(geminiText);
+      } catch (parseErr) {
+        console.error('Decode: Gemini response not valid JSON:', geminiText.substring(0, 300));
+        throw new Error('AI returned an invalid response.');
+      }
+
+      if (geminiData.error) {
+        throw new Error(geminiData.error.message || 'Gemini API error');
+      }
+
+      answer = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!answer) {
+        throw new Error('Empty AI response');
+      }
+      console.log('Decode: Gemini fallback succeeded');
+    }
 
     // --- Find Related Posts ---
     const keywords = extractKeywords(cleanQuestion);
@@ -106,7 +143,7 @@ export async function onRequest(context) {
     if (keywords.length > 0) {
       const orFilter = keywords.map(k => `title.ilike.%${k}%`).join(',');
       const postsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/posts?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id,title&limit=2`,
+        `${SUPABASE_URL}/rest/v1/posts?or=(${encodeURIComponent(orFilter)})&status=eq.published&select=id,title,slug&limit=2`,
         { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
       );
       if (postsRes.ok) {

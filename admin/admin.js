@@ -1,4 +1,4 @@
-import { supabase } from '/js/supabase-config.js';
+import { supabase } from '/assets/js/supabase-config.js';
 
 // --- AI CALL: via server-side proxy (functions/ai-proxy.js) ---
 async function callAI(prompt, options = {}) {
@@ -36,6 +36,19 @@ function cleanJSONResponse(text) {
     return text;
 }
 
+// --- SLUG GENERATION ---
+function generateSlug(title) {
+    if (!title) return '';
+    return title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')      // Remove non-word chars except spaces and hyphens
+        .replace(/\s+/g, '-')           // Replace spaces with hyphens
+        .replace(/-+/g, '-')            // Collapse multiple hyphens
+        .replace(/^-+|-+$/g, '')        // Trim leading/trailing hyphens
+        .substring(0, 80);              // Limit length
+}
+
 
 
 let quill;
@@ -45,6 +58,7 @@ let editingPostId = null;
 let editingPersonaId = null;
 let availablePersonas = [];
 let unsplashMode = 'featured'; // 'featured' | 'body'
+let affiliateCodes = {}; // Map of aff-id → raw HTML code
 
 // --- CORE INITIALIZATION ---
 async function init() {
@@ -61,6 +75,17 @@ async function init() {
         }
     });
     quill.on('text-change', calculateSEOScore);
+
+    // Auto-generate slug when title changes
+    const titleInput = document.getElementById('ai-suggested-title');
+    if (titleInput) {
+        titleInput.addEventListener('input', () => {
+            const slugInput = document.getElementById('ai-slug');
+            if (slugInput && !editingPostId) {
+                slugInput.value = generateSlug(titleInput.value);
+            }
+        });
+    }
 
     // Supabase Auth: Check existing session
     const { data: { session } } = await supabase.auth.getSession();
@@ -118,6 +143,16 @@ async function init() {
     document.getElementById('btn-toggle-html').addEventListener('click', toggleHtmlSource);
 
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+    document.getElementById('btn-save-hero').addEventListener('click', saveHeroSettings);
+    document.getElementById('btn-hero-search-img').addEventListener('click', searchHeroImages);
+    document.getElementById('hero-img-query').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchHeroImages();
+    });
+    // Live preview update
+    ['hero-label', 'hero-title-before', 'hero-title-highlight', 'hero-title-after', 'hero-bg-image'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateHeroPreview);
+    });
     document.getElementById('btn-remove-duplicates').addEventListener('click', removeDuplicates);
     document.getElementById('btn-generate-persona').addEventListener('click', generateRandomPersona);
     document.getElementById('btn-save-persona').addEventListener('click', saveOrUpdatePersona);
@@ -155,6 +190,9 @@ async function init() {
     });
     document.getElementById('btn-close-unsplash').addEventListener('click', () => closeModal('modal-unsplash'));
     document.getElementById('btn-close-preview').addEventListener('click', () => closeModal('modal-preview'));
+    document.getElementById('btn-insert-affiliate').addEventListener('click', openAffiliateModal);
+    document.getElementById('btn-confirm-affiliate').addEventListener('click', insertAffiliateCode);
+    document.getElementById('btn-close-affiliate').addEventListener('click', () => closeModal('modal-affiliate'));
 
     const personaList = document.getElementById('persona-list');
     personaList.addEventListener('click', (event) => {
@@ -188,12 +226,16 @@ const switchView = (viewName) => {
     if (viewName === 'posts') loadPosts();
     if (viewName === 'dashboard') loadDashboard();
     if (viewName === 'automation') loadQueue();
+    if (viewName === 'personas') loadPersonas();
     if (viewName === 'settings') loadPersonas();
+    if (viewName === 'site-settings') loadHeroSettings();
     if (viewName === 'ai-writer') {
         if (!editingPostId) resetAI();
         refreshPersonaSelect();
     }
 };
+// Expose switchView globally for onclick handlers in HTML
+window.switchView = switchView;
 
 // --- AUTHENTICATION ---
 async function doLogin() {
@@ -247,6 +289,136 @@ function updateKeyStatusIndicator(synced) {
         indicator.innerHTML = '<i class="ph ph-cloud-check" style="color: var(--success);"></i> <span style="color: var(--success);">Cloud synced</span>';
     } else {
         indicator.innerHTML = '<i class="ph ph-cloud-slash" style="color: var(--text-muted);"></i> <span style="color: var(--text-muted);">Local only</span>';
+    }
+}
+
+// --- SITE SETTINGS: HERO ---
+async function loadHeroSettings() {
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'hero')
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+        const hero = data?.value || {};
+        document.getElementById('hero-label').value = hero.label || '';
+        document.getElementById('hero-title-before').value = hero.title_before || '';
+        document.getElementById('hero-title-highlight').value = hero.title_highlight || '';
+        document.getElementById('hero-title-after').value = hero.title_after || '';
+        document.getElementById('hero-description').value = hero.description || '';
+        document.getElementById('hero-bg-image').value = hero.bg_image || '';
+        document.getElementById('hero-cta1-text').value = hero.cta_primary_text || '';
+        document.getElementById('hero-cta1-url').value = hero.cta_primary_url || '';
+        document.getElementById('hero-cta2-text').value = hero.cta_secondary_text || '';
+        document.getElementById('hero-cta2-url').value = hero.cta_secondary_url || '';
+        updateHeroPreview();
+    } catch (e) {
+        console.error('[Site Settings] Failed to load hero:', e);
+    }
+}
+
+function updateHeroPreview() {
+    const bgUrl = document.getElementById('hero-bg-image').value;
+    const label = document.getElementById('hero-label').value;
+    const before = document.getElementById('hero-title-before').value;
+    const highlight = document.getElementById('hero-title-highlight').value;
+    const after = document.getElementById('hero-title-after').value;
+
+    const img = document.getElementById('hero-preview-img');
+    if (img) img.src = bgUrl || '';
+
+    const labelEl = document.getElementById('hero-preview-label');
+    if (labelEl) labelEl.textContent = label;
+
+    const titleEl = document.getElementById('hero-preview-title');
+    if (titleEl) titleEl.innerHTML = `${escHtml(before)} <span class="hl">${escHtml(highlight)}</span>${escHtml(after)}`;
+}
+
+function escHtml(str) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function saveHeroSettings() {
+    const statusEl = document.getElementById('hero-save-status');
+    const btn = document.getElementById('btn-save-hero');
+    btn.disabled = true;
+    statusEl.innerHTML = '<span style="color:var(--text-muted);">Saving...</span>';
+
+    const heroData = {
+        label: document.getElementById('hero-label').value.trim(),
+        title_before: document.getElementById('hero-title-before').value.trim(),
+        title_highlight: document.getElementById('hero-title-highlight').value.trim(),
+        title_after: document.getElementById('hero-title-after').value.trim(),
+        description: document.getElementById('hero-description').value.trim(),
+        bg_image: document.getElementById('hero-bg-image').value.trim(),
+        cta_primary_text: document.getElementById('hero-cta1-text').value.trim(),
+        cta_primary_url: document.getElementById('hero-cta1-url').value.trim(),
+        cta_secondary_text: document.getElementById('hero-cta2-text').value.trim(),
+        cta_secondary_url: document.getElementById('hero-cta2-url').value.trim(),
+    };
+
+    try {
+        // Upsert: try update first, then insert
+        const { data: existing } = await supabase
+            .from('site_settings')
+            .select('id')
+            .eq('key', 'hero')
+            .single();
+
+        if (existing) {
+            const { error } = await supabase
+                .from('site_settings')
+                .update({ value: heroData, updated_at: new Date().toISOString() })
+                .eq('key', 'hero');
+            if (error) throw error;
+        } else {
+            const { error } = await supabase
+                .from('site_settings')
+                .insert({ key: 'hero', value: heroData });
+            if (error) throw error;
+        }
+
+        statusEl.innerHTML = '<span style="color:var(--success);"><i class="ph ph-check-circle"></i> Saved successfully!</span>';
+        setTimeout(() => { statusEl.innerHTML = ''; }, 3000);
+    } catch (e) {
+        console.error('[Site Settings] Save failed:', e);
+        statusEl.innerHTML = `<span style="color:var(--danger);"><i class="ph ph-warning-circle"></i> Error: ${e.message}</span>`;
+    }
+    btn.disabled = false;
+}
+
+async function searchHeroImages() {
+    const query = document.getElementById('hero-img-query').value.trim();
+    if (!query) return;
+
+    const container = document.getElementById('hero-img-results');
+    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px;">Searching...</div>';
+
+    try {
+        const resp = await fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(query)}&count=8&orientation=landscape`);
+        const data = await resp.json();
+        if (!data.images || data.images.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:16px;">No images found</div>';
+            return;
+        }
+        container.innerHTML = data.images.map(img => `
+            <div class="image-grid-item" data-url="${img.url}">
+                <img src="${img.thumb}" alt="${img.alt || query}" loading="lazy">
+            </div>
+        `).join('');
+
+        // Click to select
+        container.querySelectorAll('.image-grid-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const url = item.dataset.url;
+                document.getElementById('hero-bg-image').value = url;
+                updateHeroPreview();
+                container.innerHTML = '';
+            });
+        });
+    } catch (e) {
+        container.innerHTML = `<div style="color:var(--danger); padding:16px;">${e.message}</div>`;
     }
 }
 
@@ -426,7 +598,7 @@ async function loadDashboard() {
         (posts || []).forEach(d => { totalViews += (d.views || 0); });
         document.getElementById('stat-views').innerText = totalViews.toLocaleString();
         document.getElementById('stat-users').innerText = '-';
-        document.getElementById('traffic-sources-container').innerHTML = '<div style="color:var(--text-muted); padding:10px;">GA4 연결 실패 — Supabase 조회수 표시 중</div>';
+        document.getElementById('traffic-sources-container').innerHTML = '<div style="color:var(--text-muted); padding:10px;">GA4 연결 실패 - Supabase 조회수 표시 중</div>';
 
         // Fallback top posts from Supabase
         const postList = (posts || []).map(d => ({ title: d.title, views: d.views || 0 }));
@@ -530,7 +702,16 @@ window.editPost = async (id) => {
 
     document.getElementById('ai-suggested-title').value = p.title;
     document.getElementById('ai-category').value = p.category;
-    quill.clipboard.dangerouslyPasteHTML(p.content);
+
+    // Load slug field
+    const slugInput = document.getElementById('ai-slug');
+    if (slugInput) {
+        slugInput.value = p.slug || generateSlug(p.title);
+    }
+
+    // Pre-process affiliate blocks before loading into Quill
+    const editorContent = processContentForEdit(p.content || '');
+    quill.clipboard.dangerouslyPasteHTML(editorContent);
     activeImage = p.image;
     if (activeImage) {
         document.getElementById('selected-ai-img').src = activeImage;
@@ -548,6 +729,7 @@ window.editPost = async (id) => {
 
 window.resetAI = () => {
     editingPostId = null;
+    affiliateCodes = {}; // Clear affiliate codes
     document.getElementById('writer-heading').innerText = "AI Content Creator";
     document.getElementById('btn-save-post').innerHTML = '<i class="ph ph-paper-plane-right"></i> Publish';
 
@@ -562,6 +744,7 @@ window.resetAI = () => {
     document.getElementById('step-3').style.opacity = '0.5';
     document.getElementById('ai-topic').value = '';
     document.getElementById('ai-suggested-title').value = '';
+    document.getElementById('ai-slug').value = '';
     document.getElementById('ai-keywords-container').innerHTML = '';
     quill.setText('');
     activeImage = '';
@@ -633,6 +816,10 @@ Ensure the titles are captivating, reflect the writer's unique personality and e
         const data = JSON.parse(rawText);
 
         document.getElementById('ai-suggested-title').value = data.suggested_titles[0] || `Guide to ${topic}`;
+
+        // Auto-generate slug from the selected title
+        document.getElementById('ai-slug').value = generateSlug(data.suggested_titles[0] || topic);
+
         const kwContainer = document.getElementById('ai-keywords-container');
         kwContainer.innerHTML = '';
         data.seo_keywords.forEach(k => kwContainer.innerHTML += `<span class="suggestion-chip selected">${k}</span>`);
@@ -649,6 +836,7 @@ Ensure the titles are captivating, reflect the writer's unique personality and e
             chip.innerText = title;
             chip.onclick = () => {
                 document.getElementById('ai-suggested-title').value = title;
+                document.getElementById('ai-slug').value = generateSlug(title);
                 document.querySelectorAll('#ai-title-options-container .suggestion-chip').forEach(c => c.classList.remove('selected'));
                 chip.classList.add('selected');
             };
@@ -869,7 +1057,7 @@ ${jobVoice}
 
 function generateTemplateContent(persona, topic, title, imgHtml) {
     return `
-                <p>Hello! I'm <strong>${persona.name}</strong>, a ${persona.age} ${persona.nationality} ${persona.job}. 👋</p>
+                <p>Hello! I'm <strong>${persona.name}</strong>, a ${persona.age} ${persona.nationality} ${persona.job}.</p>
                 <p>As someone who loves <strong>${persona.likes}</strong>, I was so excited to check out <strong>${topic}</strong>.</p>
                 <br>
                 <h2>Why ${persona.name} Recommends This</h2>
@@ -884,7 +1072,7 @@ function generateTemplateContent(persona, topic, title, imgHtml) {
                     <li><strong>Must Try:</strong> Don't leave without experiencing it fully!</li>
                 </ul>
                 <br>
-                <p>Hope this helps you on your Korea trip! Let me know if you want more tips from a ${persona.nationality} local. 😉</p>
+                <p>Hope this helps you on your Korea trip! Let me know if you want more tips from a ${persona.nationality} local.</p>
             `;
 }
 
@@ -896,6 +1084,8 @@ window.runSEOPolish = () => {
         if (!title.includes("2026")) title += " (Updated 2026)";
         if (!title.includes("Guide") && !title.includes("Review")) title = "Ultimate Guide: " + title;
         document.getElementById('ai-suggested-title').value = title;
+        // Update slug after SEO polish
+        document.getElementById('ai-slug').value = generateSlug(title);
         let content = quill.root.innerHTML;
         if (!content.includes("In this article")) {
             content = `<p><em>In this article, we'll explore ${title} and why it's a must-visit.</em></p>` + content;
@@ -1026,13 +1216,13 @@ function getVoiceGuide(nationality) {
 **QUIRKS:** Abbreviate everything — "defs," "arvo," "brekkie." Call everyone "mate." Play down impressive things ("yeah it was alright" = incredible).
 **EXAMPLE PHRASES:** "Look, I'm not gonna sugarcoat it—", "Mate, you absolutely have to try this", "Reckon this is one of the best I've had", "No worries if that's not your thing, but—"`,
 
-        'France': `**VOCABULARY:** Naturally weave in French words — "ambiance," "je ne sais quoi," "quartier," "rapport qualité-prix." Use refined adjectives like "exquisite," "nuanced," "sophisticated."
+        'France': `**VOCABULARY:** Naturally weave in French words — "ambiance," "je ne sais quoi," "quartier," "rapport qualite-prix." Use refined adjectives like "exquisite," "nuanced," "sophisticated."
 **STRUCTURE:** Elegant longer sentences with multiple clauses. Build atmosphere before delivering opinions. Philosophical observations woven into practical content.
 **CULTURAL LENS:** Compare Korean aesthetics and cuisine to French standards — patisserie vs Korean desserts, fashion sensibility, cafe culture. Always note quality and craftsmanship.
 **QUIRKS:** Strong opinions about food quality and presentation. Appreciate artistry in everyday things. Slightly skeptical first, then won over.
 **EXAMPLE PHRASES:** "One must admit, the attention to detail here is remarkable—", "As a Parisian, I was initially skeptical, but...", "There's a certain je ne sais quoi about this place", "The presentation alone deserves recognition"`,
 
-        'Germany': `**VOCABULARY:** Use precise language — "specifically," "particularly noteworthy," "efficiently organized," "practical." Occasional German terms like "Gemütlichkeit," "Wanderlust."
+        'Germany': `**VOCABULARY:** Use precise language — "specifically," "particularly noteworthy," "efficiently organized," "practical." Occasional German terms like "Gemutlichkeit," "Wanderlust."
 **STRUCTURE:** Well-organized with clear progression. Topic sentences followed by supporting evidence. Include specifics — prices, hours, distances, transit details.
 **CULTURAL LENS:** Compare systems and efficiency — Korean transit punctuality, organizational methods, recycling systems, work culture. Appreciate engineering and infrastructure.
 **QUIRKS:** Include practical logistics that other writers skip. Rate value-for-money. Appreciate well-designed systems. Slightly structured even in casual writing.
@@ -1387,24 +1577,26 @@ async function runAutomation() {
 
         try {
             // Step 1: Generate SEO Plan
-            logMsg('  → Generating SEO plan...');
+            logMsg('  -> Generating SEO plan...');
             const seoPlan = await generateAutomationSEOPlan(topicTrimmed, persona);
             const title = seoPlan.title || `${topicTrimmed} - Korea Decode`;
             const keywords = seoPlan.keywords || [];
-            logMsg(`  → Title: "${title}"`);
+            logMsg(`  -> Title: "${title}"`);
 
             // Step 2: Fetch Images
-            logMsg('  → Fetching images...');
+            logMsg('  -> Fetching images...');
             const images = await fetchAutomationImages(topicTrimmed, keywords, imgCount + 1);
-            logMsg(`  → Found ${images.length} images`);
+            logMsg(`  -> Found ${images.length} images`);
 
             // Step 3: Generate Full Article
-            logMsg('  → Writing article (~' + wordCount + ' words)...');
+            logMsg('  -> Writing article (~' + wordCount + ' words)...');
             const content = await generateAutomationArticle(topicTrimmed, title, keywords, persona, wordCount, imgCount, toneOverride, images);
 
-            // Step 4: Save to Supabase
+            // Step 4: Save to Supabase (with auto-generated slug)
+            const slug = generateSlug(title);
             const postData = {
                 title,
+                slug,
                 category,
                 content,
                 image: images.length > 0 ? images[0].url : '',
@@ -1420,11 +1612,11 @@ async function runAutomation() {
             const { error } = await supabase.from('posts').insert(postData);
             if (error) throw error;
 
-            logMsg(`  ✓ Saved as ${postData.status}`);
+            logMsg(`  [OK] Saved as ${postData.status}`);
             currentDate.setHours(currentDate.getHours() + intervalHours);
 
         } catch (e) {
-            logMsg(`  ✗ ERROR: ${e.message} — skipping`);
+            logMsg(`  [ERR] ${e.message} - skipping`);
             console.error('Automation error for topic:', topicTrimmed, e);
         }
 
@@ -1486,7 +1678,7 @@ async function loadQueue() {
             const pDate = new Date(p.created_at);
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td><span style="padding:4px 8px; background:#f59e0b20; color:#f59e0b; font-size:12px; border-radius:4px;">Scheduled</span></td>
+                <td><span class="status-badge status-scheduled">Scheduled</span></td>
                 <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.title}</td>
                 <td>${pDate.toLocaleString()}</td>
                 <td><button class="btn btn-outline" style="padding:4px 8px; font-size:12px;" onclick="deletePost('${p.id}')">Cancel</button></td>
@@ -1545,6 +1737,74 @@ function calculateSEOScore() {
     document.getElementById('seo-score-text').innerText = score + '%';
 }
 
+// --- AFFILIATE WIDGET FUNCTIONS ---
+
+function openAffiliateModal() {
+    document.getElementById('aff-label').value = 'Klook Widget';
+    document.getElementById('aff-code-input').value = '';
+    document.getElementById('modal-affiliate').style.display = 'flex';
+}
+
+function insertAffiliateCode() {
+    const code = document.getElementById('aff-code-input').value.trim();
+    const label = document.getElementById('aff-label').value.trim() || 'Affiliate Widget';
+    if (!code) return alert('Please paste the affiliate HTML code.');
+
+    const affId = 'aff-' + Date.now();
+    affiliateCodes[affId] = code;
+
+    // Build placeholder HTML
+    const placeholderHTML = `<div class="affiliate-placeholder" data-aff-id="${affId}" contenteditable="false"><span class="aff-icon">📦</span><span class="aff-label">${escHtml(label)}</span><span class="aff-hint">Affiliate widget — renders on live blog</span></div>`;
+
+    if (isHtmlMode) {
+        // In HTML mode, insert at cursor position in textarea
+        const ta = document.getElementById('html-source-editor');
+        const start = ta.selectionStart;
+        const before = ta.value.substring(0, start);
+        const after = ta.value.substring(ta.selectionEnd);
+        ta.value = before + placeholderHTML + after;
+    } else {
+        // In visual mode, insert at end of content
+        const len = quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(len - 1, placeholderHTML);
+    }
+
+    closeModal('modal-affiliate');
+}
+
+/**
+ * Process editor content for saving: replace affiliate placeholders with real code.
+ * Wraps each affiliate block in HTML comments for roundtrip identification.
+ */
+function processContentForSave(html) {
+    // Replace placeholder divs with actual affiliate code wrapped in comment markers
+    return html.replace(/<div class="affiliate-placeholder"[^>]*data-aff-id="([^"]+)"[^>]*>[\s\S]*?<\/div>/g, (match, affId) => {
+        const code = affiliateCodes[affId];
+        if (code) {
+            return `<!--AFFILIATE_START-->\n<div class="affiliate-widget">\n${code}\n</div>\n<!--AFFILIATE_END-->`;
+        }
+        return match; // Keep placeholder if no code found
+    });
+}
+
+/**
+ * Process content from DB before loading into Quill:
+ * Find affiliate blocks (wrapped in comment markers) and convert to placeholders.
+ */
+function processContentForEdit(html) {
+    affiliateCodes = {}; // Reset
+    return html.replace(/<!--AFFILIATE_START-->\s*<div class="affiliate-widget">\s*([\s\S]*?)\s*<\/div>\s*<!--AFFILIATE_END-->/g, (match, code) => {
+        const affId = 'aff-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
+        affiliateCodes[affId] = code.trim();
+        // Extract label from code (try to detect provider)
+        let label = 'Affiliate Widget';
+        if (code.includes('klk-aff-widget') || code.includes('klook.com')) label = 'Klook Widget';
+        else if (code.includes('amazon')) label = 'Amazon Widget';
+        else if (code.includes('coupang')) label = 'Coupang Widget';
+        return `<div class="affiliate-placeholder" data-aff-id="${affId}" contenteditable="false"><span class="aff-icon">📦</span><span class="aff-label">${escHtml(label)}</span><span class="aff-hint">Affiliate widget — renders on live blog</span></div>`;
+    });
+}
+
 // --- HTML Source Toggle ---
 let isHtmlMode = false;
 window.toggleHtmlSource = () => {
@@ -1573,11 +1833,16 @@ window.toggleHtmlSource = () => {
 };
 
 // Helper: get current editor content (works in both visual and HTML mode)
+// Processes affiliate placeholders into real code for saving.
 function getEditorContent() {
+    let html;
     if (isHtmlMode) {
-        return document.getElementById('html-source-editor').value;
+        html = document.getElementById('html-source-editor').value;
+    } else {
+        html = quill.root.innerHTML;
     }
-    return quill.root.innerHTML;
+    // Replace affiliate placeholders with actual code
+    return processContentForSave(html);
 }
 
 window.showMobilePreview = () => {
@@ -1591,6 +1856,7 @@ window.showMobilePreview = () => {
 
 window.publishPost = async () => {
     const title = document.getElementById('ai-suggested-title').value;
+    const slug = document.getElementById('ai-slug').value || generateSlug(title);
     const category = document.getElementById('ai-category').value;
     const content = getEditorContent();
     const scheduleStr = document.getElementById('post-schedule').value;
@@ -1612,6 +1878,7 @@ window.publishPost = async () => {
         if (editingPostId) {
             const updateData = {
                 title,
+                slug,
                 category,
                 content,
                 image: activeImage || '',
@@ -1630,6 +1897,7 @@ window.publishPost = async () => {
         } else {
             const postData = {
                 title,
+                slug,
                 category,
                 content,
                 image: activeImage || '',
@@ -1659,30 +1927,43 @@ async function loadPosts() {
     const grid = document.getElementById('posts-grid');
     grid.innerHTML = 'Loading...';
 
-    const { data, error } = await supabase.from('posts').select('id, title, category, views, status, writer_name').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('posts').select('id, title, slug, category, views, status, writer_name').order('created_at', { ascending: false });
     if (error) { console.error(error); grid.innerHTML = 'Error loading posts.'; return; }
 
     grid.innerHTML = '';
     (data || []).forEach(p => {
+        const statusClass = p.status === 'published' ? 'status-published' : p.status === 'scheduled' ? 'status-scheduled' : 'status-draft';
+        const statusLabel = p.status || 'draft';
+        const postSlug = p.slug || generateSlug(p.title);
+        const viewUrl = `/blog/${postSlug}`;
+
         const div = document.createElement('div');
         div.className = 'card';
         div.style.padding = '16px';
         div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
+                        <div style="flex:1; min-width:0;">
                             <div style="font-weight:700; font-size:16px;">${p.title}</div>
                             <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                                ${p.category} • ${p.views || 0} views • ${p.writer_name || 'Admin'}
+                                <span class="status-badge ${statusClass}">${statusLabel}</span>
+                                ${p.category} | ${p.views || 0} views | ${p.writer_name || 'Admin'}
+                            </div>
+                            <div style="font-size:11px; color:var(--accent); margin-top:4px; font-family:monospace; opacity:0.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                /blog/${postSlug}
                             </div>
                         </div>
-                        <div style="display:flex; gap: 8px;">
-                            <a href="/post.html?id=${p.id}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">View</a>
+                        <div style="display:flex; gap: 8px; flex-shrink:0; margin-left:12px;">
+                            <a href="${viewUrl}" target="_blank" class="btn btn-outline" style="padding:6px 12px; font-size:12px;">View</a>
                             <button class="btn btn-outline" style="padding:6px 12px; font-size:12px; color:var(--accent); border-color:var(--accent);" onclick="editPost('${p.id}')">Edit</button>
+                            <button class="btn btn-outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);" onclick="deletePost('${p.id}')">Delete</button>
                         </div>
                     </div>
                 `;
         grid.appendChild(div);
     });
+    if ((data || []).length === 0) {
+        grid.innerHTML = '<div class="card" style="padding:20px; text-align:center; color:var(--text-muted);">No posts yet. Create your first post with AI Writer!</div>';
+    }
 }
 
 
@@ -1691,6 +1972,7 @@ const migrationList = self.migrationList || [];
 
 window.startMigration = async () => {
     const logBox = document.getElementById('migration-log');
+    logBox.style.display = 'block';
     logBox.innerHTML = 'Starting... (Check console for full details)';
     const parser = new DOMParser();
     for (const path of migrationList) {
@@ -1708,8 +1990,10 @@ window.startMigration = async () => {
             content = content.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gm, "");
             content = content.replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gm, "");
 
+            const slug = generateSlug(title);
             await supabase.from('posts').insert({
                 title,
+                slug,
                 category: 'Archive',
                 content,
                 image: 'https://images.unsplash.com/photo-1576085898323-218337e3e43c?w=800',

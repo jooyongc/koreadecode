@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO & Meta Tags -->
+    <title>About Us — Korea Decode</title>
+    <meta name="description" content="Korea Decode is an AI-powered English-language guide to South Korean culture. Learn about our mission to decode K-Food, K-Beauty, Travel, K-Pop, Culture, and Language for a global audience.">
+    <link rel="canonical" href="https://koreadecode.com/about/">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="About Us — Korea Decode">
+    <meta property="og:description" content="Korea Decode is an AI-powered English-language guide to South Korean culture. Discover our mission to decode K-Food, K-Beauty, Travel, K-Pop, Culture, and Language.">
+    <meta property="og:url" content="https://koreadecode.com/about/">
+    <meta property="og:site_name" content="Korea Decode">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="About Us — Korea Decode">
+    <meta name="twitter:description" content="Korea Decode is an AI-powered English-language guide to South Korean culture.">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        "name": "About Korea Decode",
+        "description": "Korea Decode is an AI-powered English-language guide to South Korean culture, covering K-Food, K-Beauty, Travel, K-Pop, Culture, and Language.",
+        "url": "https://koreadecode.com/about/",
+        "mainEntity": {
+            "@type": "Organization",
+            "@id": "https://koreadecode.com/#organization",
+            "name": "Korea Decode",
+            "url": "https://koreadecode.com/",
+            "foundingDate": "2025",
+            "description": "An independent English-language digital media brand dedicated to decoding South Korean culture for a global audience."
+        }
+    }
+    </script>
+
+    <style>
+        .hero-about {
+            padding: var(--space-3xl) 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .hero-about h1 {
+            margin-bottom: var(--space-lg);
+        }
+        .hero-about p {
+            max-width: 640px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+        .about-section {
+            padding: var(--space-3xl) 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .about-section:last-child {
+            border-bottom: none;
+        }
+        .about-section h2 {
+            margin-bottom: var(--space-lg);
+        }
+        .about-section p {
+            margin-bottom: var(--space-md);
+            font-size: 1rem;
+            line-height: 1.8;
+        }
+        .mission-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-2xl);
+            margin-top: var(--space-xl);
+        }
+        .mission-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+        }
+        .mission-card h3 {
+            font-family: var(--font-body);
+            text-transform: none;
+            font-size: 1.2rem;
+            margin-bottom: var(--space-md);
+            color: var(--accent);
+        }
+        .approach-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-lg);
+            margin-top: var(--space-xl);
+        }
+        .approach-feature {
+            display: flex;
+            gap: var(--space-md);
+            align-items: flex-start;
+        }
+        .approach-icon {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-dim);
+            border-radius: var(--radius);
+            color: var(--accent);
+            font-size: 1.4rem;
+        }
+        .approach-feature h4 {
+            margin-bottom: var(--space-xs);
+        }
+        .approach-feature p {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-lg);
+            margin-top: var(--space-xl);
+        }
+        .topic-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            text-align: center;
+            transition: all var(--transition);
+        }
+        .topic-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .topic-icon {
+            font-size: 2rem;
+            margin-bottom: var(--space-md);
+            color: var(--accent);
+        }
+        .topic-card h3 {
+            font-family: var(--font-body);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            margin-bottom: var(--space-sm);
+        }
+        .topic-card p {
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        .values-list {
+            margin-top: var(--space-xl);
+        }
+        .values-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-md);
+            padding: var(--space-md) 0;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-reading);
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .values-list li:last-child {
+            border-bottom: none;
+        }
+        .values-list .value-marker {
+            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            margin-top: 8px;
+        }
+        @media (max-width: 768px) {
+            .mission-grid,
+            .approach-features {
+                grid-template-columns: 1fr;
+            }
+            .topics-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (max-width: 480px) {
+            .topics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header id="site-header" class="site-header no-print"></header>
+
+    <main class="page-content">
+        <!-- Hero -->
+        <section class="hero-about">
+            <div class="container">
+                <h1>About <span class="accent">Korea Decode</span></h1>
+                <p>We are an independent, AI-powered English-language media brand dedicated to making South Korean culture accessible, understandable, and irresistible to a global audience.</p>
+            </div>
+        </section>
+
+        <!-- Mission & Vision -->
+        <section class="about-section">
+            <div class="container">
+                <h2>Our <span class="accent">Mission</span></h2>
+                <p>South Korea's cultural influence has never been stronger. From Seoul's vibrant street food stalls to the global stages of K-Pop, from revolutionary skincare routines to centuries-old traditions, Korean culture is shaping the world. But for English-speaking audiences, truly understanding it often means navigating language barriers, scattered sources, and surface-level coverage.</p>
+                <p>Korea Decode exists to change that. We decode the context, history, and nuance behind every Korean trend, recipe, destination, and cultural moment so you don't just see Korean culture — you understand it.</p>
+
+                <div class="mission-grid">
+                    <div class="mission-card">
+                        <h3>Our Vision</h3>
+                        <p>To become the most trusted English-language destination for anyone who wants to engage deeply with Korean culture — whether you're planning your first trip to Seoul, perfecting your skincare routine, or trying to understand the latest K-Pop phenomenon.</p>
+                    </div>
+                    <div class="mission-card">
+                        <h3>Why "Decode"?</h3>
+                        <p>Korean culture is layered with meaning. A single dish can carry centuries of history. A beauty trend might reflect deep philosophical ideals. A pop song can reference literary traditions. We go beyond the surface to decode these connections, giving you the full picture behind every story.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Our Approach -->
+        <section class="about-section">
+            <div class="container">
+                <h2>Our <span class="accent">Approach</span></h2>
+                <p>Korea Decode combines AI-assisted research and content creation with rigorous editorial standards. Every article is crafted using advanced language models trained on extensive Korean cultural knowledge, then reviewed for accuracy, nuance, and readability.</p>
+
+                <div class="approach-features">
+                    <div class="approach-feature">
+                        <div class="approach-icon">
+                            <i class="ph ph-brain"></i>
+                        </div>
+                        <div>
+                            <h4>AI-Powered Research</h4>
+                            <p>We leverage large language models to synthesize information from thousands of Korean and English sources, ensuring comprehensive and well-rounded coverage.</p>
+                        </div>
+                    </div>
+                    <div class="approach-feature">
+                        <div class="approach-icon">
+                            <i class="ph ph-magnifying-glass"></i>
+                        </div>
+                        <div>
+                            <h4>Fact-Checked Content</h4>
+                            <p>Every claim, recipe measurement, and travel recommendation is verified against authoritative sources before publication.</p>
+                        </div>
+                    </div>
+                    <div class="approach-feature">
+                        <div class="approach-icon">
+                            <i class="ph ph-globe-hemisphere-east"></i>
+                        </div>
+                        <div>
+                            <h4>Cultural Context</h4>
+                            <p>We don't just report trends — we explain the cultural, historical, and social context that gives them meaning.</p>
+                        </div>
+                    </div>
+                    <div class="approach-feature">
+                        <div class="approach-icon">
+                            <i class="ph ph-arrows-clockwise"></i>
+                        </div>
+                        <div>
+                            <h4>Always Current</h4>
+                            <p>Our AI-assisted workflow allows us to publish timely, relevant content that keeps pace with Korea's rapidly evolving cultural landscape.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- What We Cover -->
+        <section class="about-section">
+            <div class="container">
+                <h2>What We <span class="accent">Cover</span></h2>
+                <p>Korea Decode spans six core pillars of Korean culture, each explored with depth, context, and practical value for our readers.</p>
+
+                <div class="topics-grid">
+                    <div class="topic-card">
+                        <div class="topic-icon"><i class="ph ph-bowl-food"></i></div>
+                        <h3>K-Food</h3>
+                        <p>Authentic recipes, restaurant guides, street food deep-dives, and the stories behind Korea's most beloved dishes.</p>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon"><i class="ph ph-drop"></i></div>
+                        <h3>K-Beauty</h3>
+                        <p>Skincare routines, product reviews, ingredient breakdowns, and the science behind Korea's beauty revolution.</p>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon"><i class="ph ph-airplane-tilt"></i></div>
+                        <h3>Travel</h3>
+                        <p>City guides, hidden gems, seasonal itineraries, and practical tips for exploring South Korea like a local.</p>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon"><i class="ph ph-music-notes"></i></div>
+                        <h3>K-Pop</h3>
+                        <p>Artist profiles, industry analysis, comeback breakdowns, and the cultural forces driving the global K-Pop wave.</p>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon"><i class="ph ph-buildings"></i></div>
+                        <h3>Culture</h3>
+                        <p>Traditions, modern society, etiquette guides, holiday celebrations, and the values shaping contemporary Korea.</p>
+                    </div>
+                    <div class="topic-card">
+                        <div class="topic-icon"><i class="ph ph-translate"></i></div>
+                        <h3>Language</h3>
+                        <p>Korean vocabulary, grammar tips, useful phrases, slang explainers, and insights into the Korean language and Hangul.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Our Values -->
+        <section class="about-section">
+            <div class="container">
+                <h2>Our <span class="accent">Values</span></h2>
+                <ul class="values-list">
+                    <li>
+                        <span class="value-marker"></span>
+                        <span><strong>Accuracy First</strong> — We prioritize getting things right. Cultural nuance matters, and we take the time to ensure our content reflects Korea authentically.</span>
+                    </li>
+                    <li>
+                        <span class="value-marker"></span>
+                        <span><strong>Depth Over Clicks</strong> — We write for readers who want to understand, not just scroll. Every article aims to leave you knowing more than when you arrived.</span>
+                    </li>
+                    <li>
+                        <span class="value-marker"></span>
+                        <span><strong>Transparency</strong> — We are upfront about our use of AI in content creation. We believe AI is a powerful tool for research and writing when paired with editorial oversight.</span>
+                    </li>
+                    <li>
+                        <span class="value-marker"></span>
+                        <span><strong>Accessibility</strong> — Korean culture should be approachable for everyone, whether you are a first-time visitor or a lifelong enthusiast. We write for all levels.</span>
+                    </li>
+                    <li>
+                        <span class="value-marker"></span>
+                        <span><strong>Respect</strong> — We approach Korean culture with genuine respect and curiosity, avoiding stereotypes and sensationalism in favor of thoughtful, informed storytelling.</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer id="site-footer" class="site-footer no-print"></footer>
+
+    <script type="module">
+        import { initPage } from '/assets/js/components.js';
+        import { initAnalytics } from '/assets/js/analytics.js';
+        initPage();
+        initAnalytics();
+    </script>
+</body>
+</html>

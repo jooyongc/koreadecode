@@ -64,7 +64,26 @@ export async function onRequest(context) {
       return jsonResponse({ error: 'Korea Concierge is currently disabled.' }, 503, corsHeaders);
     }
 
-    const systemPrompt = config.system_prompt || 'You are Korea Concierge, a premium AI travel planner for Korea. Create personalized day-by-day itineraries. Respond ONLY in valid JSON.';
+    const systemPrompt = config.system_prompt || `You are Korea Concierge, a premium AI travel planner for Korea. Create personalized day-by-day itineraries.
+
+Respond ONLY in valid JSON with this structure:
+{
+  "title": "Trip title",
+  "summary": "Brief overview",
+  "days": [
+    {
+      "day": "Day 1",
+      "theme": "Theme for the day",
+      "activities": [
+        {
+          "time": "09:00",
+          "activity": "Activity name",
+          "description": "Brief description"
+        }
+      ]
+    }
+  ]
+}`;
     const model = config.model || 'gemini-2.0-flash';
     const maxTokens = config.max_tokens || 4000;
     const temperature = config.temperature ?? 0.7;
@@ -79,40 +98,74 @@ ${extra ? `- Special requests: ${extra}` : ''}
 
 Create a complete day-by-day itinerary. Remember to respond ONLY in valid JSON format as specified in your instructions.`;
 
-    // --- Call Gemini API ---
-    const geminiKey = env.GEMINI_API_KEY;
-    if (!geminiKey) {
-      return jsonResponse({ error: 'AI service not configured' }, 500, corsHeaders);
-    }
+    // --- Call AI: Workers AI first, Gemini fallback ---
+    let rawText = '';
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+    // Attempt 1: Workers AI (Cloudflare)
+    if (env.AI) {
+      try {
+        const aiResponse = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
           ],
-          generationConfig: {
-            maxOutputTokens: maxTokens,
-            temperature: temperature,
-          },
-        }),
+          max_tokens: maxTokens,
+          temperature: temperature,
+        });
+        rawText = (aiResponse.response || '').trim();
+        if (rawText) {
+          console.log('Concierge: Workers AI succeeded');
+        }
+      } catch (aiErr) {
+        console.warn('Concierge: Workers AI failed, falling back to Gemini:', aiErr.message);
       }
-    );
-
-    const geminiData = await geminiRes.json();
-    if (geminiData.error) {
-      throw new Error(geminiData.error.message || 'Gemini API error');
     }
 
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Attempt 2: Gemini API fallback
     if (!rawText) {
-      throw new Error('Empty AI response');
+      const geminiKey = env.GEMINI_API_KEY;
+      if (!geminiKey) {
+        return jsonResponse({ error: 'AI service not configured' }, 500, corsHeaders);
+      }
+
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+            ],
+            generationConfig: {
+              maxOutputTokens: maxTokens,
+              temperature: temperature,
+            },
+          }),
+        }
+      );
+
+      const geminiText = await geminiRes.text();
+      let geminiData;
+      try {
+        geminiData = JSON.parse(geminiText);
+      } catch (parseErr) {
+        console.error('Concierge: Gemini response not valid JSON:', geminiText.substring(0, 300));
+        throw new Error('AI returned an invalid response.');
+      }
+
+      if (geminiData.error) {
+        throw new Error(geminiData.error.message || 'Gemini API error');
+      }
+
+      rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!rawText) {
+        throw new Error('Empty AI response');
+      }
+      console.log('Concierge: Gemini fallback succeeded');
     }
 
-    // Parse JSON from response (strip markdown code blocks if present)
+    // --- Parse JSON from response (strip markdown code blocks if present) ---
     let itinerary;
     try {
       let cleaned = rawText.trim();

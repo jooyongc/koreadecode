@@ -1,0 +1,143 @@
+/* ============================================
+   KOREA DECODE — Decode This Page CSS
+   ============================================ */
+
+.decode-hero {
+  text-align: center;
+  padding: var(--space-3xl) 0 var(--space-2xl);
+}
+
+.decode-hero h1 {
+  margin-bottom: var(--space-md);
+}
+
+.decode-hero p {
+  font-size: 1.1rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* --- Decode Input --- */
+.decode-input-wrapper {
+  max-width: 600px;
+  margin: 0 auto var(--space-2xl);
+}
+
+.decode-input-box {
+  display: flex;
+  gap: var(--space-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm);
+  transition: border-color var(--transition-fast);
+}
+
+.decode-input-box:focus-within {
+  border-color: var(--accent);
+}
+
+.decode-input-box input {
+  flex: 1;
+  padding: var(--space-md);
+  font-size: 1rem;
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.decode-input-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.decode-input-box .btn {
+  flex-shrink: 0;
+}
+
+/* --- Example Questions --- */
+.decode-examples {
+  max-width: 600px;
+  margin: 0 auto var(--space-2xl);
+}
+
+.decode-examples h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-md);
+  text-align: center;
+}
+
+.example-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+/* --- Decode Result --- */
+.decode-result {
+  max-width: 600px;
+  margin: 0 auto;
+  display: none;
+}
+
+.decode-result.visible {
+  display: block;
+  animation: fadeInUp var(--transition-slow) ease;
+}
+
+.decode-answer {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+}
+
+.decode-answer-text {
+  font-family: var(--font-reading);
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.decode-related {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+
+.decode-related h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.decode-related a {
+  display: block;
+  padding: var(--space-sm) 0;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+/* --- Loading --- */
+.decode-loading {
+  display: none;
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.decode-loading.visible {
+  display: block;
+}
+
+.decode-loading .spinner {
+  margin: 0 auto var(--space-md);
+}
+
+.decode-loading p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

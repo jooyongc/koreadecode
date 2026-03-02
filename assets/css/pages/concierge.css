@@ -1,0 +1,288 @@
+/* ============================================
+   KOREA DECODE — Concierge Page CSS
+   ============================================ */
+
+.concierge-hero {
+  text-align: center;
+  padding: var(--space-3xl) 0 var(--space-2xl);
+}
+
+.concierge-hero h1 {
+  margin-bottom: var(--space-md);
+}
+
+.concierge-hero p {
+  font-size: 1.1rem;
+  max-width: 550px;
+  margin: 0 auto;
+}
+
+/* --- Form Steps --- */
+.concierge-form {
+  max-width: 700px;
+  margin: 0 auto var(--space-2xl);
+}
+
+.form-step {
+  margin-bottom: var(--space-xl);
+}
+
+.form-step-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: var(--space-md);
+}
+
+.form-step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* --- Vibe Chips --- */
+.vibe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-sm);
+}
+
+.vibe-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 0.9rem;
+}
+
+.vibe-chip:hover {
+  border-color: var(--border-light);
+}
+
+.vibe-chip.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.vibe-emoji {
+  font-size: 1.2rem;
+}
+
+/* --- Option Buttons --- */
+.option-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.option-btn {
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.option-btn:hover {
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.option-btn.selected {
+  background: var(--accent);
+  color: var(--bg-main);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+/* --- Extra Notes --- */
+.extra-notes {
+  margin-top: var(--space-lg);
+}
+
+.extra-notes textarea {
+  width: 100%;
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.extra-notes textarea:focus {
+  border-color: var(--accent);
+}
+
+/* --- Submit --- */
+.concierge-submit {
+  text-align: center;
+  margin-top: var(--space-xl);
+}
+
+/* --- Itinerary Result --- */
+.concierge-result {
+  max-width: 700px;
+  margin: 0 auto;
+  display: none;
+}
+
+.concierge-result.visible {
+  display: block;
+  animation: fadeInUp var(--transition-slow) ease;
+}
+
+.itinerary-header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.itinerary-header h2 {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-sm);
+}
+
+.itinerary-day {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.itinerary-day-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.day-number {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.day-theme {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.itinerary-item {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.itinerary-item:last-child {
+  border-bottom: none;
+}
+
+.item-time {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.item-details h4 {
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.item-details p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* --- Affiliate Links --- */
+.affiliate-section {
+  margin-top: var(--space-xl);
+  padding: var(--space-xl);
+  background: var(--bg-sec);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.affiliate-section h3 {
+  font-size: 1rem;
+  margin-bottom: var(--space-lg);
+}
+
+.affiliate-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.affiliate-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px 20px;
+  background: var(--accent);
+  color: var(--bg-main);
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all var(--transition-fast);
+}
+
+.affiliate-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(204, 255, 0, 0.3);
+  color: var(--bg-main);
+}
+
+/* --- Loading --- */
+.concierge-loading {
+  display: none;
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.concierge-loading.visible {
+  display: block;
+}
+
+.concierge-loading .spinner {
+  margin: 0 auto var(--space-md);
+}
+
+@media (max-width: 768px) {
+  .vibe-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
