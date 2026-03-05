@@ -121,6 +121,7 @@ let availablePersonas = [];
 let unsplashMode = 'featured'; // 'featured' | 'body'
 let affiliateCodes = {}; // Map of aff-id → raw HTML code
 let pendingUploadFile = null; // File object waiting to be uploaded
+let imgSearchPage = 1; // current image search page
 
 // --- CORE INITIALIZATION ---
 async function init() {
@@ -1329,17 +1330,28 @@ function switchImageModalTab(tabName) {
     document.getElementById('img-tab-upload').style.display = tabName === 'upload' ? 'block' : 'none';
 }
 
-async function searchUnsplashModal() {
+async function searchUnsplashModal(loadMore = false) {
     const q = document.getElementById('unsplash-modal-search').value.trim();
     if (!q) return;
     const container = document.getElementById('unsplash-results');
-    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Searching...</div>';
+
+    if (!loadMore) {
+        imgSearchPage = 1;
+        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;">Searching...</div>';
+    } else {
+        // Remove existing load-more button
+        const existingBtn = container.querySelector('.load-more-btn');
+        if (existingBtn) {
+            existingBtn.textContent = 'Loading...';
+            existingBtn.disabled = true;
+        }
+    }
+
     document.getElementById('modal-unsplash').style.display = 'flex';
     try {
-        // Fetch from both Unsplash and Pexels via proxy
         const [unsplashRes, pexelsRes] = await Promise.all([
-            fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(q)}&count=8`).then(r => r.json()).catch(() => ({ images: [] })),
-            fetch(`/image-proxy?source=pexels&query=${encodeURIComponent(q)}&count=4`).then(r => r.json()).catch(() => ({ images: [] }))
+            fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(q)}&count=12&page=${imgSearchPage}`).then(r => r.json()).catch(() => ({ images: [], totalPages: 0 })),
+            fetch(`/image-proxy?source=pexels&query=${encodeURIComponent(q)}&count=6&page=${imgSearchPage}`).then(r => r.json()).catch(() => ({ images: [], totalPages: 0 }))
         ]);
 
         // Interleave: 2 unsplash, 1 pexels, repeat
@@ -1353,11 +1365,17 @@ async function searchUnsplashModal() {
             if (pi < pImgs.length) combined.push(pImgs[pi++]);
         }
 
-        container.innerHTML = '';
-        if (combined.length === 0) {
+        if (!loadMore) container.innerHTML = '';
+        else {
+            const oldBtn = container.querySelector('.load-more-btn');
+            if (oldBtn) oldBtn.remove();
+        }
+
+        if (combined.length === 0 && !loadMore) {
             container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);">No results found</div>';
             return;
         }
+
         combined.forEach(img => {
             const el = document.createElement('img');
             el.src = img.thumb || img.url;
@@ -1382,8 +1400,24 @@ async function searchUnsplashModal() {
             };
             container.appendChild(el);
         });
+
+        // Add Load More button if there are more pages
+        const hasMore = (unsplashRes.totalPages || 0) > imgSearchPage || (pexelsRes.totalPages || 0) > imgSearchPage;
+        if (hasMore && combined.length > 0) {
+            const loadMoreBtn = document.createElement('button');
+            loadMoreBtn.className = 'btn btn-outline load-more-btn';
+            loadMoreBtn.style.cssText = 'grid-column:1/-1; margin-top:8px; padding:10px;';
+            loadMoreBtn.innerHTML = '<i class="ph ph-arrow-down"></i> Load More';
+            loadMoreBtn.onclick = () => {
+                imgSearchPage++;
+                searchUnsplashModal(true);
+            };
+            container.appendChild(loadMoreBtn);
+        }
     } catch (e) {
-        container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--danger);">API Error</div>';
+        if (!loadMore) {
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--danger);">API Error</div>';
+        }
     }
 }
 
