@@ -1150,7 +1150,7 @@ window.runAIPhase2 = async () => {
         }
     }
 
-    if (allImages.length > 0) {
+    if (allImages.length > 0 && !activeImage) {
         activeImage = allImages[0].url;
         document.getElementById('selected-ai-img').src = activeImage;
         document.getElementById('selected-ai-img').style.display = 'block';
@@ -2291,12 +2291,7 @@ async function ensureStorageBucket() {
     try {
         const { data, error } = await supabase.storage.getBucket('images');
         if (error && error.message.includes('not found')) {
-            const { error: createErr } = await supabase.storage.createBucket('images', {
-                public: true,
-                fileSizeLimit: 5 * 1024 * 1024 // 5MB
-            });
-            if (createErr) console.warn('[Storage] Could not create bucket:', createErr.message);
-            else console.log('[Storage] Created images bucket');
+            console.warn('[Storage] "images" bucket does not exist. Please create it in Supabase Dashboard → Storage → New Bucket (name: images, public: true).');
         } else if (data) {
             console.log('[Storage] images bucket ready');
         }
