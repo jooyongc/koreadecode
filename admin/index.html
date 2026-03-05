@@ -232,7 +232,10 @@
                     <div class="form-group" style="margin-bottom:8px;">
                         <input id="ai-img-query" class="form-input" placeholder="Image search query...">
                     </div>
-                    <button id="btn-search-unsplash" class="btn btn-outline btn-sm"><i class="ph ph-magnifying-glass"></i> Search Images</button>
+                    <div class="flex gap-8">
+                        <button id="btn-search-unsplash" class="btn btn-outline btn-sm"><i class="ph ph-magnifying-glass"></i> Search Images</button>
+                        <button id="btn-upload-featured" class="btn btn-outline btn-sm"><i class="ph ph-upload-simple"></i> Upload</button>
+                    </div>
                 </div>
             </div>
             <button id="btn-run-ai-phase2" class="btn btn-primary w-full">
@@ -339,16 +342,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nationality</label>
-                        <select id="p-nationality" class="form-select">
-                            <option>USA</option>
-                            <option>UK</option>
-                            <option>Canada</option>
-                            <option>Australia</option>
-                            <option>France</option>
-                            <option>Germany</option>
-                            <option>Singapore</option>
-                            <option>Japan</option>
-                        </select>
+                        <input id="p-nationality" class="form-input" placeholder="e.g. USA, UK, Japan...">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Job / Role</label>
@@ -654,19 +648,56 @@
     </section>
 </main>
 
-<!-- ===== MODAL: Image Search ===== -->
+<!-- ===== MODAL: Image Search / Upload ===== -->
 <div id="modal-unsplash" class="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="unsplash-modal-title">Image Search</h3>
             <button id="btn-close-unsplash" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
         </div>
-        <div class="flex gap-8 mb-16">
-            <input id="unsplash-modal-search" class="form-input" placeholder="Search images..." style="flex:1;">
-            <button id="btn-unsplash-modal-search" class="btn btn-primary btn-sm"><i class="ph ph-magnifying-glass"></i> Search</button>
+
+        <!-- Tabs: Search / Upload -->
+        <div class="img-modal-tabs">
+            <div class="img-modal-tab active" data-tab="search"><i class="ph ph-magnifying-glass"></i> Search</div>
+            <div class="img-modal-tab" data-tab="upload"><i class="ph ph-upload-simple"></i> Upload</div>
         </div>
-        <div id="unsplash-results" class="image-grid">
-            <div style="grid-column:1/-1; text-align:center; color:var(--text-muted);">Search for an image</div>
+
+        <!-- Search Tab -->
+        <div id="img-tab-search">
+            <div class="flex gap-8 mb-16">
+                <input id="unsplash-modal-search" class="form-input" placeholder="Search images..." style="flex:1;">
+                <button id="btn-unsplash-modal-search" class="btn btn-primary btn-sm"><i class="ph ph-magnifying-glass"></i> Search</button>
+            </div>
+            <div id="unsplash-results" class="image-grid">
+                <div style="grid-column:1/-1; text-align:center; color:var(--text-muted);">Search for an image</div>
+            </div>
+        </div>
+
+        <!-- Upload Tab -->
+        <div id="img-tab-upload" style="display:none;">
+            <div id="upload-drop-zone" class="upload-drop-zone">
+                <i class="ph ph-cloud-arrow-up" style="font-size:48px; color:var(--text-muted); margin-bottom:12px;"></i>
+                <p style="color:var(--text-muted); margin:0 0 8px;">Drag & drop an image here, or</p>
+                <label class="btn btn-outline btn-sm" style="cursor:pointer;">
+                    <i class="ph ph-folder-open"></i> Choose File
+                    <input type="file" id="upload-file-input" accept="image/*" style="display:none;">
+                </label>
+                <p style="color:var(--text-muted); font-size:11px; margin-top:8px;">Max 5MB — JPG, PNG, GIF, WebP</p>
+            </div>
+            <div id="upload-preview-area" style="display:none; text-align:center; margin-top:16px;">
+                <img id="upload-preview-img" style="max-width:100%; max-height:300px; border-radius:8px; border:1px solid var(--border);">
+                <p id="upload-file-name" style="font-size:12px; color:var(--text-muted); margin:8px 0 0;"></p>
+            </div>
+            <div id="upload-progress-area" style="display:none; margin-top:12px;">
+                <div class="upload-progress-wrapper">
+                    <div id="upload-progress-bar" class="upload-progress-fill" style="width:0%;"></div>
+                </div>
+                <p id="upload-progress-text" style="font-size:12px; color:var(--text-muted); text-align:center; margin-top:4px;">Uploading...</p>
+            </div>
+            <div id="upload-actions" style="display:none; margin-top:16px; gap:8px;">
+                <button id="btn-confirm-upload" class="btn btn-primary" style="flex:1;"><i class="ph ph-check"></i> Use This Image</button>
+                <button id="btn-cancel-upload" class="btn btn-outline" style="flex:1;"><i class="ph ph-x"></i> Cancel</button>
+            </div>
         </div>
     </div>
 </div>

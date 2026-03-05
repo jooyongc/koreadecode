@@ -1180,3 +1180,70 @@ body {
     object-fit: cover;
     display: block;
 }
+
+/* ===== IMAGE MODAL TABS ===== */
+.img-modal-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+.img-modal-tab {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.img-modal-tab:hover {
+    color: var(--text-main);
+}
+
+.img-modal-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+/* ===== UPLOAD DROP ZONE ===== */
+.upload-drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.upload-drop-zone:hover {
+    border-color: var(--text-muted);
+}
+
+.upload-drop-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+}
+
+/* ===== UPLOAD PROGRESS BAR ===== */
+.upload-progress-wrapper {
+    height: 6px;
+    background: var(--bg-input);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.upload-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}

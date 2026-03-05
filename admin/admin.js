@@ -120,6 +120,7 @@ let editingPersonaId = null;
 let availablePersonas = [];
 let unsplashMode = 'featured'; // 'featured' | 'body'
 let affiliateCodes = {}; // Map of aff-id → raw HTML code
+let pendingUploadFile = null; // File object waiting to be uploaded
 
 // --- CORE INITIALIZATION ---
 async function init() {
@@ -156,6 +157,7 @@ async function init() {
         restoreGeminiKeyFromCloud(session.user);
         loadDashboard();
         loadPersonas();
+        ensureStorageBucket();
     } else {
         document.getElementById('login-section').style.display = 'flex';
     }
@@ -168,6 +170,7 @@ async function init() {
             restoreGeminiKeyFromCloud(session.user);
             loadDashboard();
             loadPersonas();
+            ensureStorageBucket();
         } else {
             currentUser = null;
             document.getElementById('login-section').style.display = 'flex';
@@ -249,8 +252,51 @@ async function init() {
     document.getElementById('unsplash-modal-search').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') searchUnsplashModal();
     });
-    document.getElementById('btn-close-unsplash').addEventListener('click', () => closeModal('modal-unsplash'));
+    document.getElementById('btn-close-unsplash').addEventListener('click', () => { resetUploadUI(); closeModal('modal-unsplash'); });
     document.getElementById('btn-close-preview').addEventListener('click', () => closeModal('modal-preview'));
+
+    // Image modal tab switching
+    document.querySelectorAll('.img-modal-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.img-modal-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const tabName = tab.dataset.tab;
+            document.getElementById('img-tab-search').style.display = tabName === 'search' ? 'block' : 'none';
+            document.getElementById('img-tab-upload').style.display = tabName === 'upload' ? 'block' : 'none';
+        });
+    });
+
+    // Upload file input
+    document.getElementById('upload-file-input').addEventListener('change', (e) => {
+        if (e.target.files[0]) handleUploadFile(e.target.files[0]);
+    });
+
+    // Drag & drop
+    const dropZone = document.getElementById('upload-drop-zone');
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer.files[0]) handleUploadFile(e.dataTransfer.files[0]);
+    });
+
+    // Upload confirm / cancel
+    document.getElementById('btn-confirm-upload').addEventListener('click', confirmUpload);
+    document.getElementById('btn-cancel-upload').addEventListener('click', resetUploadUI);
+
+    // Featured image upload button
+    document.getElementById('btn-upload-featured').addEventListener('click', () => {
+        unsplashMode = 'featured';
+        document.getElementById('unsplash-modal-title').innerText = 'Featured Image';
+        resetUploadUI();
+        // Switch to Upload tab
+        document.querySelectorAll('.img-modal-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.img-modal-tab[data-tab="upload"]').classList.add('active');
+        document.getElementById('img-tab-search').style.display = 'none';
+        document.getElementById('img-tab-upload').style.display = 'block';
+        document.getElementById('modal-unsplash').style.display = 'flex';
+    });
     document.getElementById('btn-insert-affiliate').addEventListener('click', openAffiliateModal);
     document.getElementById('btn-confirm-affiliate').addEventListener('click', insertAffiliateCode);
     document.getElementById('btn-save-aff-preset').addEventListener('click', saveAffiliatePreset);
@@ -1258,6 +1304,8 @@ window.searchUnsplashAI = async () => {
     const q = document.getElementById('ai-img-query').value;
     document.getElementById('unsplash-modal-search').value = q;
     document.getElementById('unsplash-modal-title').innerText = 'Featured Image';
+    resetUploadUI();
+    switchImageModalTab('search');
     searchUnsplashModal();
 };
 
@@ -1266,8 +1314,18 @@ function openUnsplashForBody() {
     document.getElementById('unsplash-modal-title').innerText = 'Insert Image into Body';
     document.getElementById('unsplash-modal-search').value = document.getElementById('ai-topic')?.value || '';
     document.getElementById('unsplash-results').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Search for an image to insert</div>';
+    resetUploadUI();
+    switchImageModalTab('search');
     document.getElementById('modal-unsplash').style.display = 'flex';
     document.getElementById('unsplash-modal-search').focus();
+}
+
+function switchImageModalTab(tabName) {
+    document.querySelectorAll('.img-modal-tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector(`.img-modal-tab[data-tab="${tabName}"]`);
+    if (activeTab) activeTab.classList.add('active');
+    document.getElementById('img-tab-search').style.display = tabName === 'search' ? 'block' : 'none';
+    document.getElementById('img-tab-upload').style.display = tabName === 'upload' ? 'block' : 'none';
 }
 
 async function searchUnsplashModal() {
@@ -2227,5 +2285,134 @@ window.startMigration = async () => {
     }
     alert('Migration Done');
 };
+
+// --- STORAGE BUCKET ---
+async function ensureStorageBucket() {
+    try {
+        const { data, error } = await supabase.storage.getBucket('images');
+        if (error && error.message.includes('not found')) {
+            const { error: createErr } = await supabase.storage.createBucket('images', {
+                public: true,
+                fileSizeLimit: 5 * 1024 * 1024 // 5MB
+            });
+            if (createErr) console.warn('[Storage] Could not create bucket:', createErr.message);
+            else console.log('[Storage] Created images bucket');
+        } else if (data) {
+            console.log('[Storage] images bucket ready');
+        }
+    } catch (e) {
+        console.warn('[Storage] Bucket check failed:', e.message);
+    }
+}
+
+// --- IMAGE UPLOAD FUNCTIONS ---
+function handleUploadFile(file) {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+        alert('Only JPG, PNG, GIF, WebP images are allowed.');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File too large. Max 5MB.');
+        return;
+    }
+    pendingUploadFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('upload-preview-img').src = e.target.result;
+        document.getElementById('upload-file-name').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        document.getElementById('upload-preview-area').style.display = 'block';
+        document.getElementById('upload-drop-zone').style.display = 'none';
+        const actions = document.getElementById('upload-actions');
+        actions.style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+async function confirmUpload() {
+    if (!pendingUploadFile) return;
+    const btn = document.getElementById('btn-confirm-upload');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Uploading...';
+
+    document.getElementById('upload-progress-area').style.display = 'block';
+    document.getElementById('upload-progress-bar').style.width = '30%';
+
+    try {
+        const ext = pendingUploadFile.name.split('.').pop().toLowerCase();
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const filePath = `uploads/${fileName}`;
+
+        document.getElementById('upload-progress-bar').style.width = '60%';
+
+        const { data, error } = await supabase.storage
+            .from('images')
+            .upload(filePath, pendingUploadFile, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (error) throw error;
+
+        document.getElementById('upload-progress-bar').style.width = '90%';
+
+        const { data: urlData } = supabase.storage
+            .from('images')
+            .getPublicUrl(filePath);
+
+        const publicUrl = urlData.publicUrl;
+
+        document.getElementById('upload-progress-bar').style.width = '100%';
+        document.getElementById('upload-progress-text').textContent = 'Done!';
+
+        if (unsplashMode === 'body') {
+            insertUploadedImageIntoBody(publicUrl, pendingUploadFile.name);
+        } else {
+            activeImage = publicUrl;
+            document.getElementById('selected-ai-img').src = publicUrl;
+            document.getElementById('selected-ai-img').style.display = 'block';
+            document.getElementById('ai-img-placeholder').style.display = 'none';
+        }
+
+        setTimeout(() => {
+            resetUploadUI();
+            closeModal('modal-unsplash');
+        }, 500);
+
+    } catch (e) {
+        console.error('[Upload]', e);
+        document.getElementById('upload-progress-text').textContent = 'Upload failed: ' + e.message;
+        document.getElementById('upload-progress-bar').style.width = '0%';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ph ph-check"></i> Use This Image';
+    }
+}
+
+function insertUploadedImageIntoBody(url, fileName) {
+    const range = quill.getSelection(true);
+    const index = range ? range.index : quill.getLength() - 1;
+    const alt = fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+    const figureHtml = `<figure><img src="${url}" alt="${alt}" style="width:100%;border-radius:8px;"><figcaption>${alt}</figcaption></figure>`;
+    quill.insertText(index, '\n');
+    quill.clipboard.dangerouslyPasteHTML(index + 1, figureHtml);
+    quill.setSelection(index + 2);
+}
+
+function resetUploadUI() {
+    pendingUploadFile = null;
+    document.getElementById('upload-preview-area').style.display = 'none';
+    document.getElementById('upload-preview-img').src = '';
+    document.getElementById('upload-file-name').textContent = '';
+    document.getElementById('upload-progress-area').style.display = 'none';
+    document.getElementById('upload-progress-bar').style.width = '0%';
+    document.getElementById('upload-progress-text').textContent = 'Uploading...';
+    document.getElementById('upload-drop-zone').style.display = 'flex';
+    const actions = document.getElementById('upload-actions');
+    actions.style.display = 'none';
+    const btn = document.getElementById('btn-confirm-upload');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ph ph-check"></i> Use This Image';
+    document.getElementById('upload-file-input').value = '';
+}
 
 init();
