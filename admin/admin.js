@@ -137,6 +137,7 @@ async function init() {
         }
     });
     quill.on('text-change', calculateSEOScore);
+    initImageResizer();
 
     // Auto-generate slug when title changes
     const titleInput = document.getElementById('ai-suggested-title');
@@ -2285,6 +2286,90 @@ window.startMigration = async () => {
     }
     alert('Migration Done');
 };
+
+// --- IMAGE RESIZER ---
+function initImageResizer() {
+    let toolbar = null;
+    let selectedImg = null;
+
+    const sizes = [
+        { label: '25%', value: '25%' },
+        { label: '50%', value: '50%' },
+        { label: '75%', value: '75%' },
+        { label: '100%', value: '100%' },
+    ];
+
+    function removeToolbar() {
+        if (toolbar) { toolbar.remove(); toolbar = null; }
+        if (selectedImg) { selectedImg.classList.remove('img-selected'); selectedImg = null; }
+    }
+
+    function applySize(img, width) {
+        img.style.width = width;
+        toolbar.querySelectorAll('button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.size === width);
+        });
+    }
+
+    function showToolbar(img) {
+        removeToolbar();
+        selectedImg = img;
+        img.classList.add('img-selected');
+
+        toolbar = document.createElement('div');
+        toolbar.className = 'img-resize-toolbar';
+
+        sizes.forEach(s => {
+            const btn = document.createElement('button');
+            btn.textContent = s.label;
+            btn.dataset.size = s.value;
+            if (img.style.width === s.value) btn.classList.add('active');
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                applySize(img, s.value);
+            });
+            toolbar.appendChild(btn);
+        });
+
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '<i class="ph ph-trash"></i>';
+        delBtn.title = 'Remove image';
+        delBtn.style.color = 'var(--danger)';
+        delBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const figure = img.closest('figure');
+            if (figure) figure.remove();
+            else img.remove();
+            removeToolbar();
+        });
+        toolbar.appendChild(delBtn);
+
+        const editorEl = document.querySelector('.ql-editor');
+        const editorRect = editorEl.getBoundingClientRect();
+        const imgRect = img.getBoundingClientRect();
+        toolbar.style.left = (imgRect.left + imgRect.width / 2 - editorRect.left) + 'px';
+        toolbar.style.top = (imgRect.top - editorRect.top - 44) + 'px';
+
+        editorEl.style.position = 'relative';
+        editorEl.appendChild(toolbar);
+    }
+
+    document.querySelector('.ql-editor').addEventListener('click', (e) => {
+        if (e.target.tagName === 'IMG') {
+            e.preventDefault();
+            showToolbar(e.target);
+        } else if (!e.target.closest('.img-resize-toolbar')) {
+            removeToolbar();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') removeToolbar();
+    });
+}
+
 
 // --- STORAGE BUCKET ---
 async function ensureStorageBucket() {

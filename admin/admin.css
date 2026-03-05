@@ -1211,6 +1211,55 @@ body {
     border-bottom-color: var(--accent);
 }
 
+/* ===== IMAGE RESIZE TOOLBAR ===== */
+.img-resize-toolbar {
+    position: absolute;
+    display: flex;
+    gap: 4px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    z-index: 100;
+    transform: translateX(-50%);
+}
+
+.img-resize-toolbar button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.img-resize-toolbar button:hover {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.img-resize-toolbar button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+.ql-editor img {
+    cursor: pointer;
+    transition: outline 0.15s;
+}
+
+.ql-editor img.img-selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 /* ===== UPLOAD DROP ZONE ===== */
 .upload-drop-zone {
     border: 2px dashed var(--border);
