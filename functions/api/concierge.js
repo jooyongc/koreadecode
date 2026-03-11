@@ -133,7 +133,6 @@ Create a complete day-by-day itinerary with 3-5 activities per day. Keep descrip
                 generationConfig: {
                   maxOutputTokens: maxTokens,
                   temperature: temperature,
-                  responseMimeType: 'application/json',
                 },
               }),
             }
