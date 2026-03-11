@@ -88,6 +88,7 @@ Create a complete day-by-day itinerary with 3-5 activities per day. Keep descrip
 
     // --- Call AI: Workers AI first, Gemini fallback ---
     let rawText = '';
+    const debugInfo = { workersAI: 'skipped', gemini: {} };
 
     // Attempt 1: Workers AI (Cloudflare)
     if (env.AI) {
@@ -101,11 +102,9 @@ Create a complete day-by-day itinerary with 3-5 activities per day. Keep descrip
           temperature: temperature,
         });
         rawText = (aiResponse.response || '').trim();
-        if (rawText) {
-          console.log('Concierge: Workers AI succeeded');
-        }
+        debugInfo.workersAI = rawText ? 'success' : 'empty_response';
       } catch (aiErr) {
-        console.warn('Concierge: Workers AI failed, falling back to Gemini:', aiErr.message);
+        debugInfo.workersAI = `error: ${aiErr.message}`;
       }
     }
 
@@ -113,7 +112,7 @@ Create a complete day-by-day itinerary with 3-5 activities per day. Keep descrip
     if (!rawText) {
       const geminiKey = env.GEMINI_API_KEY;
       if (!geminiKey) {
-        return jsonResponse({ error: 'AI service not configured' }, 500, corsHeaders);
+        return jsonResponse({ error: 'AI service not configured', debug: 'no GEMINI_API_KEY' }, 500, corsHeaders);
       }
 
       // Try configured model first, then fallback to gemini-2.0-flash
@@ -143,27 +142,29 @@ Create a complete day-by-day itinerary with 3-5 activities per day. Keep descrip
           try {
             geminiData = JSON.parse(geminiText);
           } catch (parseErr) {
-            console.warn(`Concierge: ${tryModel} response not valid JSON:`, geminiText.substring(0, 300));
+            debugInfo.gemini[tryModel] = `parse_error: ${geminiText.substring(0, 200)}`;
             continue;
           }
 
           if (geminiData.error) {
-            console.warn(`Concierge: ${tryModel} API error:`, geminiData.error.message);
+            debugInfo.gemini[tryModel] = `api_error: ${geminiData.error.message || JSON.stringify(geminiData.error).substring(0, 200)}`;
             continue;
           }
 
           rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
           if (rawText) {
-            console.log(`Concierge: ${tryModel} succeeded`);
+            debugInfo.gemini[tryModel] = 'success';
             break;
+          } else {
+            debugInfo.gemini[tryModel] = `empty: ${JSON.stringify(geminiData).substring(0, 200)}`;
           }
         } catch (geminiErr) {
-          console.warn(`Concierge: ${tryModel} failed:`, geminiErr.message);
+          debugInfo.gemini[tryModel] = `fetch_error: ${geminiErr.message}`;
         }
       }
 
       if (!rawText) {
-        return jsonResponse({ error: 'AI service is temporarily unavailable. Please try again.' }, 503, corsHeaders);
+        return jsonResponse({ error: 'AI service is temporarily unavailable. Please try again.', debug: debugInfo }, 503, corsHeaders);
       }
     }
 
