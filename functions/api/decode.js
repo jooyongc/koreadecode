@@ -84,7 +84,8 @@ export async function onRequest(context) {
           max_tokens: maxTokens,
           temperature: temperature,
         });
-        answer = (aiResponse.response || '').trim();
+        const aiText = typeof aiResponse.response === 'string' ? aiResponse.response : JSON.stringify(aiResponse.response || '');
+        answer = aiText.trim();
         if (answer) {
           console.log('Decode: Workers AI succeeded');
         }
