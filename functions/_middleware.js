@@ -40,17 +40,28 @@ export async function onRequest(context) {
   }
 
   // --- Proceed with original request ---
-  const response = await next();
+  try {
+    const response = await next();
 
-  // --- Add security headers ---
-  const newHeaders = new Headers(response.headers);
-  newHeaders.set('X-Content-Type-Options', 'nosniff');
-  newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-  newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    // --- Add security headers ---
+    const newHeaders = new Headers(response.headers);
+    newHeaders.set('X-Content-Type-Options', 'nosniff');
+    newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+    newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: newHeaders,
-  });
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders,
+    });
+  } catch (err) {
+    console.error('Middleware error:', err);
+    return new Response('Something went wrong. Please try again later.', {
+      status: 500,
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
 }

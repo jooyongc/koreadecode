@@ -21,7 +21,12 @@ export async function onRequest(context) {
   };
 
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400, headers: corsHeaders });
+    }
     const { prompt, userGeminiKey, model, generationConfig } = body;
 
     if (!prompt) {

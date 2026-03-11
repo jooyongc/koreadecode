@@ -28,7 +28,12 @@ export async function onRequest(context) {
 
   try {
     // Parse request
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      return jsonResponse({ error: 'Invalid JSON in request body' }, 400, corsHeaders);
+    }
     const question = (body.question || '').trim();
 
     if (!question) {
@@ -54,12 +59,19 @@ export async function onRequest(context) {
     await supabasePost(SUPABASE_URL, SUPABASE_KEY, '/rest/v1/ai_rate_limits', { ip_hash: ipHash });
 
     // --- Load AI Config ---
-    const configRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_config?feature_name=eq.decode_this&limit=1`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-    );
-    const configs = await configRes.json();
-    const config = configs[0] || {};
+    let config = {};
+    try {
+      const configRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/ai_config?feature_name=eq.decode_this&limit=1`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      );
+      if (configRes.ok) {
+        const configs = await configRes.json();
+        config = configs[0] || {};
+      }
+    } catch (configErr) {
+      console.warn('Failed to load AI config, using defaults:', configErr.message);
+    }
 
     if (config.is_active === false) {
       return jsonResponse({ error: 'This feature is currently disabled.' }, 503, corsHeaders);
@@ -160,15 +172,19 @@ export async function onRequest(context) {
       ip_hash: ipHash,
     });
 
-    // --- Cleanup old rate limit records (older than 2 hours) ---
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/ai_rate_limits?requested_at=lt.${twoHoursAgo}`,
-      {
-        method: 'DELETE',
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-      }
-    );
+    // --- Cleanup old rate limit records (older than 2 hours, fire-and-forget) ---
+    try {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      fetch(
+        `${SUPABASE_URL}/rest/v1/ai_rate_limits?requested_at=lt.${twoHoursAgo}`,
+        {
+          method: 'DELETE',
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+        }
+      ).catch(() => {});
+    } catch (_) {
+      // Non-critical cleanup — don't block response
+    }
 
     return jsonResponse({ answer, relatedPosts }, 200, corsHeaders);
 
@@ -194,27 +210,34 @@ async function hashIP(ip) {
 }
 
 async function checkRateLimit(supabaseUrl, supabaseKey, ipHash) {
-  const now = new Date();
-  const oneMinAgo = new Date(now - 60 * 1000).toISOString();
-  const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+  try {
+    const now = new Date();
+    const oneMinAgo = new Date(now - 60 * 1000).toISOString();
+    const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
 
-  // Check per-minute limit (5 requests)
-  const minRes = await fetch(
-    `${supabaseUrl}/rest/v1/ai_rate_limits?ip_hash=eq.${ipHash}&requested_at=gte.${oneMinAgo}&select=id`,
-    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
-  );
-  const minData = await minRes.json();
-  if (minData.length >= 5) return false;
+    // Check per-minute limit (5 requests)
+    const minRes = await fetch(
+      `${supabaseUrl}/rest/v1/ai_rate_limits?ip_hash=eq.${ipHash}&requested_at=gte.${oneMinAgo}&select=id`,
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+    );
+    if (!minRes.ok) return true; // Allow request if rate limit check fails
+    const minData = await minRes.json();
+    if (Array.isArray(minData) && minData.length >= 5) return false;
 
-  // Check per-hour limit (20 requests)
-  const hourRes = await fetch(
-    `${supabaseUrl}/rest/v1/ai_rate_limits?ip_hash=eq.${ipHash}&requested_at=gte.${oneHourAgo}&select=id`,
-    { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
-  );
-  const hourData = await hourRes.json();
-  if (hourData.length >= 20) return false;
+    // Check per-hour limit (20 requests)
+    const hourRes = await fetch(
+      `${supabaseUrl}/rest/v1/ai_rate_limits?ip_hash=eq.${ipHash}&requested_at=gte.${oneHourAgo}&select=id`,
+      { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } }
+    );
+    if (!hourRes.ok) return true; // Allow request if rate limit check fails
+    const hourData = await hourRes.json();
+    if (Array.isArray(hourData) && hourData.length >= 20) return false;
 
-  return true;
+    return true;
+  } catch (err) {
+    console.warn('Rate limit check failed, allowing request:', err.message);
+    return true; // Fail open — don't block users if rate limit DB is down
+  }
 }
 
 async function supabasePost(supabaseUrl, supabaseKey, path, data) {

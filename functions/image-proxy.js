@@ -51,6 +51,12 @@ async function fetchUnsplash(env, query, count, page, orientation, corsHeaders) 
   const resp = await fetch(
     `https://api.unsplash.com/search/photos?page=${page}&per_page=${count}&query=${encodeURIComponent(query)}&orientation=${orientation}&client_id=${key}`
   );
+
+  if (!resp.ok) {
+    console.error("Unsplash API error:", resp.status);
+    return new Response(JSON.stringify({ source: "unsplash", images: [], totalPages: 0, error: `Unsplash API error (${resp.status})` }), { status: 502, headers: corsHeaders });
+  }
+
   const data = await resp.json();
 
   if (!data.results) {
@@ -79,6 +85,12 @@ async function fetchPexels(env, query, count, page, orientation, corsHeaders) {
     `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${count}&page=${page}&orientation=${orientation}`,
     { headers: { Authorization: key } }
   );
+
+  if (!resp.ok) {
+    console.error("Pexels API error:", resp.status);
+    return new Response(JSON.stringify({ source: "pexels", images: [], totalPages: 0, error: `Pexels API error (${resp.status})` }), { status: 502, headers: corsHeaders });
+  }
+
   const data = await resp.json();
 
   if (!data.photos) {

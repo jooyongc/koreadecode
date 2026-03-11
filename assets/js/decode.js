@@ -89,6 +89,10 @@ export function initDecode() {
   }
 
   function displayAnswer(answer, relatedPosts) {
+    if (!answer) {
+      showError('No answer received. Please try again.');
+      return;
+    }
     // Format answer text: convert markdown-style bold and line breaks
     let formatted = escapeHtml(answer);
     formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
