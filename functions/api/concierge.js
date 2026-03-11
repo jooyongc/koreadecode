@@ -116,41 +116,56 @@ Create a complete day-by-day itinerary with 3-5 activities per day. Keep descrip
         return jsonResponse({ error: 'AI service not configured' }, 500, corsHeaders);
       }
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
-            ],
-            generationConfig: {
-              maxOutputTokens: maxTokens,
-              temperature: temperature,
-            },
-          }),
+      // Try configured model first, then fallback to gemini-2.0-flash
+      const modelsToTry = [model, 'gemini-2.0-flash'].filter((v, i, a) => a.indexOf(v) === i);
+
+      for (const tryModel of modelsToTry) {
+        try {
+          const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${tryModel}:generateContent?key=${geminiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+                ],
+                generationConfig: {
+                  maxOutputTokens: maxTokens,
+                  temperature: temperature,
+                  responseMimeType: 'application/json',
+                },
+              }),
+            }
+          );
+
+          const geminiText = await geminiRes.text();
+          let geminiData;
+          try {
+            geminiData = JSON.parse(geminiText);
+          } catch (parseErr) {
+            console.warn(`Concierge: ${tryModel} response not valid JSON:`, geminiText.substring(0, 300));
+            continue;
+          }
+
+          if (geminiData.error) {
+            console.warn(`Concierge: ${tryModel} API error:`, geminiData.error.message);
+            continue;
+          }
+
+          rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (rawText) {
+            console.log(`Concierge: ${tryModel} succeeded`);
+            break;
+          }
+        } catch (geminiErr) {
+          console.warn(`Concierge: ${tryModel} failed:`, geminiErr.message);
         }
-      );
-
-      const geminiText = await geminiRes.text();
-      let geminiData;
-      try {
-        geminiData = JSON.parse(geminiText);
-      } catch (parseErr) {
-        console.error('Concierge: Gemini response not valid JSON:', geminiText.substring(0, 300));
-        throw new Error('AI returned an invalid response.');
       }
 
-      if (geminiData.error) {
-        throw new Error(geminiData.error.message || 'Gemini API error');
-      }
-
-      rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
       if (!rawText) {
-        throw new Error('Empty AI response');
+        return jsonResponse({ error: 'AI service is temporarily unavailable. Please try again.' }, 503, corsHeaders);
       }
-      console.log('Concierge: Gemini fallback succeeded');
     }
 
     // --- Parse JSON from response ---
