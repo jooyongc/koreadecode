@@ -2,6 +2,12 @@ export async function onRequest(context) {
   const { request, next, env } = context;
   const url = new URL(request.url);
 
+  // --- Redirect www to non-www ---
+  if (url.hostname === 'www.koreadecode.com') {
+    url.hostname = 'koreadecode.com';
+    return Response.redirect(url.toString(), 301);
+  }
+
   // --- Handle legacy /post.html?id=xxx redirect ---
   if (url.pathname === '/post.html') {
     const postId = url.searchParams.get('id');

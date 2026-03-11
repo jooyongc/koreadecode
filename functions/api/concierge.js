@@ -66,24 +66,12 @@ export async function onRequest(context) {
 
     const systemPrompt = config.system_prompt || `You are Korea Concierge, a premium AI travel planner for Korea. Create personalized day-by-day itineraries.
 
-Respond ONLY in valid JSON with this structure:
-{
-  "title": "Trip title",
-  "summary": "Brief overview",
-  "days": [
-    {
-      "day": "Day 1",
-      "theme": "Theme for the day",
-      "activities": [
-        {
-          "time": "09:00",
-          "activity": "Activity name",
-          "description": "Brief description"
-        }
-      ]
-    }
-  ]
-}`;
+IMPORTANT: Your entire response must be a single valid JSON object with NO text before or after it. Do NOT wrap it in markdown code blocks. Do NOT add any explanation outside the JSON.
+
+Use this exact JSON structure:
+{"title":"Trip title","summary":"Brief overview","days":[{"day":"Day 1","theme":"Theme","activities":[{"time":"09:00","activity":"Name","description":"Brief description"}]}]}
+
+Keep each activity description under 80 characters to stay within token limits.`;
     const model = config.model || 'gemini-2.0-flash';
     const maxTokens = config.max_tokens || 4000;
     const temperature = config.temperature ?? 0.7;
@@ -96,7 +84,7 @@ Respond ONLY in valid JSON with this structure:
 - Budget: ${budget}
 ${extra ? `- Special requests: ${extra}` : ''}
 
-Create a complete day-by-day itinerary. Remember to respond ONLY in valid JSON format as specified in your instructions.`;
+Create a complete day-by-day itinerary with 3-5 activities per day. Keep descriptions concise. Output ONLY the raw JSON object, no markdown, no explanation.`;
 
     // --- Call AI: Workers AI first, Gemini fallback ---
     let rawText = '';
@@ -165,32 +153,15 @@ Create a complete day-by-day itinerary. Remember to respond ONLY in valid JSON f
       console.log('Concierge: Gemini fallback succeeded');
     }
 
-    // --- Parse JSON from response (strip markdown code blocks if present) ---
+    // --- Parse JSON from response ---
     let itinerary;
     try {
-      let cleaned = rawText.trim();
-      // Strip markdown code fences
-      cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```\s*$/, '');
-      itinerary = JSON.parse(cleaned);
+      itinerary = extractJSON(rawText);
     } catch (parseErr) {
-      // Attempt to repair truncated JSON
-      try {
-        let repaired = rawText.trim().replace(/^```(?:json)?\s*/, '').replace(/\s*```\s*$/, '');
-        // Close any unclosed strings, arrays, objects
-        const opens = (repaired.match(/\[/g) || []).length - (repaired.match(/\]/g) || []).length;
-        const braces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
-        // Trim trailing incomplete key/value
-        repaired = repaired.replace(/,\s*"[^"]*$/, '');
-        repaired = repaired.replace(/,\s*$/, '');
-        for (let i = 0; i < opens; i++) repaired += ']';
-        for (let i = 0; i < braces; i++) repaired += '}';
-        itinerary = JSON.parse(repaired);
-      } catch (repairErr) {
-        console.error('JSON parse error:', parseErr, 'Raw:', rawText.substring(0, 300));
-        return jsonResponse({
-          error: 'AI returned invalid format. Please try again.',
-        }, 500, corsHeaders);
-      }
+      console.error('JSON parse error:', parseErr.message, 'Raw:', rawText.substring(0, 500));
+      return jsonResponse({
+        error: 'AI returned invalid format. Please try again.',
+      }, 500, corsHeaders);
     }
 
     // --- Fetch Affiliate Links ---
@@ -282,4 +253,42 @@ async function supabasePost(supabaseUrl, supabaseKey, path, data) {
     },
     body: JSON.stringify(data),
   });
+}
+
+function extractJSON(rawText) {
+  let text = rawText.trim();
+
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
+
+  // Try direct parse first
+  try {
+    return JSON.parse(text);
+  } catch (_) {}
+
+  // Try to find JSON object in the text (AI sometimes adds preamble/postamble)
+  const jsonStart = text.indexOf('{');
+  const jsonEnd = text.lastIndexOf('}');
+  if (jsonStart !== -1 && jsonEnd > jsonStart) {
+    try {
+      return JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+    } catch (_) {}
+  }
+
+  // Attempt to repair truncated JSON
+  let repaired = jsonStart !== -1 ? text.substring(jsonStart) : text;
+  // Remove trailing incomplete string/key
+  repaired = repaired.replace(/,\s*"[^"]*$/, '');
+  repaired = repaired.replace(/,\s*$/, '');
+  // Close unclosed brackets
+  const opens = (repaired.match(/\[/g) || []).length - (repaired.match(/\]/g) || []).length;
+  const braces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
+  for (let i = 0; i < opens; i++) repaired += ']';
+  for (let i = 0; i < braces; i++) repaired += '}';
+
+  try {
+    return JSON.parse(repaired);
+  } catch (e) {
+    throw new Error(`Cannot parse AI response as JSON: ${e.message}`);
+  }
 }
