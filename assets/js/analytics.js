@@ -1,12 +1,17 @@
 /**
- * Korea Decode — GA4 + AdSense Initialization
+ * Korea Decode — GA4 + AdSense Initialization (Consent-aware)
  */
 
 const GA_ID = 'G-487F519VEM';
 const ADSENSE_PUB = 'ca-pub-6660181512354238';
 
+function hasConsent() {
+  return localStorage.getItem('cookie_consent') === 'accepted';
+}
+
 export function initGA() {
   if (window.location.hostname === 'localhost') return;
+  if (!hasConsent()) return;
 
   const script = document.createElement('script');
   script.async = true;
@@ -22,6 +27,7 @@ export function initGA() {
 
 export function initAdSense() {
   if (window.location.hostname === 'localhost') return;
+  if (!hasConsent()) return;
 
   const script = document.createElement('script');
   script.async = true;
@@ -41,6 +47,9 @@ export function trackEvent(action, category, label, value) {
 }
 
 export function initAnalytics() {
-  initGA();
-  initAdSense();
+  if (hasConsent()) {
+    initGA();
+    initAdSense();
+  }
+  // If no consent yet, analytics will be initialized when user accepts via cookie banner
 }
