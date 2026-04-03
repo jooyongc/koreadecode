@@ -59,6 +59,9 @@ export async function onRequest(context) {
     // Non-critical
   }
 
+  // --- Render affiliate shortcodes ---
+  post.content = await renderAffiliateShortcodes(post.content || '', SUPABASE_URL, headers);
+
   // --- Build HTML ---
   const html = buildPostHTML(post, relatedPosts);
 
@@ -69,6 +72,44 @@ export async function onRequest(context) {
       'Cache-Control': 'public, max-age=3600, s-maxage=86400',
     },
   });
+}
+
+// ------------------------------------------------------------------
+// Affiliate shortcode renderer: [affiliate preset="preset-id"]
+// Fetches preset HTML from affiliate_presets table and replaces shortcodes
+// ------------------------------------------------------------------
+async function renderAffiliateShortcodes(content, supabaseUrl, headers) {
+  const shortcodeRegex = /\[affiliate preset="([^"]+)"\]/g;
+  const matches = [...content.matchAll(shortcodeRegex)];
+  if (matches.length === 0) return content;
+
+  // Collect unique preset IDs
+  const presetIds = [...new Set(matches.map(m => m[1]))];
+
+  // Fetch only needed presets in one query
+  try {
+    const idFilter = presetIds.map(id => `"${id}"`).join(',');
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/affiliate_presets?id=in.(${encodeURIComponent(presetIds.join(','))})&is_active=eq.true&select=id,code`,
+      { headers }
+    );
+    if (!res.ok) return content; // On error, leave shortcodes as-is (invisible to reader)
+
+    const presets = await res.json();
+    const presetMap = {};
+    for (const p of presets) {
+      presetMap[p.id] = p.code;
+    }
+
+    return content.replace(shortcodeRegex, (match, presetId) => {
+      const code = presetMap[presetId];
+      if (!code) return ''; // Preset not found or inactive — remove shortcode silently
+      return `<div class="affiliate-widget" data-preset="${presetId.replace(/"/g, '&quot;')}">${code}</div>`;
+    });
+  } catch (err) {
+    console.error('[Affiliate SSR] Error fetching presets:', err);
+    return content; // Graceful fallback
+  }
 }
 
 // ------------------------------------------------------------------

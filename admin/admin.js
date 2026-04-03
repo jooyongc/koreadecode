@@ -301,8 +301,16 @@ async function init() {
     });
     document.getElementById('btn-insert-affiliate').addEventListener('click', openAffiliateModal);
     document.getElementById('btn-confirm-affiliate').addEventListener('click', insertAffiliateCode);
-    document.getElementById('btn-save-aff-preset').addEventListener('click', saveAffiliatePreset);
+    document.getElementById('btn-save-aff-preset').addEventListener('click', saveAffiliatePresetLegacy);
     document.getElementById('btn-close-affiliate').addEventListener('click', () => closeModal('modal-affiliate'));
+    // New: DB-backed preset UI
+    document.getElementById('btn-insert-shortcode').addEventListener('click', insertAffiliateShortcode);
+    document.getElementById('btn-aff-preset-save').addEventListener('click', saveAffiliatePresetToDB);
+    document.getElementById('btn-aff-preset-delete').addEventListener('click', deleteAffiliatePresetFromDB);
+    document.getElementById('aff-preset-select').addEventListener('change', onPresetSelectChange);
+    document.querySelectorAll('.aff-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchAffiliateTab(btn.dataset.affTab));
+    });
 
     const personaList = document.getElementById('persona-list');
     personaList.addEventListener('click', (event) => {
@@ -1997,65 +2005,170 @@ function calculateSEOScore() {
 
 // --- AFFILIATE WIDGET FUNCTIONS ---
 
+// In-memory cache of DB presets (refreshed on modal open)
+let dbAffiliatePresets = [];
+
 function openAffiliateModal() {
+    // Reset manual tab fields
     document.getElementById('aff-label').value = 'Klook Widget';
     document.getElementById('aff-code-input').value = '';
-    renderAffiliatePresets();
+    // Reset manage fields
+    document.getElementById('aff-manage-id').value = '';
+    document.getElementById('aff-manage-label').value = '';
+    document.getElementById('aff-manage-code').value = '';
+    document.getElementById('aff-manage-provider').value = 'custom';
+    document.getElementById('aff-manage-category').value = '';
+    // Default to presets tab
+    switchAffiliateTab('presets');
+    // Load DB presets
+    loadAffiliatePresetsFromDB();
     document.getElementById('modal-affiliate').style.display = 'flex';
 }
 
-function getAffiliatePresets() {
+// --- Tab switching ---
+function switchAffiliateTab(tabName) {
+    document.querySelectorAll('.aff-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.affTab === tabName));
+    document.getElementById('aff-tab-presets').style.display = tabName === 'presets' ? 'block' : 'none';
+    document.getElementById('aff-tab-manual').style.display = tabName === 'manual' ? 'block' : 'none';
+}
+
+// --- DB-backed Preset Functions ---
+
+async function loadAffiliatePresetsFromDB() {
+    const select = document.getElementById('aff-preset-select');
+    select.innerHTML = '<option value="">-- Loading... --</option>';
+    try {
+        const { data, error } = await supabase
+            .from('affiliate_presets')
+            .select('*')
+            .eq('is_active', true)
+            .order('label', { ascending: true });
+        if (error) throw error;
+        dbAffiliatePresets = data || [];
+        select.innerHTML = '<option value="">-- Select a preset --</option>';
+        dbAffiliatePresets.forEach(p => {
+            const providerIcon = { klook: '🎫', coupang: '🛒', amazon: '📦', custom: '🔗' }[p.provider] || '🔗';
+            select.innerHTML += `<option value="${escHtml(p.id)}">${providerIcon} ${escHtml(p.label)}</option>`;
+        });
+    } catch (err) {
+        console.error('[Affiliate] Failed to load presets:', err);
+        select.innerHTML = '<option value="">-- Failed to load --</option>';
+    }
+}
+
+function onPresetSelectChange() {
+    const presetId = document.getElementById('aff-preset-select').value;
+    const previewEl = document.getElementById('aff-preset-preview');
+    if (!presetId) {
+        previewEl.style.display = 'none';
+        return;
+    }
+    const preset = dbAffiliatePresets.find(p => p.id === presetId);
+    if (preset) {
+        previewEl.textContent = preset.code;
+        previewEl.style.display = 'block';
+        // Fill manage fields for easy editing
+        document.getElementById('aff-manage-id').value = preset.id;
+        document.getElementById('aff-manage-label').value = preset.label;
+        document.getElementById('aff-manage-provider').value = preset.provider || 'custom';
+        document.getElementById('aff-manage-category').value = preset.category || '';
+        document.getElementById('aff-manage-code').value = preset.code;
+    }
+}
+
+function insertAffiliateShortcode() {
+    const presetId = document.getElementById('aff-preset-select').value;
+    if (!presetId) return alert('Please select a preset first.');
+    const preset = dbAffiliatePresets.find(p => p.id === presetId);
+    const label = preset ? preset.label : presetId;
+
+    const shortcode = `[affiliate preset="${presetId}"]`;
+
+    if (isHtmlMode) {
+        const ta = document.getElementById('html-source-editor');
+        const start = ta.selectionStart;
+        ta.value = ta.value.substring(0, start) + shortcode + ta.value.substring(ta.selectionEnd);
+    } else {
+        // In Quill visual mode: insert shortcode as plain text (safe, no script issues)
+        const range = quill.getSelection();
+        const pos = range ? range.index : quill.getLength() - 1;
+        quill.insertText(pos, '\n' + shortcode + '\n');
+    }
+
+    closeModal('modal-affiliate');
+}
+
+async function saveAffiliatePresetToDB() {
+    const id = document.getElementById('aff-manage-id').value.trim();
+    const label = document.getElementById('aff-manage-label').value.trim();
+    const code = document.getElementById('aff-manage-code').value.trim();
+    const provider = document.getElementById('aff-manage-provider').value;
+    const category = document.getElementById('aff-manage-category').value;
+
+    if (!id || !label || !code) return alert('ID, Label, and Code are all required.');
+
+    // Validate ID is slug-friendly
+    if (!/^[a-z0-9-]+$/.test(id)) return alert('Preset ID must be lowercase letters, numbers, and hyphens only.');
+
+    try {
+        const { error } = await supabase
+            .from('affiliate_presets')
+            .upsert({
+                id,
+                label,
+                provider,
+                category: category || null,
+                code,
+                is_active: true,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+        if (error) throw error;
+        alert('Preset saved to database!');
+        loadAffiliatePresetsFromDB();
+    } catch (err) {
+        console.error('[Affiliate] Save preset error:', err);
+        alert('Failed to save preset: ' + err.message);
+    }
+}
+
+async function deleteAffiliatePresetFromDB() {
+    const id = document.getElementById('aff-manage-id').value.trim();
+    if (!id) return alert('Select or enter a preset ID to delete.');
+    if (!confirm(`Delete preset "${id}"? This will not remove shortcodes from existing posts, but they will stop rendering.`)) return;
+
+    try {
+        const { error } = await supabase
+            .from('affiliate_presets')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        alert('Preset deleted.');
+        document.getElementById('aff-manage-id').value = '';
+        document.getElementById('aff-manage-label').value = '';
+        document.getElementById('aff-manage-code').value = '';
+        loadAffiliatePresetsFromDB();
+    } catch (err) {
+        console.error('[Affiliate] Delete preset error:', err);
+        alert('Failed to delete: ' + err.message);
+    }
+}
+
+// --- Legacy localStorage Preset Functions (backward compat for manual tab) ---
+
+function getAffiliatePresetsLegacy() {
     return JSON.parse(localStorage.getItem('aff_presets') || '[]');
 }
 
-function saveAffiliatePreset() {
+function saveAffiliatePresetLegacy() {
     const label = document.getElementById('aff-label').value.trim();
     const code = document.getElementById('aff-code-input').value.trim();
     if (!label || !code) return alert('Label and code are both required to save a preset.');
-    const presets = getAffiliatePresets();
-    // Replace if same label exists
+    const presets = getAffiliatePresetsLegacy();
     const idx = presets.findIndex(p => p.label === label);
     if (idx >= 0) presets[idx].code = code;
     else presets.push({ label, code });
     localStorage.setItem('aff_presets', JSON.stringify(presets));
-    renderAffiliatePresets();
-    alert('Preset saved!');
-}
-
-function renderAffiliatePresets() {
-    const container = document.getElementById('aff-preset-list');
-    const presets = getAffiliatePresets();
-    if (presets.length === 0) {
-        container.innerHTML = '<span style="color:var(--text-muted); font-size:13px;">No saved presets yet</span>';
-        return;
-    }
-    container.innerHTML = presets.map((p, i) => `
-        <button class="btn btn-outline btn-sm aff-preset-btn" data-idx="${i}" style="position:relative;">
-            <i class="ph ph-link"></i> ${escHtml(p.label)}
-            <span class="aff-preset-del" data-idx="${i}" title="Delete preset" style="margin-left:6px;color:var(--danger);cursor:pointer;">&times;</span>
-        </button>
-    `).join('');
-
-    // Click to fill
-    container.querySelectorAll('.aff-preset-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (e.target.classList.contains('aff-preset-del')) {
-                // Delete preset
-                const idx = parseInt(e.target.dataset.idx);
-                const pr = getAffiliatePresets();
-                pr.splice(idx, 1);
-                localStorage.setItem('aff_presets', JSON.stringify(pr));
-                renderAffiliatePresets();
-                return;
-            }
-            const idx = parseInt(btn.dataset.idx);
-            const preset = getAffiliatePresets()[idx];
-            if (preset) {
-                document.getElementById('aff-label').value = preset.label;
-                document.getElementById('aff-code-input').value = preset.code;
-            }
-        });
-    });
+    alert('Preset saved locally!');
 }
 
 function insertAffiliateCode() {

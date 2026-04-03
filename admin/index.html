@@ -720,37 +720,107 @@
 
 <!-- ===== MODAL: Insert Affiliate Code ===== -->
 <div id="modal-affiliate" class="modal-overlay">
-    <div class="modal-content" style="max-width:620px;">
+    <div class="modal-content" style="max-width:660px;">
         <div class="modal-header">
             <h3>Insert Affiliate Widget</h3>
             <button id="btn-close-affiliate" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
         </div>
 
-        <!-- Saved Presets -->
-        <div id="aff-presets" style="margin-bottom:16px;">
-            <label class="form-label">Saved Presets</label>
-            <div id="aff-preset-list" style="display:flex; gap:8px; flex-wrap:wrap;">
-                <span style="color:var(--text-muted); font-size:13px;">No saved presets yet</span>
+        <!-- Tab switcher: Presets vs Manual -->
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <button class="btn btn-sm aff-tab-btn active" data-aff-tab="presets" style="flex:1;">
+                <i class="ph ph-list-dashes"></i> Saved Presets
+            </button>
+            <button class="btn btn-sm aff-tab-btn" data-aff-tab="manual" style="flex:1;">
+                <i class="ph ph-code"></i> Manual Code
+            </button>
+        </div>
+
+        <!-- TAB: Presets (DB-backed) -->
+        <div id="aff-tab-presets" class="aff-tab-panel">
+            <div class="form-group">
+                <label class="form-label">Select Preset</label>
+                <select id="aff-preset-select" class="form-input" style="cursor:pointer;">
+                    <option value="">-- Loading presets... --</option>
+                </select>
             </div>
+            <div id="aff-preset-preview" style="display:none; margin-bottom:12px; padding:12px; background:var(--bg-sec); border-radius:8px; font-size:12px; font-family:monospace; max-height:150px; overflow-y:auto; color:var(--text-muted); white-space:pre-wrap; word-break:break-all;"></div>
+            <button id="btn-insert-shortcode" class="btn btn-primary" style="width:100%;">
+                <i class="ph ph-plus-circle"></i> Insert Shortcode
+            </button>
+
+            <div style="height:1px; background:var(--border); margin:16px 0;"></div>
+
+            <!-- Preset Management -->
+            <details style="margin-bottom:8px;">
+                <summary style="cursor:pointer; color:var(--accent); font-size:13px; font-weight:600;">
+                    <i class="ph ph-gear"></i> Manage Presets
+                </summary>
+                <div style="margin-top:12px;">
+                    <div class="form-group">
+                        <label class="form-label">Preset ID (slug)</label>
+                        <input id="aff-manage-id" class="form-input" placeholder="e.g. klook-seoul-tour">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Label</label>
+                        <input id="aff-manage-label" class="form-input" placeholder="e.g. Klook Seoul Tours">
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <div class="form-group" style="flex:1;">
+                            <label class="form-label">Provider</label>
+                            <select id="aff-manage-provider" class="form-input">
+                                <option value="klook">Klook</option>
+                                <option value="coupang">Coupang</option>
+                                <option value="amazon">Amazon</option>
+                                <option value="custom" selected>Custom</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label class="form-label">Category</label>
+                            <select id="aff-manage-category" class="form-input">
+                                <option value="">-- None --</option>
+                                <option value="travel">Travel</option>
+                                <option value="beauty">Beauty</option>
+                                <option value="food">Food</option>
+                                <option value="kpop">K-Pop</option>
+                                <option value="culture">Culture</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">HTML Code</label>
+                        <textarea id="aff-manage-code" class="form-input" rows="5" placeholder='Paste affiliate HTML/script code here...' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button id="btn-aff-preset-save" class="btn btn-outline" style="flex:1;">
+                            <i class="ph ph-floppy-disk"></i> Save Preset
+                        </button>
+                        <button id="btn-aff-preset-delete" class="btn btn-outline" style="flex:1; color:var(--danger); border-color:var(--danger);">
+                            <i class="ph ph-trash"></i> Delete Preset
+                        </button>
+                    </div>
+                </div>
+            </details>
         </div>
 
-        <div style="height:1px; background:var(--border); margin-bottom:16px;"></div>
-
-        <div class="form-group">
-            <label class="form-label">Widget Label</label>
-            <input id="aff-label" class="form-input" placeholder="e.g. Klook Seoul Tours" value="Klook Widget">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Affiliate HTML Code</label>
-            <textarea id="aff-code-input" class="form-input" rows="6" placeholder='<ins class="klk-aff-widget" ...></ins>&#10;<script>...</script>' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
-        </div>
-        <div style="display:flex; gap:8px;">
-            <button id="btn-save-aff-preset" class="btn btn-outline" style="flex:1;">
-                <i class="ph ph-floppy-disk"></i> Save as Preset
-            </button>
-            <button id="btn-confirm-affiliate" class="btn btn-primary" style="flex:1;">
-                <i class="ph ph-plus-circle"></i> Insert into Editor
-            </button>
+        <!-- TAB: Manual (legacy — kept for backward compat) -->
+        <div id="aff-tab-manual" class="aff-tab-panel" style="display:none;">
+            <div class="form-group">
+                <label class="form-label">Widget Label</label>
+                <input id="aff-label" class="form-input" placeholder="e.g. Klook Seoul Tours" value="Klook Widget">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Affiliate HTML Code</label>
+                <textarea id="aff-code-input" class="form-input" rows="6" placeholder='<ins class="klk-aff-widget" ...></ins>&#10;<script>...</script>' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button id="btn-save-aff-preset" class="btn btn-outline" style="flex:1;">
+                    <i class="ph ph-floppy-disk"></i> Save as Preset
+                </button>
+                <button id="btn-confirm-affiliate" class="btn btn-primary" style="flex:1;">
+                    <i class="ph ph-plus-circle"></i> Insert into Editor
+                </button>
+            </div>
         </div>
     </div>
 </div>
