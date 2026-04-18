@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO -->
+    <title>Travel Deals | Korea Decode — Korea Hotel Deals & Point Value Insights</title>
+    <meta name="description" content="Hand-picked hotel deals across Korea — Seoul, Busan, Jeju and beyond. Compare cash and points pricing with transparent value insights.">
+    <meta name="keywords" content="Korea hotel deals, Seoul hotel, Busan hotel, Jeju hotel, points hotel deals, K-travel">
+    <link rel="canonical" href="https://koreadecode.com/travel-deals">
+
+    <!-- Open Graph -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Travel Deals | Korea Decode">
+    <meta property="og:description" content="Hand-picked hotel deals across Korea with transparent points and cash value insights.">
+    <meta property="og:url" content="https://koreadecode.com/travel-deals">
+    <meta property="og:site_name" content="Korea Decode">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Travel Deals | Korea Decode">
+    <meta name="twitter:description" content="Hand-picked hotel deals across Korea with transparent points and cash value insights.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/pages/travel-deals.css">
+</head>
+<body>
+
+    <!-- ========== HEADER ========== -->
+    <header id="site-header" class="site-header no-print"></header>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="page-content">
+
+        <!-- Hub Header -->
+        <div class="container">
+            <div class="blog-header">
+                <h1>Travel <span class="accent">Deals</span></h1>
+                <p>
+                    Hand-picked Korea hotel deals with transparent cash and points value insights.
+                    Updated regularly from our partner data feed — verify current pricing at booking time.
+                </p>
+                <aside class="affiliate-disclosure" style="max-width: 760px; margin-top: 20px;">
+                    <p><strong>Disclosure:</strong> Korea Decode는 어필리에이트 파트너십을 통해 소정의 수수료를 받을 수 있습니다. 가격/포인트 정보는 수집 시점 기준이며 실제 예약 시 다를 수 있습니다.</p>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Filter Toolbar -->
+        <div class="container">
+            <div class="deals-toolbar">
+                <div class="deals-filter-group">
+                    <label class="deals-filter-label" for="deal-city">City</label>
+                    <select id="deal-city" class="deals-filter-input">
+                        <option value="">All cities</option>
+                        <option value="seoul">Seoul</option>
+                        <option value="busan">Busan</option>
+                        <option value="jeju">Jeju</option>
+                        <option value="incheon">Incheon</option>
+                    </select>
+                </div>
+
+                <div class="deals-filter-group">
+                    <label class="deals-filter-label" for="deal-checkin">Check-in</label>
+                    <input id="deal-checkin" type="date" class="deals-filter-input">
+                </div>
+
+                <div class="deals-filter-group deals-filter-toggle">
+                    <label class="deals-checkbox">
+                        <input id="deal-points-only" type="checkbox">
+                        <span>Points deals only</span>
+                    </label>
+                </div>
+
+                <button id="deal-reset" class="btn btn-outline btn-sm">
+                    <i class="ph ph-arrow-counter-clockwise"></i> Reset
+                </button>
+
+                <div class="deals-count" id="deals-count">Loading deals...</div>
+            </div>
+        </div>
+
+        <!-- Deals Grid -->
+        <div class="container">
+            <div class="deals-grid" id="deals-grid">
+                <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="container">
+            <div class="pagination" id="deals-pagination"></div>
+        </div>
+
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer id="site-footer" class="site-footer no-print"></footer>
+
+    <!-- ========== SCRIPTS ========== -->
+    <script type="module">
+        import { initPage } from '/assets/js/components.js';
+        import { initAnalytics } from '/assets/js/analytics.js';
+        import { initTravelDeals } from '/assets/js/travel-deals.js';
+
+        initPage();
+        initAnalytics();
+        initTravelDeals();
+    </script>
+
+</body>
+</html>

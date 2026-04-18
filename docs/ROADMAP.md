@@ -10,7 +10,12 @@
 - [x] 어필리에이트 쇼트코드 시스템 (DB 프리셋 + SSR 렌더링)
 - [x] AdSense 정책 준수 (ads.txt, 쿠키 동의, 개인정보처리방침)
 - [x] Concierge 기능 제거 + Decode Workers AI 안정성 수정
+- [x] Gondola Travel 수익화 Phase 1 — 템플릿 + Disclosure + 클릭 추적
+- [x] Gondola Travel 수익화 Phase 2 — hotel_deals/deal_snapshots/affiliate_click_logs + /api/travel-deals
+- [x] Gondola Travel 수익화 Phase 3 — collect/generate 스크립트 + SOP
+- [x] Gondola Travel 수익화 Phase 4 — /travel-deals 허브 + GA 이벤트
 - [ ] Google AdSense 재신청 및 승인
+- [ ] Travel Deal KPI 달성 (CTR 5%, 예약 전환율 1.5%)
 
 ## Undecided (미확정/검토 중)
 - WordPress 레거시 파일 정리 (wp-content/, wp-includes/)
