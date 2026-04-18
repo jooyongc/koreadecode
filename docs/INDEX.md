@@ -15,6 +15,7 @@
 - [ROADMAP.md](ROADMAP.md) — 확정/미확정 로드맵
 - [GONDOLA_MONETIZATION_PLAN.md](GONDOLA_MONETIZATION_PLAN.md) — Gondola MCP 기반 Travel 수익화 개발 계획
 - [CLAUDE_CODE_PROMPTS_GONDOLA.md](CLAUDE_CODE_PROMPTS_GONDOLA.md) — Claude Code 실행 프롬프트 모음
+- [TRAVEL_DEAL_WORKFLOW.md](TRAVEL_DEAL_WORKFLOW.md) — Travel Deal 수집 → 초안 → 검수 → 발행 파이프라인
 
 ## Reference
 - [ref/README.md](ref/README.md) — 아카이브 문서 안내
