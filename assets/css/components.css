@@ -406,3 +406,63 @@
     padding: 14px 24px;
   }
 }
+
+/* --- Travel Deal blocks (used in blog post content) --- */
+.travel-deal-hero,
+.travel-deal-spec,
+.travel-deal-cta,
+.travel-deal-context {
+  margin: 24px 0;
+}
+.travel-deal-hero h2 {
+  font-family: 'Syncopate', sans-serif;
+  font-size: 1.4rem;
+  color: var(--accent, #CCFF00);
+  margin-bottom: 8px;
+}
+.travel-deal-hero .deal-subtitle {
+  color: var(--text-gray, #888);
+  font-size: 0.95rem;
+}
+.travel-deal-spec {
+  padding: 16px 20px;
+  background: rgba(204, 255, 0, 0.06);
+  border-left: 3px solid var(--accent, #CCFF00);
+  border-radius: 4px;
+}
+.travel-deal-spec h3,
+.travel-deal-cta h3,
+.travel-deal-context h3 {
+  font-size: 1.05rem;
+  margin-bottom: 10px;
+}
+.travel-deal-spec ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.travel-deal-spec li {
+  padding: 4px 0;
+}
+.travel-deal-cta {
+  padding: 20px;
+  background: var(--bg-sec, #111);
+  border: 1px solid rgba(204, 255, 0, 0.3);
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* --- Affiliate disclosure (footer notice in posts) --- */
+.affiliate-disclosure {
+  margin: 32px 0 16px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-gray, #888);
+}
+.affiliate-disclosure strong {
+  color: var(--text-white, #fff);
+}

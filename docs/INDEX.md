@@ -13,6 +13,8 @@
 - [API.md](API.md) — 외부 API 연동 목록 및 엔드포인트
 - [DEPLOY.md](DEPLOY.md) — Cloudflare Pages 배포 절차
 - [ROADMAP.md](ROADMAP.md) — 확정/미확정 로드맵
+- [GONDOLA_MONETIZATION_PLAN.md](GONDOLA_MONETIZATION_PLAN.md) — Gondola MCP 기반 Travel 수익화 개발 계획
+- [CLAUDE_CODE_PROMPTS_GONDOLA.md](CLAUDE_CODE_PROMPTS_GONDOLA.md) — Claude Code 실행 프롬프트 모음
 
 ## Reference
 - [ref/README.md](ref/README.md) — 아카이브 문서 안내

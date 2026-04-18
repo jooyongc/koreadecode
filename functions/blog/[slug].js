@@ -806,6 +806,9 @@ ${post.image ? `
 })();
 </script>
 
+<!-- Affiliate click tracking (GA4 outbound events) -->
+<script src="/assets/js/affiliate-tracking.js" defer></script>
+
 <!-- Back to top -->
 <button class="back-top" id="backTop" aria-label="Back to top">&uarr;</button>
 <script>

@@ -300,6 +300,7 @@ async function init() {
         document.getElementById('modal-unsplash').style.display = 'flex';
     });
     document.getElementById('btn-insert-affiliate').addEventListener('click', openAffiliateModal);
+    document.getElementById('btn-insert-travel-deal').addEventListener('click', insertTravelDealTemplate);
     document.getElementById('btn-confirm-affiliate').addEventListener('click', insertAffiliateCode);
     document.getElementById('btn-save-aff-preset').addEventListener('click', saveAffiliatePresetLegacy);
     document.getElementById('btn-close-affiliate').addEventListener('click', () => closeModal('modal-affiliate'));
@@ -2073,6 +2074,49 @@ function onPresetSelectChange() {
         document.getElementById('aff-manage-provider').value = preset.provider || 'custom';
         document.getElementById('aff-manage-category').value = preset.category || '';
         document.getElementById('aff-manage-code').value = preset.code;
+    }
+}
+
+function insertTravelDealTemplate() {
+    const template = `<section class="travel-deal-hero">
+  <h2>City · Hotel Name — Deal Title</h2>
+  <p class="deal-subtitle">Check-in date · N nights · Provider</p>
+</section>
+
+<section class="travel-deal-spec">
+  <h3>Deal Details</h3>
+  <ul>
+    <li><strong>Cash price:</strong> $XXX / night</li>
+    <li><strong>Points price:</strong> XX,XXX pts / night</li>
+    <li><strong>Value (CPP):</strong> X.X¢ per point</li>
+    <li><strong>Captured:</strong> YYYY-MM-DD</li>
+  </ul>
+</section>
+
+<section class="travel-deal-cta">
+  <h3>Book this deal</h3>
+  <p>[affiliate preset="REPLACE_WITH_PRESET_ID"]</p>
+</section>
+
+<section class="travel-deal-context">
+  <h3>Why this deal stands out</h3>
+  <p>Explain the context — seasonality, room type, loyalty program value, or comparison with typical market pricing.</p>
+</section>
+
+<aside class="affiliate-disclosure">
+  <p><strong>Disclosure:</strong> 이 글은 어필리에이트 파트너십 링크를 포함합니다. 구매/예약 시 Korea Decode가 소정의 수수료를 받을 수 있으며, 가격 및 포인트 정보는 수집 시점 기준이므로 실제와 다를 수 있습니다.</p>
+</aside>
+`;
+
+    if (isHtmlMode) {
+        const ta = document.getElementById('html-source-editor');
+        const start = ta.selectionStart;
+        ta.value = ta.value.substring(0, start) + template + ta.value.substring(ta.selectionEnd);
+    } else {
+        const range = quill.getSelection(true);
+        const index = range ? range.index : quill.getLength();
+        quill.insertText(index, '\n');
+        quill.clipboard.dangerouslyPasteHTML(index + 1, template);
     }
 }
 
