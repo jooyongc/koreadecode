@@ -22,9 +22,20 @@ git push origin main
 |----------|--------|-------------|
 | `/api/posts` | GET | 포스트 목록 (pagination, filter, search) |
 | `/api/decode` | POST | AI 문화 해석 요청 |
+| `/api/travel-deals` | GET | 호텔 딜 목록 (city, checkin, nights, points_only, page, limit) |
 | `/functions/ai-proxy.js` | POST | AI 프록시 |
 | `/functions/image-proxy.js` | GET | 이미지 최적화 프록시 |
 | `/functions/ga-proxy.js` | POST | GA 추적 프록시 |
+
+## Supabase Tables
+| Table | Purpose |
+|-------|---------|
+| `posts` | 블로그 포스트 |
+| `affiliate_presets` | 어필리에이트 쇼트코드 프리셋 |
+| `hotel_deals` | Gondola 기반 호텔 딜 원본 |
+| `deal_snapshots` | 호텔 딜 가격/포인트 이력 |
+| `affiliate_click_logs` | 어필리에이트 클릭 로그 (PII 방지) |
+| `ai_config` / `ai_decode_logs` / `ai_rate_limits` | AI Decode 기능 |
 
 ## Environment Variables (wrangler.toml)
 | Variable | Type | Location |

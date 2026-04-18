@@ -28,6 +28,12 @@
 - **Response**: `{ answer: string, model: string }`
 - **Rate limited**: IP 기반
 
+### GET `/api/travel-deals`
+- **Query params**: `city`, `checkin`(YYYY-MM-DD), `nights`, `points_only`(true|false), `page`, `limit`(default 20, max 100)
+- **Response**: `{ deals: [...], total, page, totalPages }`
+- **Cache**: `public, max-age=120, s-maxage=600` (Cloudflare edge 10분)
+- **Filter**: `status=active`만 반환, `featured desc, created_at desc` 순 정렬
+
 ## Current Rules
 - Secret 키는 절대 프론트엔드에 노출하지 않음
 - 모든 프록시 엔드포인트에 CORS 헤더 적용
