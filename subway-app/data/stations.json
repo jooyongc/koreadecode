@@ -1,0 +1,167 @@
+[
+  {
+    "station": "Gangnam",
+    "line": "Line 2",
+    "directions": {
+      "Hongdae": "5-2",
+      "Jamsil": "8-1",
+      "Sindorim": "3-4",
+      "City Hall": "4-1",
+      "Hapjeong": "5-3",
+      "Seoul Station": "1-3",
+      "Yeoksam": "7-2",
+      "Samseong": "9-1"
+    }
+  },
+  {
+    "station": "Hongdae",
+    "line": "Line 2",
+    "directions": {
+      "Gangnam": "4-3",
+      "Jamsil": "5-2",
+      "Sindorim": "1-1",
+      "City Hall": "3-2",
+      "Hapjeong": "2-4",
+      "Seoul Station": "6-1",
+      "Yeoksam": "4-2",
+      "Samseong": "5-1"
+    }
+  },
+  {
+    "station": "Jamsil",
+    "line": "Line 2",
+    "directions": {
+      "Gangnam": "3-1",
+      "Hongdae": "7-3",
+      "Sindorim": "2-2",
+      "City Hall": "6-4",
+      "Hapjeong": "4-2",
+      "Seoul Station": "5-3"
+    }
+  },
+  {
+    "station": "Seoul Station",
+    "line": "Line 1",
+    "directions": {
+      "Gangnam": "5-4",
+      "Myeongdong": "2-1",
+      "Dongdaemun": "7-2",
+      "City Hall": "3-3",
+      "Yeouido": "4-2",
+      "Incheon Airport T1": "1-1"
+    }
+  },
+  {
+    "station": "Myeongdong",
+    "line": "Line 4",
+    "directions": {
+      "Seoul Station": "3-3",
+      "Dongdaemun History & Culture Park": "6-2",
+      "Itaewon": "1-4",
+      "Gangnam": "4-1",
+      "Gyeongbokgung": "5-2"
+    }
+  },
+  {
+    "station": "Itaewon",
+    "line": "Line 6",
+    "directions": {
+      "Gangnam": "2-3",
+      "Hongdae": "5-1",
+      "Seoul Station": "3-2",
+      "Myeongdong": "1-4",
+      "Hapjeong": "4-1"
+    }
+  },
+  {
+    "station": "Hapjeong",
+    "line": "Line 2",
+    "directions": {
+      "Gangnam": "6-2",
+      "Hongdae": "3-3",
+      "Jamsil": "5-1",
+      "City Hall": "4-4",
+      "Sindorim": "2-1",
+      "Itaewon": "1-3"
+    }
+  },
+  {
+    "station": "City Hall",
+    "line": "Line 2",
+    "directions": {
+      "Gangnam": "7-1",
+      "Hongdae": "2-3",
+      "Jamsil": "4-2",
+      "Seoul Station": "1-2",
+      "Hapjeong": "5-4",
+      "Sindorim": "3-1"
+    }
+  },
+  {
+    "station": "Sindorim",
+    "line": "Line 2",
+    "directions": {
+      "Gangnam": "8-2",
+      "Hongdae": "4-4",
+      "Jamsil": "3-1",
+      "City Hall": "6-3",
+      "Hapjeong": "7-2"
+    }
+  },
+  {
+    "station": "Dongdaemun",
+    "line": "Line 1",
+    "directions": {
+      "Seoul Station": "4-2",
+      "Myeongdong": "5-1",
+      "Gangnam": "3-3",
+      "City Hall": "2-4",
+      "Gyeongbokgung": "6-1"
+    }
+  },
+  {
+    "station": "Gyeongbokgung",
+    "line": "Line 3",
+    "directions": {
+      "Gangnam": "6-1",
+      "City Hall": "3-2",
+      "Jamsil": "5-4",
+      "Seoul Station": "4-3",
+      "Dongdaemun": "1-2",
+      "Myeongdong": "2-4"
+    }
+  },
+  {
+    "station": "Yeouido",
+    "line": "Line 5",
+    "directions": {
+      "Gangnam": "2-2",
+      "Hongdae": "4-1",
+      "City Hall": "3-4",
+      "Seoul Station": "5-3",
+      "Hapjeong": "1-3"
+    }
+  },
+  {
+    "station": "Samseong",
+    "line": "Line 2",
+    "directions": {
+      "Gangnam": "2-1",
+      "Hongdae": "6-3",
+      "Jamsil": "1-2",
+      "City Hall": "5-4",
+      "Hapjeong": "4-3"
+    }
+  },
+  {
+    "station": "Yeoksam",
+    "line": "Line 2",
+    "directions": {
+      "Gangnam": "3-2",
+      "Hongdae": "7-1",
+      "Jamsil": "2-3",
+      "City Hall": "6-2",
+      "Hapjeong": "5-1"
+    }
+  }
+]
