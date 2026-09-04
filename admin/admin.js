@@ -137,6 +137,272 @@ function buildAffiliateBanner({ provider = 'klook', text = '', cta = '', url = '
 </div>`;
 }
 
+/* ============================================================================
+   REFERENCE SOURCES
+   The AI is weak on Korean local detail, so every article is grounded on pages
+   the editor supplies. Fetched through /source-proxy (CORS blocks the browser).
+   ========================================================================== */
+
+const KD_MAX_SOURCES = 4;
+
+/** Fetched source documents for the article currently being written. */
+let aiSources = [];
+
+/**
+ * Fetch and cache the reference pages listed in the Step 1 textarea.
+ * Renders per-URL status so the editor can see what actually came back.
+ */
+async function fetchReferenceSources() {
+    const btn = document.getElementById('btn-fetch-sources');
+    const statusEl = document.getElementById('source-status');
+    const listEl = document.getElementById('source-list');
+
+    const urls = (document.getElementById('ai-source-urls').value || '')
+        .split(/[\n,\s]+/)
+        .map(u => u.trim())
+        .filter(u => /^https?:\/\//i.test(u))
+        .slice(0, KD_MAX_SOURCES);
+
+    if (urls.length === 0) {
+        aiSources = [];
+        listEl.innerHTML = '';
+        statusEl.textContent = 'Paste at least one http(s) link first.';
+        return;
+    }
+
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Reading...';
+    btn.disabled = true;
+    statusEl.textContent = `Fetching ${urls.length} page${urls.length > 1 ? 's' : ''}...`;
+    listEl.innerHTML = '';
+
+    try {
+        const resp = await fetch('/source-proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls })
+        });
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+
+        aiSources = (data.sources || []).filter(s => s.ok);
+        renderSourceList(data.sources || []);
+
+        const okCount = aiSources.length;
+        const totalChars = aiSources.reduce((n, s) => n + (s.chars || 0), 0);
+        statusEl.textContent = okCount === 0
+            ? 'No readable content — the article will fall back to general knowledge.'
+            : `${okCount} of ${urls.length} read · ${totalChars.toLocaleString()} characters of source material.`;
+    } catch (err) {
+        console.error('[Sources] fetch failed:', err);
+        aiSources = [];
+        statusEl.textContent = 'Failed to read sources: ' + err.message;
+    } finally {
+        btn.innerHTML = original;
+        btn.disabled = false;
+    }
+}
+
+/** Render one status row per requested URL. */
+function renderSourceList(sources) {
+    const listEl = document.getElementById('source-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = sources.map(s => {
+        const host = escHtml(s.siteName || s.url);
+        if (!s.ok) {
+            return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+                <i class="ph ph-warning-circle" style="color:var(--danger);margin-top:2px;"></i>
+                <div><strong style="color:var(--text-muted);">${host}</strong>
+                <div style="color:var(--danger);">${escHtml(s.error || 'Could not read this page')}</div></div>
+            </div>`;
+        }
+        const langTag = s.lang === 'ko'
+            ? '<span style="color:var(--accent);">KO &rarr; will be translated</span>'
+            : `<span style="color:var(--text-muted);">${escHtml((s.lang || 'en').toUpperCase())}</span>`;
+        return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+            <i class="ph ph-check-circle" style="color:var(--accent);margin-top:2px;"></i>
+            <div style="min-width:0;">
+                <strong style="color:var(--text-primary);">${escHtml(s.title || host)}</strong>
+                <div style="color:var(--text-muted);">${host} · ${(s.chars || 0).toLocaleString()} chars · ${langTag}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+/**
+ * Format the fetched sources for a prompt.
+ * @param {number} perSource - Characters to include from each source
+ * @returns {string} Prompt block, or '' when nothing was fetched
+ */
+function buildSourceBlock(perSource = 4500) {
+    if (aiSources.length === 0) return '';
+
+    const docs = aiSources.map((s, i) => {
+        const langNote = s.lang === 'ko'
+            ? ' [KOREAN — translate the facts into natural English, do not quote the Korean]'
+            : '';
+        return `--- SOURCE ${i + 1}: ${s.title || s.siteName} (${s.siteName})${langNote} ---
+${s.text.slice(0, perSource)}`;
+    }).join('\n\n');
+
+    return `
+**SOURCE MATERIAL — this is the ground truth for this article:**
+
+${docs}
+
+--- END OF SOURCES ---
+
+**HOW TO USE THE SOURCES (critical — this is why they were provided):**
+- Every specific fact comes from the sources: prices, opening hours, addresses, subway
+  lines and exit numbers, durations, phone-ahead rules, what a ticket includes.
+- Any source in Korean must be TRANSLATED into natural English. Never leave Korean
+  sentences in the article and never translate word-for-word — rewrite it as English prose.
+  Korean proper nouns keep romanisation with Hangul in brackets on first use.
+- You may add general background, context and explanation from your own knowledge to make
+  the guide readable — but NOT specific numbers, names, addresses or times. If a figure is
+  not in the sources, either leave it out or say what it depends on.
+- Where the sources disagree, prefer the most specific and most recent one.
+- Never copy a source sentence verbatim. Rewrite everything in the house voice.
+`;
+}
+
+/* ============================================================================
+   AFFILIATE SLOTS
+   The editor pastes up to 5 links before generation; the model places each one
+   where it belongs in the article, so nothing has to be inserted by hand later.
+   ========================================================================== */
+
+const KD_MAX_AFFILIATE_SLOTS = 5;
+
+/** Build the 5 empty slot rows in Step 2. */
+function renderAffiliateSlots() {
+    const wrap = document.getElementById('affiliate-slots');
+    if (!wrap || wrap.dataset.built === '1') return;
+
+    wrap.innerHTML = Array.from({ length: KD_MAX_AFFILIATE_SLOTS }, (_, i) => `
+        <div class="affiliate-slot" style="display:grid;grid-template-columns:26px 1fr 1fr 110px;gap:8px;align-items:center;margin-bottom:8px;">
+            <span style="font-size:12px;color:var(--text-muted);text-align:center;">${i + 1}</span>
+            <input class="form-input aff-slot-url" data-slot="${i}" placeholder="https://affiliate-link..." style="font-size:12px;">
+            <input class="form-input aff-slot-desc" data-slot="${i}" placeholder="What it is, e.g. Half-day DMZ tour" style="font-size:12px;">
+            <select class="form-select aff-slot-provider" data-slot="${i}" style="font-size:12px;">
+                <option value="klook">Klook</option>
+                <option value="kkday">KKday</option>
+            </select>
+        </div>
+    `).join('');
+    wrap.dataset.built = '1';
+}
+
+/**
+ * Read the filled-in slots.
+ * @returns {Array<{n:number, url:string, desc:string, provider:string}>}
+ */
+function readAffiliateSlots() {
+    const slots = [];
+    document.querySelectorAll('.aff-slot-url').forEach(input => {
+        const i = input.dataset.slot;
+        const url = input.value.trim();
+        if (!/^https?:\/\//i.test(url)) return;
+        const desc = document.querySelector(`.aff-slot-desc[data-slot="${i}"]`)?.value.trim() || '';
+        const provider = document.querySelector(`.aff-slot-provider[data-slot="${i}"]`)?.value || 'klook';
+        slots.push({ n: slots.length + 1, url, desc, provider });
+    });
+    return slots;
+}
+
+/** Prompt block describing the available affiliate placements. */
+function buildAffiliateSlotBlock(slots) {
+    if (slots.length === 0) return '';
+    const list = slots.map(s => `- [[AFF:${s.n}]] — ${s.desc || 'a bookable tour or product related to this topic'}`).join('\n');
+    return `
+**AFFILIATE PLACEMENTS — ${slots.length} link${slots.length > 1 ? 's' : ''} to position:**
+${list}
+
+Place each marker on its own line, exactly as written (e.g. \`[[AFF:2]]\`), at the point in
+the article where a reader would naturally want it — straight AFTER you have explained why
+that thing is worth doing or what it costs. Rules:
+- Use every marker exactly once. Do not invent markers beyond the list.
+- Never put one in the intro, never two in a row, never one as the final line.
+- Do not write your own booking button HTML; the marker becomes the button automatically.
+`;
+}
+
+/**
+ * Swap [[AFF:n]] markers for real banners, then place any the model skipped.
+ * @param {string} html - Article body
+ * @param {Array} slots - From readAffiliateSlots()
+ * @returns {string}
+ */
+function applyAffiliateSlots(html, slots) {
+    if (!slots || slots.length === 0) return html;
+
+    let out = html;
+    const placed = new Set();
+
+    slots.forEach(slot => {
+        const banner = buildAffiliateBanner({
+            provider: slot.provider,
+            text: slot.desc || 'Book this ahead — popular dates sell out.',
+            url: slot.url,
+        });
+        // Tolerate <p>[[AFF:1]]</p>, [[AFF: 1]], [[aff:1]] and friends.
+        const marker = new RegExp(`(?:<p[^>]*>\\s*)?\\[\\[\\s*AFF\\s*:\\s*${slot.n}\\s*\\]\\](?:\\s*</p>)?`, 'gi');
+        if (marker.test(out)) {
+            marker.lastIndex = 0;
+            let first = true;
+            out = out.replace(marker, () => {
+                if (!first) return '';            // model repeated a marker — keep only the first
+                first = false;
+                placed.add(slot.n);
+                return banner;
+            });
+        }
+    });
+
+    // Strip any stray markers the model invented, then place unused slots at section breaks.
+    out = out.replace(/(?:<p[^>]*>\s*)?\[\[\s*AFF\s*:\s*\d+\s*\]\](?:\s*<\/p>)?/gi, '');
+
+    const leftovers = slots.filter(s => !placed.has(s.n));
+    if (leftovers.length > 0) {
+        const banner = slot => buildAffiliateBanner({
+            provider: slot.provider,
+            text: slot.desc || 'Book this ahead — popular dates sell out.',
+            url: slot.url,
+        });
+
+        const parts = out.split(/(?=<h2[\s>])/i);
+
+        // Candidate insertion points sit before an <h2>. Start at the SECOND heading so a
+        // banner never lands between the intro and the first section; fall back to the
+        // first heading only when there are not enough sections to go round.
+        const points = [];
+        for (let i = parts.length > 2 ? 2 : 1; i < parts.length; i++) points.push(i);
+        if (points.length > 0 && points.length < leftovers.length && parts.length > 1) points.unshift(1);
+
+        const chosen = [];
+        if (points.length > 0) {
+            const stride = points.length / leftovers.length;
+            for (let i = 0; i < leftovers.length; i++) {
+                const idx = points[Math.min(points.length - 1, Math.floor(i * stride))];
+                if (!chosen.includes(idx)) chosen.push(idx);
+            }
+        }
+
+        // Pair slots to points, insert from the end so earlier indices stay valid.
+        const targets = chosen.map((idx, i) => ({ idx, slot: leftovers[i] }))
+                              .sort((a, b) => b.idx - a.idx);
+        targets.forEach(({ idx, slot }) => parts.splice(idx, 0, banner(slot) + '\n'));
+        out = parts.join('');
+
+        // More links than usable section breaks — the remainder goes at the end.
+        leftovers.slice(chosen.length).forEach(slot => { out += '\n' + banner(slot); });
+    }
+
+    if (!out.includes('affiliate-disclosure')) out += '\n' + KD_AFFILIATE_DISCLOSURE;
+    return out;
+}
+
 /** Standard disclosure appended to every article that carries affiliate links. */
 const KD_AFFILIATE_DISCLOSURE = `<aside class="affiliate-disclosure"><strong>Disclosure:</strong> some links in this guide are affiliate links. If you book through them, Korea Decode may earn a small commission at no extra cost to you. It never changes which options we recommend.</aside>`;
 
@@ -438,6 +704,8 @@ async function init() {
     document.getElementById('btn-seo-polish').addEventListener('click', runSEOPolish);
     document.getElementById('btn-run-ai-phase1').addEventListener('click', runAIPhase1);
     document.getElementById('btn-run-ai-phase2').addEventListener('click', runAIPhase2);
+    document.getElementById('btn-fetch-sources').addEventListener('click', fetchReferenceSources);
+    renderAffiliateSlots();
     document.getElementById('btn-search-unsplash').addEventListener('click', searchUnsplashAI);
     document.getElementById('btn-save-post').addEventListener('click', publishPost);
     document.getElementById('btn-show-preview').addEventListener('click', showMobilePreview);
@@ -1201,6 +1469,13 @@ window.resetAI = () => {
     document.getElementById('ai-img-query').value = '';
     document.getElementById('ai-category').selectedIndex = 0;
     document.getElementById('post-schedule').value = '';
+
+    // Clear reference sources and affiliate slots
+    aiSources = [];
+    document.getElementById('ai-source-urls').value = '';
+    document.getElementById('source-list').innerHTML = '';
+    document.getElementById('source-status').textContent = '';
+    document.querySelectorAll('.aff-slot-url, .aff-slot-desc').forEach(el => { el.value = ''; });
     document.getElementById('ai-keywords-container').innerHTML = '';
     const titleOptions = document.getElementById('ai-title-options-container');
     if (titleOptions) titleOptions.innerHTML = '';
@@ -1221,14 +1496,20 @@ window.runAIPhase1 = async () => {
     btn.disabled = true;
 
     try {
+        const sourceBlock = buildSourceBlock(2500);
+
         const prompt = `
 You are the editor of 'Korea Decode', a practical English-language guide to Korea written from Seoul.
 
 Topic: "${topic}"
 
 ${MISS_PARK_VOICE}
+${sourceBlock}
+Produce an SEO plan for a practical guide on this topic.${aiSources.length ? `
 
-Produce an SEO plan for a practical guide on this topic.
+Base the titles and keywords on what the SOURCE MATERIAL above actually covers — the real
+place names, the real options, the angle the sources support. Do not promise anything the
+sources cannot back up.` : ''}
 
 **TITLE RULES:**
 - Titles describe what the reader will be able to DO or DECIDE after reading. Search-intent first.
@@ -1395,6 +1676,8 @@ window.runAIPhase2 = async () => {
     // 2. Generate Content with AI
     let content = '';
 
+    const affiliateSlots = readAffiliateSlots();
+
     try {
         const prompt = `
 **Task:** Write a practical guide for 'Korea Decode'.
@@ -1404,8 +1687,9 @@ ${MISS_PARK_VOICE}
 **Title:** "${title}"
 **Core Subject:** "${topic}"
 **Target Keywords:** ${keywords.join(', ')}
-
+${buildSourceBlock()}
 ${KD_STYLE_RULES}
+${buildAffiliateSlotBlock(affiliateSlots)}
 
 **ARTICLE FORMAT — PRACTICAL GUIDE, NOT AN ESSAY:**
 
@@ -1430,15 +1714,9 @@ ${KD_STYLE_RULES}
    <ul><li> for checklists, <strong> for the numbers that matter, <blockquote> for a single practical
    tip per section.
 
-6. **Affiliate placements:** where a bookable tour, ticket, pass or product genuinely fits, insert
-   this block — 2 to 3 times in the article, always AFTER you have explained why the thing is worth
-   doing, never at the very top and never two in a row:
-   <div class="affiliate-cta" data-provider="klook" style="background:#111;border:1px solid #cdff0033;border-left:4px solid #cdff00;border-radius:12px;padding:18px 20px;margin:28px 0;">
-   <p style="color:#cfcfcf;margin:0 0 12px;font-size:0.95rem;line-height:1.6;">[One line saying what the reader is booking and why booking ahead helps]</p>
-   <a href="#affiliate" target="_blank" rel="sponsored nofollow noopener" style="display:inline-block;background:#cdff00;color:#000;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem;">Check price on Klook &rarr;</a>
-   </div>
-   For a second or third placement you may swap the provider to KKday by using data-provider="kkday"
-   and the colour #ff6bdf with the label "Check price on KKday".
+6. **Affiliate placements:** see the AFFILIATE PLACEMENTS list above. Drop each `[[AFF:n]]` marker
+   on its own line at the right point in the article. If no list was given, do not write any
+   booking buttons at all.
 
 7. **IMAGES — MANDATORY:** place exactly **${imgCount}** image markers, each as <p>[IMG]</p> alone on
    its own line, spaced evenly through the article.
@@ -1490,9 +1768,11 @@ delete it or replace it with a fact.
         rawContent = rawContent.replace(/\[IMG\]/g, '');
         rawContent = rawContent.replace(/\[INSERT_IMAGE_HERE\]/g, '');
 
-        // House style + guaranteed affiliate placements
+        // House style, then real affiliate links in place of the markers
         rawContent = scrubSlang(rawContent);
-        rawContent = injectAffiliateBanners(rawContent, { min: 2, max: 4, topic });
+        rawContent = affiliateSlots.length > 0
+            ? applyAffiliateSlots(rawContent, affiliateSlots)
+            : injectAffiliateBanners(rawContent, { min: 2, max: 4, topic });
         content = rawContent;
 
     } catch (e) {

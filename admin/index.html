@@ -160,7 +160,7 @@
     <section id="view-ai-writer" class="view-section">
         <div class="view-header">
             <h1 id="writer-heading">AI Content Creator</h1>
-            <p>Generate SEO-optimized content with AI personas</p>
+            <p>Grounded on your reference links, written in the Miss Park house voice</p>
         </div>
 
         <!-- Step 1: Topic & Brainstorm -->
@@ -195,6 +195,23 @@
                     </select>
                 </div>
             </div>
+            <!-- Reference sources: the AI is grounded on these instead of guessing -->
+            <div class="form-group">
+                <label class="form-label">
+                    Reference Links <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">— up to 4, one per line. Korean pages are fine; they get translated.</span>
+                </label>
+                <textarea id="ai-source-urls" class="form-input" rows="4"
+                          style="font-family:monospace;font-size:12px;"
+                          placeholder="https://korean.visitseoul.net/...&#10;https://blog.naver.com/...&#10;https://www.klook.com/ko/activity/..."></textarea>
+                <div class="flex gap-8" style="margin-top:8px;align-items:center;">
+                    <button id="btn-fetch-sources" class="btn btn-outline btn-sm">
+                        <i class="ph ph-download-simple"></i> Read Sources
+                    </button>
+                    <span id="source-status" style="font-size:12px;color:var(--text-muted);"></span>
+                </div>
+                <div id="source-list" style="margin-top:10px;"></div>
+            </div>
+
             <button id="btn-run-ai-phase1" class="btn btn-ai w-full">
                 <i class="ph ph-brain"></i> Brainstorm SEO Plan
             </button>
@@ -236,6 +253,18 @@
                     </div>
                 </div>
             </div>
+            <!-- Affiliate slots: paste up to 5 links and the AI places them in context -->
+            <div class="form-group">
+                <label class="form-label">
+                    Affiliate Links <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">— up to 5. The AI drops each one where it fits in the article.</span>
+                </label>
+                <div id="affiliate-slots"></div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">
+                    The description tells the AI what the link is, e.g. &ldquo;Half-day DMZ tour with hotel pickup&rdquo;.
+                    Leave rows blank to skip them.
+                </div>
+            </div>
+
             <button id="btn-run-ai-phase2" class="btn btn-primary w-full">
                 <i class="ph ph-pen-nib"></i> Write Full Article
             </button>

@@ -91,8 +91,6 @@
 
                 <!-- Left: type -->
                 <div class="hero-copy slide-in-left">
-                    <p class="hero-hello" id="hero-label">Hi, I&rsquo;m Miss Park</p>
-
                     <h1 class="hero-title" id="hero-title">
                         <span class="line word-decode">DECODE</span>
                         <span class="line word-korea">Korea<span class="dot">.</span></span>
@@ -122,16 +120,22 @@
                 <div class="hero-figure slide-in-right delay-2">
                     <div class="hero-figure-wrap">
                         <div class="hero-figure-frame">
-                            <img id="miss-park-photo"
-                                 class="miss-park-photo"
-                                 src="/assets/img/miss-park.svg"
-                                 alt="Miss Park, the Seoul-based writer behind Korea Decode"
-                                 width="460" height="613"
-                                 loading="eager"
-                                 onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
+                            <picture>
+                                <source srcset="/assets/img/miss-park.webp" type="image/webp">
+                                <img id="miss-park-photo"
+                                     class="miss-park-photo"
+                                     src="/assets/img/miss-park.jpg"
+                                     alt="Miss Park, the Seoul-based writer behind Korea Decode"
+                                     width="920" height="840"
+                                     loading="eager"
+                                     onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
+                            </picture>
+                            <p class="miss-park-greeting">
+                                <span>Hello!</span>
+                                <span>Welcome to Korea.</span>
+                                <span>I&rsquo;m Miss Park.</span>
+                            </p>
                         </div>
-                        <span class="miss-park-tag">Miss Park</span>
-                        <span class="miss-park-sub">Seoul, 서울</span>
                     </div>
                 </div>
 
@@ -255,11 +259,14 @@
             <div class="container misspark-layout">
 
                 <div class="misspark-portrait">
-                    <img src="/assets/img/miss-park.svg"
-                         alt="Portrait of Miss Park, editor of Korea Decode"
-                         width="460" height="575"
-                         loading="lazy"
-                         onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
+                    <picture>
+                        <source srcset="/assets/img/miss-park.webp" type="image/webp">
+                        <img src="/assets/img/miss-park.jpg"
+                             alt="Portrait of Miss Park, editor of Korea Decode"
+                             width="920" height="840"
+                             loading="lazy"
+                             onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
+                    </picture>
                     <p class="misspark-quote">&ldquo;If I wouldn&rsquo;t send my own friend there, it&rsquo;s not going in the guide.&rdquo;</p>
                 </div>
 
