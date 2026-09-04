@@ -52,10 +52,6 @@
         <i class="ph ph-article"></i>
         <span>Post Manager</span>
     </div>
-    <div class="nav-item" data-view="personas">
-        <i class="ph ph-users-three"></i>
-        <span>Personas</span>
-    </div>
     <div class="nav-item" data-view="automation">
         <i class="ph ph-robot"></i>
         <span>Automation</span>
@@ -195,11 +191,6 @@
                     <div class="form-input" style="display:flex;align-items:center;gap:8px;opacity:0.85;">
                         <i class="ph ph-user-circle"></i> Miss Park &mdash; Editor, Korea Decode
                     </div>
-                    <!-- Personas were removed in the 2026 redesign: every article uses one house voice.
-                         The hidden select is kept so any legacy script reading it does not break. -->
-                    <select id="ai-persona-select" class="form-select" hidden>
-                        <option value="default">Miss Park (house voice)</option>
-                    </select>
                 </div>
             </div>
             <!-- Reference sources: the AI is grounded on these instead of guessing -->
@@ -373,76 +364,6 @@
         <div id="posts-grid"></div>
     </section>
 
-    <!-- ===== PERSONAS VIEW ===== -->
-    <section id="view-personas" class="view-section">
-        <div class="view-header">
-            <h1>Writer Personas</h1>
-            <p>Create and manage AI writer personas for diverse content</p>
-        </div>
-
-        <div class="grid-2">
-            <!-- Persona List -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>All Personas</h3>
-                </div>
-                <div id="persona-list">Loading...</div>
-            </div>
-
-            <!-- Persona Form -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 id="persona-form-title">Create New Persona</h3>
-                </div>
-                <div class="persona-form">
-                    <div class="form-group">
-                        <label class="form-label">Name</label>
-                        <input id="p-name" class="form-input" placeholder="Emma Smith">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Age</label>
-                        <select id="p-age" class="form-select">
-                            <option>18-24</option>
-                            <option selected>25-34</option>
-                            <option>35-44</option>
-                            <option>45-54</option>
-                            <option>55+</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Gender</label>
-                        <select id="p-gender" class="form-select">
-                            <option>Female</option>
-                            <option>Male</option>
-                            <option>Non-binary</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Nationality</label>
-                        <input id="p-nationality" class="form-input" placeholder="e.g. USA, UK, Japan...">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Job / Role</label>
-                        <input id="p-job" class="form-input" placeholder="Travel Blogger">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Interests / Likes</label>
-                        <input id="p-likes" class="form-input" placeholder="Spicy food, Hidden cafes">
-                    </div>
-                    <div class="form-group full-width">
-                        <label class="form-label">Bio</label>
-                        <textarea id="p-bio" class="form-textarea" rows="3" placeholder="Short bio for this persona..."></textarea>
-                    </div>
-                </div>
-                <div class="flex gap-8 mt-16 flex-wrap">
-                    <button id="btn-save-persona" class="btn btn-primary">Add Persona</button>
-                    <button id="btn-generate-persona" class="btn btn-outline"><i class="ph ph-shuffle"></i> Random</button>
-                    <button id="btn-cancel-persona" class="btn btn-outline" style="display:none;">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- ===== AUTOMATION VIEW ===== -->
     <section id="view-automation" class="view-section">
         <div class="view-header">
@@ -480,9 +401,6 @@
                         <div class="form-input" style="display:flex;align-items:center;gap:8px;opacity:0.85;">
                             <i class="ph ph-user-circle"></i> Miss Park &mdash; house voice
                         </div>
-                        <select id="auto-persona" class="form-select" hidden>
-                            <option value="default">Miss Park (house voice)</option>
-                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Category</label>
@@ -710,14 +628,6 @@
                     </select>
                 </div>
                 <button id="btn-save-settings" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Settings</button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3>Persona Management</h3>
-                </div>
-                <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Manage your writer personas from the Personas tab.</p>
-                <button class="btn btn-outline" onclick="switchView('personas')"><i class="ph ph-users-three"></i> Go to Personas</button>
             </div>
         </div>
     </section>

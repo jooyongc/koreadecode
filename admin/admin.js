@@ -644,8 +644,6 @@ let quill;
 let activeImage = '';
 let currentUser = null;
 let editingPostId = null;
-let editingPersonaId = null;
-let availablePersonas = [];
 let unsplashMode = 'featured'; // 'featured' | 'body'
 let affiliateCodes = {}; // Map of aff-id → raw HTML code
 let pendingUploadFile = null; // File object waiting to be uploaded
@@ -692,7 +690,6 @@ async function init() {
         document.getElementById('login-section').style.display = 'none';
         restoreGeminiKeyFromCloud(session.user);
         loadDashboard();
-        loadPersonas();
         ensureStorageBucket();
     } else {
         document.getElementById('login-section').style.display = 'flex';
@@ -705,8 +702,7 @@ async function init() {
             document.getElementById('login-section').style.display = 'none';
             restoreGeminiKeyFromCloud(session.user);
             loadDashboard();
-            loadPersonas();
-            ensureStorageBucket();
+                ensureStorageBucket();
         } else {
             currentUser = null;
             document.getElementById('login-section').style.display = 'flex';
@@ -754,9 +750,6 @@ async function init() {
         if (el) el.addEventListener('input', updateHeroPreview);
     });
     document.getElementById('btn-remove-duplicates').addEventListener('click', removeDuplicates);
-    document.getElementById('btn-generate-persona').addEventListener('click', generateRandomPersona);
-    document.getElementById('btn-save-persona').addEventListener('click', saveOrUpdatePersona);
-    document.getElementById('btn-cancel-persona').addEventListener('click', resetPersonaForm);
 
     document.getElementById('btn-run-automation').addEventListener('click', runAutomation);
     document.getElementById('btn-save-auto-profile').addEventListener('click', saveAutoProfile);
@@ -847,15 +840,6 @@ async function init() {
         btn.addEventListener('click', () => switchAffiliateTab(btn.dataset.affTab));
     });
 
-    const personaList = document.getElementById('persona-list');
-    personaList.addEventListener('click', (event) => {
-        const button = event.target.closest('button');
-        if (!button) return;
-        const action = button.dataset.action;
-        const id = button.dataset.id;
-        if (action === 'edit') editPersona(id);
-        else if (action === 'delete') deletePersona(id);
-    });
 
     const savedKey = localStorage.getItem('gemini_key');
     document.getElementById('setting-gemini-key').value = savedKey || '';
@@ -879,13 +863,10 @@ const switchView = (viewName) => {
     if (viewName === 'posts') loadPosts();
     if (viewName === 'dashboard') loadDashboard();
     if (viewName === 'automation') loadQueue();
-    if (viewName === 'personas') loadPersonas();
-    if (viewName === 'settings') loadPersonas();
     if (viewName === 'site-settings') loadHeroSettings();
     if (viewName === 'ads') loadAdSlots();
     if (viewName === 'ai-writer') {
         if (!editingPostId) resetAI();
-        refreshPersonaSelect();
     }
 };
 // Expose switchView globally for onclick handlers in HTML
@@ -1329,221 +1310,9 @@ const closeModal = (id) => document.getElementById(id).style.display = 'none';
 
 
 // --- PERSONA MANAGEMENT ---
-async function loadPersonas() {
-    const list = document.getElementById('persona-list');
-    list.innerHTML = 'Loading...';
-    try {
-        const { data, error } = await supabase.from('personas').select('*');
-        if (error) throw error;
 
-        availablePersonas = data || [];
-        list.innerHTML = '';
-        availablePersonas.forEach(p => {
-            list.innerHTML += `
-                <div class="persona-card">
-                    <div style="display:flex; align-items:center;">
-                        <div class="persona-avatar">${p.name[0]}</div>
-                        <div class="persona-details">
-                            <div class="persona-name">${p.name} (${p.age})</div>
-                            <div class="persona-role">${p.nationality} • ${p.job}</div>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn btn-outline" data-action="edit" data-id="${p.id}" style="padding: 4px 8px; font-size:12px;"><i class="ph ph-pencil"></i></button>
-                        <button class="btn btn-outline" data-action="delete" data-id="${p.id}" style="color:var(--danger); border-color:var(--danger); padding: 4px 8px; font-size:12px;"><i class="ph ph-trash"></i></button>
-                    </div>
-                </div>
-            `;
-        });
-        if (availablePersonas.length === 0) list.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No personas created yet.</div>';
-        refreshPersonaSelect();
-        refreshAutoPersonaSelect();
-    } catch (e) {
-        console.error(e);
-        list.innerHTML = 'Failed to load personas.';
-    }
-}
 
-const editPersona = (id) => {
-    const p = availablePersonas.find(item => item.id === id);
-    if (!p) return;
 
-    editingPersonaId = id;
-    document.getElementById('p-name').value = p.name;
-    document.getElementById('p-age').value = p.age;
-    document.getElementById('p-gender').value = p.gender;
-    document.getElementById('p-nationality').value = p.nationality;
-    document.getElementById('p-job').value = p.job;
-    document.getElementById('p-likes').value = p.likes;
-    document.getElementById('p-bio').value = p.bio;
-
-    document.getElementById('persona-form-title').innerText = "Edit Persona";
-    document.getElementById('btn-save-persona').innerText = "Update Persona";
-    document.getElementById('btn-cancel-persona').style.display = 'block';
-
-    document.getElementById('persona-form-title').scrollIntoView({ behavior: "smooth" });
-};
-
-const resetPersonaForm = () => {
-    editingPersonaId = null;
-    document.getElementById('p-name').value = '';
-    document.getElementById('p-likes').value = '';
-    document.getElementById('p-bio').value = '';
-    document.getElementById('persona-form-title').innerText = "Create New Persona";
-    document.getElementById('btn-save-persona').innerText = "Add Persona";
-    document.getElementById('btn-cancel-persona').style.display = 'none';
-};
-
-function generateRandomPersona() {
-    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-
-    // --- First Names by region/gender ---
-    const firstNames = {
-        western_f: ["Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Charlotte", "Harper", "Amelia", "Ella", "Chloe", "Grace", "Lily", "Zoe", "Hannah", "Natalie", "Victoria", "Audrey", "Claire", "Scarlett", "Lucy", "Nora", "Stella", "Violet", "Ruby"],
-        western_m: ["Liam", "Noah", "James", "William", "Oliver", "Benjamin", "Lucas", "Henry", "Alexander", "Daniel", "Matthew", "Sebastian", "Jack", "Owen", "Ethan", "Ryan", "Nathan", "Dylan", "Samuel", "Caleb", "Leo", "Max", "Theo", "Miles", "Finn"],
-        korean_f: ["Jiyeon", "Minji", "Soojin", "Yuna", "Haeun", "Soyeon", "Dahyun", "Eunbi", "Chaeyoung", "Nayeon", "Seulgi", "Jisoo", "Yeji", "Hyejin", "Subin"],
-        korean_m: ["Minjun", "Jiwoo", "Seohan", "Hyunwoo", "Taeyang", "Dongwook", "Junhyuk", "Siwon", "Jaehyun", "Seojun", "Doyoon", "Yoonho", "Jihoon", "Wonjin", "Hajun"],
-        japanese_f: ["Yuki", "Sakura", "Hana", "Aoi", "Mei", "Rin", "Mio", "Saki", "Nanami", "Koharu"],
-        japanese_m: ["Haruto", "Ren", "Sota", "Yuto", "Kaito", "Riku", "Hinata", "Takumi", "Kenta", "Daichi"],
-        chinese_f: ["Mei Lin", "Xiao Wei", "Li Na", "Jing Yi", "Xin Yue", "Yan Yan", "Zi Han", "Yu Xin", "Shu Qi", "Wen Xin"],
-        chinese_m: ["Wei", "Jun", "Hao", "Zhi Yuan", "Yi Fan", "Tian Yu", "Chen Xi", "Ming Hao", "Zi Xuan", "Bo Wen"],
-        southeast_asian_f: ["Priya", "Ananya", "Nurul", "Putri", "Mai", "Thao", "Arisa", "Kamala", "Siti", "Nadia"],
-        southeast_asian_m: ["Arjun", "Raj", "Ahmad", "Rizky", "Duc", "Minh", "Kiran", "Ravi", "Budi", "Tariq"],
-        european_f: ["Léa", "Camille", "Lena", "Freya", "Elsa", "Chiara", "Marta", "Ingrid", "Katya", "Petra", "Amelie", "Bianca", "Sofie", "Astrid", "Elena"],
-        european_m: ["Hugo", "Louis", "Matteo", "Lars", "Erik", "Marco", "Pablo", "Andrei", "Niklas", "Felix", "Anton", "Luca", "Sven", "Pierre", "Dmitri"],
-        latin_f: ["Valentina", "Camila", "Luciana", "Gabriela", "Mariana", "Fernanda", "Daniela", "Renata", "Isabela", "Paloma"],
-        latin_m: ["Santiago", "Mateo", "Diego", "Alejandro", "Carlos", "Miguel", "Rafael", "Andrés", "Gabriel", "Felipe"],
-        african_f: ["Amara", "Zara", "Nia", "Aisha", "Fatima", "Kemi", "Thandiwe", "Amina", "Chioma", "Naledi"],
-        african_m: ["Kwame", "Emeka", "Tariq", "Jabari", "Kofi", "Chidi", "Oluwaseun", "Tendai", "Amadi", "Sekou"]
-    };
-
-    // --- Last Names by region ---
-    const lastNames = {
-        western: ["Smith", "Johnson", "Williams", "Brown", "Jones", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson", "Clark", "Harris", "Lewis", "Walker", "Hall", "Allen", "Young", "King", "Wright"],
-        korean: ["Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Yoon", "Jang", "Lim", "Han", "Oh", "Seo", "Shin", "Kwon", "Hwang", "Song", "Ahn", "Ryu", "Bae", "Moon"],
-        japanese: ["Tanaka", "Suzuki", "Watanabe", "Ito", "Yamamoto", "Nakamura", "Kobayashi", "Sato", "Kato", "Yoshida"],
-        chinese: ["Wang", "Li", "Zhang", "Liu", "Chen", "Yang", "Huang", "Wu", "Zhou", "Xu"],
-        european: ["Müller", "Schmidt", "Dubois", "Martin", "García", "Rossi", "Silva", "Andersen", "Johansson", "Petrov", "Larsson", "Bernard", "Meyer", "Moreau", "Ferreira"],
-        latin: ["García", "Rodríguez", "Martínez", "López", "Hernández", "González", "Pérez", "Sánchez", "Ramírez", "Torres"],
-        southeast_asian: ["Patel", "Sharma", "Nguyen", "Tran", "Pham", "Rahman", "Singh", "Tan", "Wong", "Das"],
-        african: ["Okafor", "Mensah", "Adeyemi", "Nkosi", "Diallo", "Osei", "Kamara", "Mwangi", "Abara", "Dlamini"]
-    };
-
-    // --- Jobs (expanded) ---
-    const jobs = [
-        "Travel Blogger", "K-Beauty Editor", "Food Critic", "K-Pop Journalist", "Digital Nomad",
-        "Expat Living in Seoul", "Culture Columnist", "Lifestyle Vlogger", "Skincare Researcher",
-        "Korean Food Recipe Developer", "K-Drama Reviewer", "Language Learning Coach",
-        "Photography Enthusiast", "Fashion & Style Writer", "Hallyu Culture Analyst",
-        "Freelance Journalist", "Study Abroad Student", "ESL Teacher in Korea",
-        "Seoul City Guide", "Wellness & Health Writer", "K-Pop Fan Community Leader",
-        "Travel Photographer", "Street Food Explorer", "Cultural Anthropologist",
-        "Korean History Researcher", "Sustainable Travel Advocate"
-    ];
-
-    // --- Countries (expanded) ---
-    const countries = [
-        "USA", "UK", "Canada", "Australia", "France", "Germany", "Singapore", "Japan",
-        "South Korea", "Philippines", "Indonesia", "India", "Vietnam", "Thailand", "Malaysia",
-        "Brazil", "Mexico", "Colombia", "Spain", "Italy", "Netherlands", "Sweden", "Norway",
-        "Nigeria", "South Africa", "Kenya", "Ghana", "New Zealand", "Ireland", "Portugal",
-        "Poland", "Turkey", "UAE", "Saudi Arabia", "Argentina", "Chile", "Taiwan", "Hong Kong"
-    ];
-
-    // --- Likes (expanded) ---
-    const likesList = [
-        "Spicy tteokbokki", "Hidden cafes in Hongdae", "Indie Korean music", "Skincare routines",
-        "Korean history", "Street food markets", "K-Drama binge watching", "Soju tastings",
-        "Temple stays", "Korean BBQ", "Jeju Island hikes", "Hanbok fashion", "Night markets",
-        "Korean pottery and ceramics", "Bukchon Hanok Village walks", "Seoul subway exploration",
-        "Korean language learning", "Vintage shopping in Itaewon", "PC bang culture",
-        "Makgeolli brewing", "Cherry blossom season", "Korean fried chicken", "Jimjilbang spa days",
-        "K-Pop album collecting", "Traditional tea ceremonies", "Busan beach culture",
-        "Korean calligraphy", "Seoul rooftop bars", "Korean cooking classes"
-    ];
-
-    // --- Ages ---
-    const ages = ["20", "22", "24", "25", "27", "28", "30", "32", "33", "35", "38", "40", "42", "45", "50", "55"];
-    const genders = ["Female", "Male", "Non-binary"];
-
-    // Pick a random region group
-    const regionGroups = [
-        { first_f: 'western_f', first_m: 'western_m', last: 'western' },
-        { first_f: 'korean_f', first_m: 'korean_m', last: 'korean' },
-        { first_f: 'japanese_f', first_m: 'japanese_m', last: 'japanese' },
-        { first_f: 'chinese_f', first_m: 'chinese_m', last: 'chinese' },
-        { first_f: 'european_f', first_m: 'european_m', last: 'european' },
-        { first_f: 'latin_f', first_m: 'latin_m', last: 'latin' },
-        { first_f: 'southeast_asian_f', first_m: 'southeast_asian_m', last: 'southeast_asian' },
-        { first_f: 'african_f', first_m: 'african_m', last: 'african' }
-    ];
-
-    const region = pick(regionGroups);
-    const gender = pick(genders);
-    const isFemale = gender === 'Female';
-    const firstKey = isFemale ? region.first_f : (gender === 'Male' ? region.first_m : pick([region.first_f, region.first_m]));
-    const firstName = pick(firstNames[firstKey]);
-    const lastName = pick(lastNames[region.last]);
-    const rName = `${firstName} ${lastName}`;
-    const rJob = pick(jobs);
-    const rCountry = pick(countries);
-    const rAge = pick(ages);
-    const rLikes = pick(likesList);
-
-    document.getElementById('p-name').value = rName;
-    document.getElementById('p-job').value = rJob;
-    document.getElementById('p-nationality').value = rCountry;
-    document.getElementById('p-likes').value = rLikes;
-    document.getElementById('p-age').value = rAge;
-    document.getElementById('p-gender').value = gender;
-
-    const bio = `Hi, I'm ${rName}! I'm a ${rAge}-year-old ${rJob} from ${rCountry} currently exploring every corner of Korea. I'm obsessed with ${rLikes} and love sharing my honest experiences. Follow along for my local tips!`;
-    document.getElementById('p-bio').value = bio;
-}
-
-async function saveOrUpdatePersona() {
-    const name = document.getElementById('p-name').value;
-    const age = document.getElementById('p-age').value;
-    const gender = document.getElementById('p-gender').value;
-    const nationality = document.getElementById('p-nationality').value;
-    const job = document.getElementById('p-job').value;
-    const likes = document.getElementById('p-likes').value;
-    const bio = document.getElementById('p-bio').value;
-
-    if (!name || !job) return alert('Name and Job are required');
-
-    const personaData = { name, age, gender, nationality, job, likes, bio };
-
-    if (editingPersonaId) {
-        const { error } = await supabase.from('personas').update(personaData).eq('id', editingPersonaId);
-        if (error) return alert('Error: ' + error.message);
-        alert('Persona Updated!');
-    } else {
-        const { error } = await supabase.from('personas').insert(personaData);
-        if (error) return alert('Error: ' + error.message);
-        alert('Persona Created!');
-    }
-
-    resetPersonaForm();
-    loadPersonas();
-}
-
-const deletePersona = async (id) => {
-    if (confirm('Are you sure you want to delete this persona?')) {
-        await supabase.from('personas').delete().eq('id', id);
-        loadPersonas();
-    }
-};
-
-function refreshPersonaSelect() {
-    const sel = document.getElementById('ai-persona-select');
-    const currentVal = sel.value;
-    sel.innerHTML = '<option value="default">Default AI (Generic)</option>';
-    availablePersonas.forEach(p => {
-        sel.innerHTML += `<option value="${p.id}">${p.name} - ${p.job} (${p.nationality})</option>`;
-    });
-    if (currentVal) sel.value = currentVal;
-}
 
 
 // --- DASHBOARD ANALYTICS ---
@@ -1875,8 +1644,8 @@ window.runAIPhase2 = async () => {
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing the guide...';
     btn.disabled = true;
 
-    // Single house byline — no personas.
-    const persona = KD_AUTHOR;
+    // Single house byline for the whole site.
+    const author = KD_AUTHOR;
 
     // Images are NOT fetched automatically any more: stock photos were often a poor
     // match for the topic. Use "Insert Image" in step 3 to place your own, and the
@@ -1968,7 +1737,7 @@ delete it or replace it with a fact.
 
     } catch (e) {
         alert("AI Error: " + e.message + "\nFalling back to template.");
-        content = generateTemplateContent(persona, topic, title, '');
+        content = generateTemplateContent(author, topic, title, '');
     }
 
     quill.clipboard.dangerouslyPasteHTML(content);
@@ -1986,7 +1755,7 @@ delete it or replace it with a fact.
  * Fallback skeleton used when the AI call fails. Deliberately empty of claims —
  * it is a structure for the editor to fill in, not publishable copy.
  */
-function generateTemplateContent(persona, topic, title, imgHtml) {
+function generateTemplateContent(author, topic, title, imgHtml) {
     return `
                 <p><em>Draft skeleton — AI generation failed, fill this in before publishing.</em></p>
                 <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
@@ -2196,7 +1965,6 @@ function saveAutoProfile() {
     if (!name) return alert('Enter a profile name');
     const profile = {
         name,
-        persona: document.getElementById('auto-persona').value,
         category: document.getElementById('auto-category').value,
         wordcount: document.getElementById('auto-wordcount').value,
         imgCount: document.getElementById('auto-img-count').value,
@@ -2238,7 +2006,6 @@ function loadAutoProfile() {
     const p = profiles[parseInt(idx)];
     if (!p) return;
     document.getElementById('auto-profile-name').value = p.name;
-    document.getElementById('auto-persona').value = p.persona || 'default';
     document.getElementById('auto-category').value = p.category || 'News';
     document.getElementById('auto-wordcount').value = p.wordcount || '1200';
     document.getElementById('auto-img-count').value = p.imgCount || '2';
@@ -2247,18 +2014,9 @@ function loadAutoProfile() {
     document.getElementById('auto-interval').value = p.interval || '24';
 }
 
-function refreshAutoPersonaSelect() {
-    const sel = document.getElementById('auto-persona');
-    const currentVal = sel.value;
-    sel.innerHTML = '<option value="default">Default AI (Generic)</option>';
-    availablePersonas.forEach(p => {
-        sel.innerHTML += `<option value="${p.id}">${p.name} - ${p.job} (${p.nationality})</option>`;
-    });
-    if (currentVal) sel.value = currentVal;
-}
 
 // --- AUTOMATION AI GENERATION ---
-async function generateAutomationSEOPlan(topic, persona) {
+async function generateAutomationSEOPlan(topic) {
     const prompt = `Generate an SEO plan for a Korea Decode practical guide.
 Topic: "${topic}"
 
@@ -2311,7 +2069,7 @@ async function fetchAutomationImages(topic, keywords, count) {
     return images;
 }
 
-async function generateAutomationArticle(topic, title, keywords, persona, wordCount, imgCount, toneOverride, images) {
+async function generateAutomationArticle(topic, title, keywords, wordCount, imgCount, toneOverride, images) {
     const contentImages = images.slice(1, imgCount + 1);
     const actualImgCount = contentImages.length;
 
@@ -2412,8 +2170,8 @@ async function runAutomation() {
     if (topics.length === 0) return alert('Enter topics (one per line)');
     if (!startStr) return alert('Select start date');
 
-    // Single house byline — no personas.
-    const persona = KD_AUTHOR;
+    // Single house byline for the whole site.
+    const author = KD_AUTHOR;
 
     const btn = document.getElementById('btn-run-automation');
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Generating...';
@@ -2444,7 +2202,7 @@ async function runAutomation() {
         try {
             // Step 1: Generate SEO Plan
             logMsg('  -> Generating SEO plan...');
-            const seoPlan = await generateAutomationSEOPlan(topicTrimmed, persona);
+            const seoPlan = await generateAutomationSEOPlan(topicTrimmed);
             const title = seoPlan.title || `${topicTrimmed} - Korea Decode`;
             const keywords = seoPlan.keywords || [];
             // 'auto' (or an unset select) lets the AI classify into Book/Plan/Shop/Eat
@@ -2460,7 +2218,7 @@ async function runAutomation() {
 
             // Step 3: Generate Full Article
             logMsg('  -> Writing article (~' + wordCount + ' words)...');
-            const content = await generateAutomationArticle(topicTrimmed, title, keywords, persona, wordCount, imgCount, toneOverride, images);
+            const content = await generateAutomationArticle(topicTrimmed, title, keywords, wordCount, imgCount, toneOverride, images);
 
             // Step 4: Save to Supabase (with auto-generated slug)
             const slug = generateSlug(title);
@@ -2473,9 +2231,9 @@ async function runAutomation() {
                 views: 0,
                 status: outputStatus === 'scheduled' ? 'scheduled' : 'draft',
                 created_at: new Date(currentDate).toISOString(),
-                writer_name: persona.name,
-                writer_job: persona.job,
-                writer_bio: persona.bio || KD_AUTHOR.bio,
+                writer_name: author.name,
+                writer_job: author.job,
+                writer_bio: author.bio || KD_AUTHOR.bio,
                 writer_avatar: KD_AUTHOR.avatar
             };
 
@@ -2557,8 +2315,6 @@ async function loadQueue() {
         });
     }
 
-    // Refresh persona select for automation
-    refreshAutoPersonaSelect();
 }
 
 window.deletePost = async (id) => {
@@ -2943,8 +2699,8 @@ window.publishPost = async () => {
 
     if (!title) return alert("Title is required");
 
-    // Single house byline — no personas.
-    const persona = KD_AUTHOR;
+    // Single house byline for the whole site.
+    const author = KD_AUTHOR;
 
     try {
         if (editingPostId) {
@@ -2954,9 +2710,9 @@ window.publishPost = async () => {
                 category,
                 content,
                 image: activeImage || '',
-                writer_name: persona.name,
-                writer_job: persona.job,
-                writer_bio: persona.bio || KD_AUTHOR.bio,
+                writer_name: author.name,
+                writer_job: author.job,
+                writer_bio: author.bio || KD_AUTHOR.bio,
                 writer_avatar: KD_AUTHOR.avatar
             };
             if (scheduleStr) {
@@ -2975,9 +2731,9 @@ window.publishPost = async () => {
                 image: activeImage || '',
                 views: 0,
                 status: scheduleStr ? 'scheduled' : 'published',
-                writer_name: persona.name,
-                writer_job: persona.job,
-                writer_bio: persona.bio || KD_AUTHOR.bio,
+                writer_name: author.name,
+                writer_job: author.job,
+                writer_bio: author.bio || KD_AUTHOR.bio,
                 writer_avatar: KD_AUTHOR.avatar
             };
             if (scheduleStr) {
