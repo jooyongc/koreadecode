@@ -8,10 +8,10 @@
    ============================================ */
 .hero {
   position: relative;
-  min-height: calc(100vh - var(--header-height));
+  min-height: auto;
   display: flex;
   align-items: center;
-  padding: var(--space-3xl) 0 var(--space-2xl);
+  padding: var(--space-lg) 0 var(--space-2xl);
   overflow: hidden;
   background: var(--bg-main);
 }
@@ -41,9 +41,9 @@
   height: 42vw;
   max-width: 560px;
   max-height: 560px;
-  bottom: -18%;
-  right: 2%;
-  background: radial-gradient(circle, rgba(255, 107, 223, 0.24) 0%, transparent 68%);
+  bottom: -26%;
+  right: 46%;
+  background: radial-gradient(circle, rgba(255, 107, 223, 0.20) 0%, transparent 68%);
   animation-delay: -3s;
 }
 
@@ -52,9 +52,9 @@
   height: 30vw;
   max-width: 400px;
   max-height: 400px;
-  bottom: 8%;
-  left: 22%;
-  background: radial-gradient(circle, rgba(255, 140, 66, 0.18) 0%, transparent 66%);
+  bottom: 4%;
+  left: 8%;
+  background: radial-gradient(circle, rgba(255, 140, 66, 0.16) 0%, transparent 66%);
   animation-delay: -6s;
 }
 
@@ -79,7 +79,7 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
+  grid-template-columns: 1.35fr 0.65fr;
   align-items: center;
   gap: var(--space-2xl);
 }
@@ -147,33 +147,49 @@
   margin-bottom: var(--space-xl);
 }
 
-.hero-actions {
+/* ---- Four category buttons, shaped like the site's CTA buttons ---- */
+.hero-cats {
   display: flex;
-  gap: var(--space-md);
   flex-wrap: wrap;
-  margin-bottom: var(--space-xl);
+  gap: 12px;
+  margin: 0 0 var(--space-xl);
 }
 
-/* Neon primary CTA */
-.hero-actions .btn-primary {
-  background: var(--neon);
+.hero-cat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  padding: 18px 28px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition),
+              color var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+/* Each category fills with its own colour on hover. */
+.hero-cat:hover,
+.hero-cat:focus-visible {
+  background: var(--cat-color, var(--neon));
+  border-color: var(--cat-color, var(--neon));
   color: #000;
-  box-shadow: 0 0 0 rgba(205, 255, 0, 0);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--cat-glow, rgba(205, 255, 0, 0.3));
+  outline: none;
 }
 
-.hero-actions .btn-primary:hover {
-  box-shadow: 0 8px 40px rgba(205, 255, 0, 0.35);
-}
-
-.hero-actions .btn-outline {
-  border-color: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(6px);
-}
-
-.hero-actions .btn-outline:hover {
-  border-color: var(--pink);
-  color: var(--pink);
-}
+.hero-cat[data-cat="Book"] { --cat-color: var(--neon);   --cat-glow: rgba(205, 255, 0, 0.32); }
+.hero-cat[data-cat="Plan"] { --cat-color: var(--pink);   --cat-glow: rgba(255, 107, 223, 0.32); }
+.hero-cat[data-cat="Shop"] { --cat-color: var(--orange); --cat-glow: rgba(255, 140, 66, 0.32); }
+.hero-cat[data-cat="Food"] { --cat-color: #ffffff;       --cat-glow: rgba(255, 255, 255, 0.25); }
 
 /* Trust line under the CTAs */
 .hero-trust {
@@ -206,11 +222,13 @@
   justify-content: center;
 }
 
-/* Wrapper keeps the handwritten tags outside the frame's overflow clip */
+/* Wrapper holds the speech bubble alongside the (now half-size) portrait */
 .hero-figure-wrap {
   position: relative;
   width: 100%;
-  max-width: 540px;
+  max-width: 270px;
+  margin-left: auto;
+  padding-top: 96px;   /* room for the bubble above her */
 }
 
 .hero-figure-frame {
@@ -219,50 +237,53 @@
   /* The artwork ships with its own rounded panel and name tags, so this
      wrapper adds no border or clipping of its own — only depth and motion.
      container-type lets the greeting overlay scale with the image. */
-  container-type: inline-size;
-  border-radius: var(--radius-lg);
-  filter: drop-shadow(0 30px 70px rgba(0, 0, 0, 0.75));
   animation: floaty 7s ease-in-out infinite;
 }
 
-.hero-figure-frame picture,
 .hero-figure-frame img,
 .hero-figure-frame svg {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: var(--radius-lg);
 }
 
-/* Handwritten greeting, sitting in the empty space at the top-left of the
-   artwork. Sized in container units so it tracks the image at every width. */
-.miss-park-greeting {
+/* Handwritten speech bubble above the portrait, tail pointing down at her. */
+.miss-park-bubble {
   position: absolute;
-  left: 10%;
-  top: 6%;
+  top: 0;
+  left: -58px;
+  right: 8px;
   z-index: 3;
   margin: 0;
-  max-width: 42%;
+  padding: 14px 20px 16px;
+  background: #f6f6ef;
+  color: #14140f;
+  border-radius: 20px;
   font-family: var(--font-hand);
+  font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.2;
-  color: #fff;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85);
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   pointer-events: none;
-  font-size: 1.1rem;            /* fallback for browsers without container units */
-  font-size: 5.2cqw;
 }
 
-.miss-park-greeting span {
-  display: block;
+.miss-park-bubble strong {
+  font-weight: 700;
+  color: #d81b8c;      /* pink that still passes contrast on the light bubble */
 }
 
-.miss-park-greeting span:first-child {
-  color: var(--neon);
-}
-
-.miss-park-greeting span:last-child {
-  color: var(--pink);
+/* Tail */
+.miss-park-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -14px;
+  right: 54px;
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 16px solid #f6f6ef;
 }
 
 /* Scroll cue */
@@ -293,7 +314,7 @@
    MARQUEE STRIP
    ============================================ */
 .brand-strip {
-  border-top: 1px solid var(--border);
+  border-top: none;
   border-bottom: 1px solid var(--border);
   background: var(--bg-sec);
   overflow: hidden;
@@ -388,104 +409,144 @@
   color: #000;
 }
 
-.chip[data-category="Eat"].active,
-.chip[data-category="Eat"]:hover {
+.chip[data-category="Food"].active,
+.chip[data-category="Food"]:hover {
   background: #fff;
   border-color: #fff;
   color: #000;
 }
 
 /* ============================================
-   THE 4 CATEGORIES — Book / Plan / Shop / Eat
+   KOREA RIGHT NOW — exchange rates + weather
    ============================================ */
-.category-highlights {
+.korea-now {
+  border-top: 1px solid var(--border);
+  background:
+    radial-gradient(60% 120% at 12% 0%, rgba(205, 255, 0, 0.05) 0%, transparent 60%),
+    var(--bg-main);
+}
+
+.now-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.now-stamp {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.now-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-lg);
 }
 
-.category-card {
-  position: relative;
-  display: block;
+.now-panel {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  overflow: hidden;
-  transition: transform var(--transition), border-color var(--transition);
-  color: inherit;
+  padding: var(--space-lg) var(--space-xl) var(--space-md);
 }
 
-.category-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: var(--cat-color, var(--neon));
-  opacity: 0.9;
-}
-
-.category-card::after {
-  content: '';
-  position: absolute;
-  right: -40px;
-  bottom: -40px;
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: var(--cat-color, var(--neon));
-  opacity: 0.06;
-  transition: opacity var(--transition), transform var(--transition);
-}
-
-.category-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--cat-color, var(--neon));
-}
-
-.category-card:hover::after {
-  opacity: 0.14;
-  transform: scale(1.15);
-}
-
-.category-card[data-cat="Book"] { --cat-color: var(--neon); }
-.category-card[data-cat="Plan"] { --cat-color: var(--pink); }
-.category-card[data-cat="Shop"] { --cat-color: var(--orange); }
-.category-card[data-cat="Eat"]  { --cat-color: #ffffff; }
-
-.category-icon {
-  width: 48px;
-  height: 48px;
+.now-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--cat-color, var(--neon)) 14%, transparent);
-  border-radius: var(--radius);
-  margin-bottom: var(--space-md);
-  font-size: 1.5rem;
-  color: var(--cat-color, var(--neon));
-}
-
-.category-card h3 {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 2px;
-  color: var(--text-primary);
-}
-
-.category-card .cat-tagline {
-  font-family: var(--font-hand);
-  font-size: 1.2rem;
-  color: var(--cat-color, var(--neon));
-  margin-bottom: var(--space-sm);
-}
-
-.category-card p {
-  font-size: 0.88rem;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   color: var(--text-muted);
-  line-height: 1.65;
+  margin-bottom: var(--space-md);
+}
+
+.now-title i { font-size: 1.1rem; color: var(--neon); }
+.now-panel:nth-child(2) .now-title i { color: var(--pink); }
+
+.now-list { margin: 0; padding: 0; }
+
+.now-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.now-item:last-child { border-bottom: none; }
+
+.now-flag { font-size: 1.05rem; line-height: 1; }
+
+.now-wicon {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  align-self: center;
+}
+
+.now-label {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 84px;
+}
+
+.now-ko {
+  font-family: var(--font-hand);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.now-value {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.now-unit {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 3px;
+}
+
+.now-sub {
+  font-family: var(--font-reading);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  min-width: 120px;
+  text-align: right;
+}
+
+.now-empty,
+.now-foot {
+  font-family: var(--font-reading);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding-top: var(--space-sm);
+}
+
+.now-skeleton { display: block; padding: 11px 0; }
+
+@media (max-width: 900px) {
+  .now-grid { grid-template-columns: 1fr; }
+  .now-sub { display: none; }
 }
 
 /* ============================================
@@ -493,14 +554,14 @@
    ============================================ */
 .misspark-section {
   border-top: 1px solid var(--border);
-  background:
-    radial-gradient(70% 120% at 85% 0%, rgba(255, 107, 223, 0.08) 0%, transparent 60%),
-    var(--bg-main);
+  /* No tinted backdrop here: the portrait fades to transparent at its edges,
+     so any wash behind it would show up as a visible rectangle. */
+  background: var(--bg-main);
 }
 
 .misspark-layout {
   display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
+  grid-template-columns: 0.62fr 1.38fr;
   gap: var(--space-3xl);
   align-items: center;
 }
@@ -509,13 +570,11 @@
   position: relative;
 }
 
-.misspark-portrait picture,
 .misspark-portrait img,
 .misspark-portrait svg {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: var(--radius-lg);
 }
 
 /* Sits under the artwork rather than over it — the image already has a name
@@ -569,55 +628,6 @@
   font-family: var(--font-reading);
   font-size: 0.85rem;
   color: var(--text-muted);
-}
-
-/* ============================================
-   DECODE PREVIEW
-   ============================================ */
-.decode-preview {
-  background: var(--bg-sec);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-2xl);
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2xl);
-  align-items: center;
-}
-
-.decode-preview-content h2 {
-  margin-bottom: var(--space-md);
-}
-
-.decode-preview-content p {
-  margin-bottom: var(--space-lg);
-}
-
-.decode-preview-demo {
-  background: var(--bg-main);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-lg);
-}
-
-.decode-preview-demo .demo-q {
-  font-family: var(--font-hand);
-  font-size: 1.25rem;
-  color: var(--pink);
-  margin-bottom: var(--space-md);
-  padding-left: var(--space-md);
-  border-left: 2px solid var(--pink);
-}
-
-.decode-preview-demo .demo-a {
-  font-family: var(--font-reading);
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  line-height: 1.7;
-}
-
-.decode-preview-demo .demo-a strong {
-  color: var(--text-secondary);
 }
 
 /* ============================================
@@ -714,7 +724,8 @@
   }
 
   .hero-figure-wrap {
-    max-width: 320px;
+    max-width: 270px;
+    margin: 0 auto;
   }
 
   .hero-scroll { display: none; }
@@ -729,17 +740,28 @@
   }
 
   .misspark-portrait {
-    max-width: 380px;
+    max-width: 320px;
   }
 }
 
 @media (max-width: 768px) {
+  .hero-cat {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+
   .hero-title {
     font-size: clamp(3rem, 16vw, 5rem);
   }
 
   .hero-figure-wrap {
-    max-width: 300px;
+    max-width: 240px;
+  }
+
+  .miss-park-bubble {
+    left: -24px;
+    right: -24px;
+    font-size: 1.3rem;
   }
 
 

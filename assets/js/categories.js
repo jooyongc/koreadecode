@@ -1,7 +1,10 @@
 /**
  * Korea Decode — Category System
  *
- * The site runs on four categories: Book, Plan, Shop, Eat.
+ * The site runs on four categories: Book, Plan, Shop, Food.
+ *
+ * 'Food' was called 'Eat' until the 2026 label pass; 'eat' stays in the alias
+ * list so every post already stored that way still lands in the right bucket.
  *
  * Posts written before the 2026 redesign are stored with the old labels
  * (K-Food, K-Beauty, Travel, K-Pop, Culture...). Rather than migrating the
@@ -13,17 +16,17 @@
  *   Book — K-Pop, Culture, K-Drama, entertainment, tours, tickets
  *   Plan — Travel, itineraries, transport, city guides
  *   Shop — K-Beauty, skincare, fashion, souvenirs
- *   Eat  — K-Food, restaurants, recipes, cafes, drinks
+ *   Food — K-Food, restaurants, recipes, cafes, drinks
  */
 
-export const CATEGORIES = ['Book', 'Plan', 'Shop', 'Eat'];
+export const CATEGORIES = ['Book', 'Plan', 'Shop', 'Food'];
 
 /** Short tagline shown under each category heading. */
 export const CATEGORY_TAGLINES = {
     Book: 'tickets & tours',
     Plan: 'routes & logistics',
     Shop: 'beauty & souvenirs',
-    Eat: 'food & drinking',
+    Food: 'food & drinking',
 };
 
 /** Every legacy / alternate label that resolves to each new category (lower-case). */
@@ -34,8 +37,8 @@ export const CATEGORY_ALIASES = {
            'guide', 'seoul', 'busan', 'jeju'],
     Shop: ['shop', 'shopping', 'k-beauty', 'kbeauty', 'beauty', 'skincare', 'cosmetics',
            'fashion', 'souvenir', 'souvenirs', 'k-fashion'],
-    Eat: ['eat', 'food', 'k-food', 'kfood', 'restaurant', 'restaurants', 'recipe', 'recipes',
-          'drink', 'drinks', 'cafe', 'street food'],
+    Food: ['food', 'eat', 'k-food', 'kfood', 'restaurant', 'restaurants', 'recipe', 'recipes',
+           'drink', 'drinks', 'cafe', 'street food'],
 };
 
 /** Reverse lookup: alias -> new category. Built once at module load. */

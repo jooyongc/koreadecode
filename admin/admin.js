@@ -51,7 +51,7 @@ async function callAI(prompt, options = {}) {
    ========================================================================== */
 
 /** The four site categories. Stored on every new post. */
-const KD_CATEGORIES = ['Book', 'Plan', 'Shop', 'Eat'];
+const KD_CATEGORIES = ['Book', 'Plan', 'Shop', 'Food'];
 
 /**
  * The single byline for the whole site. Replaces the old per-post persona system.
@@ -59,8 +59,8 @@ const KD_CATEGORIES = ['Book', 'Plan', 'Shop', 'Eat'];
  */
 const KD_AUTHOR = {
     name: 'Miss Park',
-    job: 'Editor, Korea Decode',
-    bio: 'Korean writer based in Seoul. Tests, prices and checks everything Korea Decode recommends.',
+    job: 'Tour guide & Korean teacher, Seoul',
+    bio: 'Born in Korea. Licensed tour guide and Korean language teacher, meeting travellers every week.',
     avatar: 'M',
 };
 
@@ -2098,9 +2098,9 @@ Also classify the topic into exactly one Korea Decode category:
 - "Book" — tours, tickets, passes, experiences worth reserving ahead
 - "Plan" — itineraries, transport, timing, etiquette, city logistics
 - "Shop" — K-Beauty, skincare, fashion, souvenirs, tax refunds
-- "Eat"  — restaurants, dishes, ordering, cafes, drinking
+- "Food" — restaurants, dishes, ordering, cafes, drinking
 
-Return JSON only: { "title": "practical, search-led title", "category": "Book|Plan|Shop|Eat", "keywords": ["kw1","kw2","kw3","kw4","kw5"] }`;
+Return JSON only: { "title": "practical, search-led title", "category": "Book|Plan|Shop|Food", "keywords": ["kw1","kw2","kw3","kw4","kw5"] }`;
     const raw = await callAI(prompt, {
         generationConfig: { temperature: 0.4, topP: 0.85 }
     });

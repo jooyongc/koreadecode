@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { href: '/blog?category=Book', label: 'Book' },
   { href: '/blog?category=Plan', label: 'Plan' },
   { href: '/blog?category=Shop', label: 'Shop' },
-  { href: '/blog?category=Eat', label: 'Eat' },
+  { href: '/blog?category=Food', label: 'Food' },
   { href: '/decode', label: 'Decode' },
   { href: '/about', label: 'About' },
 ];
@@ -108,7 +108,7 @@ export function injectFooter() {
           <a href="/blog?category=Book">Book</a>
           <a href="/blog?category=Plan">Plan</a>
           <a href="/blog?category=Shop">Shop</a>
-          <a href="/blog?category=Eat">Eat</a>
+          <a href="/blog?category=Food">Food</a>
         </div>
         <div class="footer-section">
           <h4>Info</h4>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- SEO -->
-    <title>Korea Decode | Book, Plan, Shop &amp; Eat in Korea — Guides by Miss Park</title>
+    <title>Korea Decode | Book, Plan, Shop &amp; Food in Korea — Guides by Miss Park</title>
     <meta name="description" content="Korea Decode is a practical English guide to Korea, written by Miss Park, who actually lives here. Book tours and tickets, plan your trip, shop K-Beauty, and eat like a local — with real prices, addresses, and honest picks.">
     <meta name="keywords" content="Korea travel guide, Seoul itinerary, Korea tours booking, K-Beauty shopping guide, Korean food guide, what to eat in Seoul, Korea trip planning">
     <link rel="canonical" href="https://koreadecode.com/">
@@ -13,15 +13,15 @@
     <!-- Open Graph -->
     <meta property="og:locale" content="en_US">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Korea Decode | Book, Plan, Shop &amp; Eat in Korea">
-    <meta property="og:description" content="Practical Korea guides from someone who lives here. Book, Plan, Shop, Eat — real prices, real addresses, no fluff.">
+    <meta property="og:title" content="Korea Decode | Book, Plan, Shop &amp; Food in Korea">
+    <meta property="og:description" content="Practical Korea guides from someone who lives here. Book, Plan, Shop, Food — real prices, real addresses, no fluff.">
     <meta property="og:url" content="https://koreadecode.com/">
     <meta property="og:site_name" content="Korea Decode">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Korea Decode | Book, Plan, Shop &amp; Eat in Korea">
-    <meta name="twitter:description" content="Practical Korea guides from someone who lives here. Book, Plan, Shop, Eat — real prices, real addresses, no fluff.">
+    <meta name="twitter:title" content="Korea Decode | Book, Plan, Shop &amp; Food in Korea">
+    <meta name="twitter:description" content="Practical Korea guides from someone who lives here. Book, Plan, Shop, Food — real prices, real addresses, no fluff.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,8 +64,8 @@
                 "@type": "Person",
                 "@id": "https://koreadecode.com/#misspark",
                 "name": "Miss Park",
-                "jobTitle": "Editor, Korea Decode",
-                "description": "Korean writer based in Seoul who tests, prices, and reviews everything Korea Decode recommends.",
+                "jobTitle": "Tour guide, Korean language teacher and editor of Korea Decode",
+                "description": "Born in Korea. Works as a licensed tour guide and Korean language teacher, meeting travellers from around the world every week.",
                 "homeLocation": { "@type": "Place", "name": "Seoul, South Korea" },
                 "worksFor": { "@id": "https://koreadecode.com/#organization" }
             }
@@ -80,6 +80,14 @@
 
     <!-- ========== MAIN CONTENT ========== -->
     <main class="page-content">
+
+        <!-- ===== BRAND STRIP ===== -->
+        <div class="brand-strip no-print" aria-hidden="true">
+            <div class="brand-strip-track">
+                <span>Book <em>&bull;</em> Plan <em>&bull;</em> Shop <em>&bull;</em> Food <em>&bull;</em> Seoul <em>&bull;</em> Busan <em>&bull;</em> Jeju <em>&bull;</em> Gyeongju <em>&bull;</em> Written in Korea <em>&bull;</em>&nbsp;</span>
+                <span>Book <em>&bull;</em> Plan <em>&bull;</em> Shop <em>&bull;</em> Food <em>&bull;</em> Seoul <em>&bull;</em> Busan <em>&bull;</em> Jeju <em>&bull;</em> Gyeongju <em>&bull;</em> Written in Korea <em>&bull;</em>&nbsp;</span>
+            </div>
+        </div>
 
         <!-- ===== HERO — cinematic split ===== -->
         <section class="hero">
@@ -96,16 +104,13 @@
                         <span class="line word-korea">Korea<span class="dot">.</span></span>
                     </h1>
 
-                    <p class="hero-description" id="hero-description">
-                        I live in Seoul, and I write the guide I wish tourists had. Real prices in won,
-                        the subway exit number, what is worth booking ahead, and what you can skip.
-                        No hype, no guessing.
-                    </p>
 
-                    <div class="hero-actions">
-                        <a href="/blog" class="btn btn-primary btn-lg" id="hero-cta-primary">Start Reading</a>
-                        <a href="/decode" class="btn btn-outline btn-lg" id="hero-cta-secondary">Ask Miss Park</a>
-                    </div>
+                    <nav class="hero-cats" aria-label="Browse by category">
+                        <a class="hero-cat" data-cat="Book" href="/blog?category=Book">BOOK</a>
+                        <a class="hero-cat" data-cat="Plan" href="/blog?category=Plan">PLAN</a>
+                        <a class="hero-cat" data-cat="Shop" href="/blog?category=Shop">SHOP</a>
+                        <a class="hero-cat" data-cat="Food" href="/blog?category=Food">FOOD</a>
+                    </nav>
 
                     <div class="hero-trust">
                         <span><strong>Written in Seoul</strong> &mdash; not from a desk abroad</span>
@@ -119,97 +124,60 @@
                 <!-- Right: Miss Park -->
                 <div class="hero-figure slide-in-right delay-2">
                     <div class="hero-figure-wrap">
+                        <p class="miss-park-bubble">
+                            Hello! Welcome to Korea.<br>
+                            I&rsquo;m <strong>Miss Park</strong>.
+                        </p>
                         <div class="hero-figure-frame">
-                            <picture>
-                                <source srcset="/assets/img/miss-park.webp" type="image/webp">
-                                <img id="miss-park-photo"
-                                     class="miss-park-photo"
-                                     src="/assets/img/miss-park.jpg"
-                                     alt="Miss Park, the Seoul-based writer behind Korea Decode"
-                                     width="920" height="840"
-                                     loading="eager"
-                                     onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
-                            </picture>
-                            <p class="miss-park-greeting">
-                                <span>Hello!</span>
-                                <span>Welcome to Korea.</span>
-                                <span>I&rsquo;m Miss Park.</span>
-                            </p>
+                            <img id="miss-park-photo"
+                                 class="miss-park-photo"
+                                 src="/assets/img/miss-park.webp"
+                                 alt="Miss Park, the Seoul-based writer behind Korea Decode"
+                                 width="620" height="867"
+                                 loading="eager"
+                                 onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
+
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            <div class="hero-scroll" aria-hidden="true">
-                <span class="line"></span>
-                <span>Scroll</span>
-            </div>
         </section>
 
-        <!-- ===== BRAND STRIP ===== -->
-        <div class="brand-strip no-print" aria-hidden="true">
-            <div class="brand-strip-track">
-                <span>Book <em>&bull;</em> Plan <em>&bull;</em> Shop <em>&bull;</em> Eat <em>&bull;</em> Seoul <em>&bull;</em> Busan <em>&bull;</em> Jeju <em>&bull;</em> Gyeongju <em>&bull;</em> Written in Korea <em>&bull;</em>&nbsp;</span>
-                <span>Book <em>&bull;</em> Plan <em>&bull;</em> Shop <em>&bull;</em> Eat <em>&bull;</em> Seoul <em>&bull;</em> Busan <em>&bull;</em> Jeju <em>&bull;</em> Gyeongju <em>&bull;</em> Written in Korea <em>&bull;</em>&nbsp;</span>
-            </div>
-        </div>
 
-        <!-- ===== THE FOUR CATEGORIES ===== -->
-        <section class="section" id="categories-section">
+        <!-- ===== KOREA RIGHT NOW — rates + weather ===== -->
+        <section class="section korea-now" id="korea-now">
             <div class="container">
-                <div class="section-header">
+                <div class="now-head">
                     <div>
-                        <p class="section-kicker">start here</p>
-                        <h2>Four ways to <span class="accent">use Korea</span></h2>
+                        <p class="section-kicker">before you pack</p>
+                        <h2>Korea <span class="accent">right now</span></h2>
                     </div>
-                    <a href="/blog" class="view-all">Browse Everything &rarr;</a>
+                    <span class="now-stamp">Updated <span id="now-updated">&mdash;</span></span>
                 </div>
 
-                <div class="category-highlights">
-                    <a class="category-card" data-cat="Book" href="/blog?category=Book">
-                        <div class="category-icon"><i class="ph ph-ticket"></i></div>
-                        <h3>Book</h3>
-                        <p class="cat-tagline">tickets &amp; tours</p>
-                        <p>
-                            Which tours, passes, and tickets are worth booking before you fly &mdash; DMZ trips,
-                            palace passes, KTX seats, theme parks, airport transfers. I list what sells out,
-                            what you can buy at the door, and what the ticket actually includes.
-                        </p>
-                    </a>
+                <div class="now-grid">
+                    <div class="now-panel">
+                        <h3 class="now-title"><i class="ph ph-currency-krw"></i> What your money is worth</h3>
+                        <ul class="now-list" id="fx-list">
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                        </ul>
+                        <p class="now-foot">Mid-market rates. Cards and ATMs land a little below this.</p>
+                    </div>
 
-                    <a class="category-card" data-cat="Plan" href="/blog?category=Plan">
-                        <div class="category-icon"><i class="ph ph-map-trifold"></i></div>
-                        <h3>Plan</h3>
-                        <p class="cat-tagline">routes &amp; logistics</p>
-                        <p>
-                            Itineraries that survive contact with the subway map. Neighbourhood-by-neighbourhood
-                            routes, how many days each city really needs, T-money and transit, SIM cards,
-                            weather months, and the etiquette that keeps you out of awkward moments.
-                        </p>
-                    </a>
-
-                    <a class="category-card" data-cat="Shop" href="/blog?category=Shop">
-                        <div class="category-icon"><i class="ph ph-shopping-bag"></i></div>
-                        <h3>Shop</h3>
-                        <p class="cat-tagline">beauty &amp; souvenirs</p>
-                        <p>
-                            K-Beauty without the marketing. What Koreans actually buy at Olive Young, what a
-                            product costs here versus at home, tax refund rules, and which souvenirs survive
-                            the flight. Ingredient lists explained in plain English.
-                        </p>
-                    </a>
-
-                    <a class="category-card" data-cat="Eat" href="/blog?category=Eat">
-                        <div class="category-icon"><i class="ph ph-bowl-food"></i></div>
-                        <h3>Eat</h3>
-                        <p class="cat-tagline">food &amp; drinking</p>
-                        <p>
-                            How to order, how to share, and how much to expect to pay. Dishes ranked by how
-                            spicy they really are, convenience-store finds worth your time, late-night food,
-                            vegetarian survival tips, and the menu Korean words that matter.
-                        </p>
-                    </a>
+                    <div class="now-panel">
+                        <h3 class="now-title"><i class="ph ph-thermometer-simple"></i> What to pack for</h3>
+                        <ul class="now-list" id="weather-list">
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                        </ul>
+                        <p class="now-foot">Seoul, Busan and Jeju can differ by 5&deg;C on the same day.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -232,7 +200,7 @@
                         <button class="chip" data-category="Book">Book</button>
                         <button class="chip" data-category="Plan">Plan</button>
                         <button class="chip" data-category="Shop">Shop</button>
-                        <button class="chip" data-category="Eat">Eat</button>
+                        <button class="chip" data-category="Food">Food</button>
                     </div>
                 </div>
 
@@ -259,14 +227,11 @@
             <div class="container misspark-layout">
 
                 <div class="misspark-portrait">
-                    <picture>
-                        <source srcset="/assets/img/miss-park.webp" type="image/webp">
-                        <img src="/assets/img/miss-park.jpg"
-                             alt="Portrait of Miss Park, editor of Korea Decode"
-                             width="920" height="840"
-                             loading="lazy"
-                             onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
-                    </picture>
+                    <img src="/assets/img/miss-park-portrait.webp"
+                         alt="Portrait of Miss Park, editor of Korea Decode"
+                         width="760" height="1108"
+                         loading="lazy"
+                         onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
                     <p class="misspark-quote">&ldquo;If I wouldn&rsquo;t send my own friend there, it&rsquo;s not going in the guide.&rdquo;</p>
                 </div>
 
@@ -274,27 +239,19 @@
                     <p class="section-kicker">meet your guide</p>
                     <h2>Who is <span class="accent-pink">Miss Park</span>?</h2>
                     <p>
-                        I am Korean, I live in Seoul, and I have spent most of my life explaining this country
-                        to visiting friends. Korea Decode is that same conversation, written down: which
-                        neighbourhood suits your trip, what a bowl of kalguksu should cost, which tour is worth
-                        booking and which one is a bus ride with a microphone.
-                    </p>
-                    <p>
-                        Everything here is checked against how things actually work on the ground &mdash; opening
-                        hours that change on Mondays, restaurants that close between lunch and dinner, the
-                        cash-only stall that has no English menu but the best fried chicken on the block.
-                        Where a booking link earns Korea Decode a commission, it is marked, and it never
-                        changes what I recommend.
+                        She was born in Korea. She works as a licensed tour guide and a Korean language
+                        teacher, and she meets travellers from all over the world every week &mdash; which is
+                        where most of these guides come from.
                     </p>
 
                     <div class="misspark-facts">
                         <div class="misspark-fact">
-                            <strong>Based in Seoul</strong>
+                            <strong>Born and based in Korea</strong>
                             <span>Not a recycled listicle from abroad</span>
                         </div>
                         <div class="misspark-fact">
-                            <strong>Real numbers</strong>
-                            <span>Prices in KRW and USD, updated as they change</span>
+                            <strong>Tour guide &amp; Korean teacher</strong>
+                            <span>She answers these questions in person all week</span>
                         </div>
                         <div class="misspark-fact">
                             <strong>Honest picks</strong>
@@ -306,36 +263,6 @@
             </div>
         </section>
 
-        <!-- ===== DECODE THIS PREVIEW ===== -->
-        <section class="section" id="decode-preview-section">
-            <div class="container">
-                <div class="decode-preview">
-                    <div class="decode-preview-content">
-                        <p class="section-kicker">ask anything</p>
-                        <h2>Decode <span class="accent">This</span></h2>
-                        <p>
-                            Stuck on a Korean word, a menu, a sign, or a custom nobody explains to tourists?
-                            Ask, and get a short, plain answer with the context you actually need &mdash; what it
-                            means, when you will run into it, and what to do about it.
-                        </p>
-                        <a href="/decode" class="btn btn-primary">Try Decode This</a>
-                    </div>
-                    <div class="decode-preview-demo">
-                        <div class="demo-q">
-                            &ldquo;The menu just says &#49692;&#46160;&#48512;. What do I do?&rdquo;
-                        </div>
-                        <div class="demo-a">
-                            <strong>Sundubu-jjigae &mdash; soft tofu stew, usually 9,000&ndash;12,000 KRW (about $7&ndash;9).</strong>
-                            It arrives boiling, so give it a minute. You will normally be asked how spicy you
-                            want it and whether you want an egg cracked in; &ldquo;&#49692;&#54620; &#47581;&#44172;&rdquo;
-                            (mild) is a safe answer. Rice and side dishes come with it and refills of the side
-                            dishes are free. It is one of the few Korean stews commonly served as a single
-                            portion, so it works well if you are eating alone.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- ===== STATS STRIP ===== -->
         <section class="section">
@@ -347,7 +274,7 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-number" id="stat-categories">4</div>
-                        <div class="stat-label">Book / Plan / Shop / Eat</div>
+                        <div class="stat-label">Book / Plan / Shop / Food</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-number" id="stat-readers">--</div>
@@ -373,7 +300,7 @@
                         Every guide falls into one of four buckets. <strong>Book</strong> covers tickets, tours,
                         and passes worth reserving ahead. <strong>Plan</strong> covers routes, transport,
                         timing, and etiquette. <strong>Shop</strong> covers K-Beauty, tax refunds, and
-                        souvenirs. <strong>Eat</strong> covers ordering, prices, spice levels, and where to go
+                        souvenirs. <strong>Food</strong> covers ordering, prices, spice levels, and where to go
                         when it is midnight and you are hungry.
                     </p>
                 </div>
@@ -416,10 +343,12 @@
         import { initPage } from '/assets/js/components.js';
         import { initAnalytics } from '/assets/js/analytics.js';
         import { initHome } from '/assets/js/home.js';
+        import { initKoreaNow } from '/assets/js/korea-now.js';
 
         initPage();
         initAnalytics();
         initHome();
+        initKoreaNow();
     </script>
 
 </body>
