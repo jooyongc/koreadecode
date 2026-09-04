@@ -1,0 +1,30 @@
+# Cloudflare Pages — cache rules
+#
+# Why this file exists: the site's filenames are not content-hashed
+# (home.css stays home.css after every edit), so if the browser or the CDN
+# holds an old copy, a fresh deploy is invisible until someone clears cache.
+# Revalidating HTML, CSS and JS on every request costs one cheap 304 and
+# makes every deploy show up immediately.
+
+# --- HTML: always revalidate ---
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# --- Styles and scripts: revalidate (filenames are stable, contents are not) ---
+/assets/css/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/admin/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+# --- Images: change rarely, safe to hold for a day ---
+/assets/img/*
+  Cache-Control: public, max-age=86400
+
+# --- API responses set their own Cache-Control in the Function ---
