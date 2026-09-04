@@ -1,6 +1,19 @@
 import { supabase } from '/assets/js/supabase-config.js';
 import { normalizeCategory } from '/assets/js/categories.js';
 
+/* Build stamp. If the module fails to parse this never runs, and the red warning
+   baked into admin/index.html stays on screen — which is exactly how a stale or
+   broken admin.js announces itself. */
+const KD_ADMIN_BUILD = '2026-09-04c';
+console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
+document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('admin-build');
+    if (el) {
+        el.textContent = 'build ' + KD_ADMIN_BUILD + ' \u00b7 sources + affiliate slots active';
+        el.style.color = 'var(--text-muted)';
+    }
+});
+
 // --- AI CALL: via server-side proxy (functions/ai-proxy.js) ---
 async function callAI(prompt, options = {}) {
     console.log("[AI] Calling AI via proxy...");
