@@ -319,7 +319,7 @@ function buildAffiliateSlotBlock(slots) {
 **AFFILIATE PLACEMENTS — ${slots.length} link${slots.length > 1 ? 's' : ''} to position:**
 ${list}
 
-Place each marker on its own line, exactly as written (e.g. \`[[AFF:2]]\`), at the point in
+Place each marker on its own line, exactly as written (e.g. "[[AFF:2]]"), at the point in
 the article where a reader would naturally want it — straight AFTER you have explained why
 that thing is worth doing or what it costs. Rules:
 - Use every marker exactly once. Do not invent markers beyond the list.
@@ -626,6 +626,11 @@ let imgSearchPage = 1; // current image search page
 
 // --- CORE INITIALIZATION ---
 async function init() {
+    // Reference sources + affiliate slots first: they depend on nothing else, so a
+    // later failure (blocked CDN, Quill hiccup) cannot stop them from being wired up.
+    document.getElementById('btn-fetch-sources')?.addEventListener('click', fetchReferenceSources);
+    renderAffiliateSlots();
+
     // Initialize Quill Editor
     quill = new Quill('#editor-container', {
         theme: 'snow',
@@ -704,8 +709,6 @@ async function init() {
     document.getElementById('btn-seo-polish').addEventListener('click', runSEOPolish);
     document.getElementById('btn-run-ai-phase1').addEventListener('click', runAIPhase1);
     document.getElementById('btn-run-ai-phase2').addEventListener('click', runAIPhase2);
-    document.getElementById('btn-fetch-sources').addEventListener('click', fetchReferenceSources);
-    renderAffiliateSlots();
     document.getElementById('btn-search-unsplash').addEventListener('click', searchUnsplashAI);
     document.getElementById('btn-save-post').addEventListener('click', publishPost);
     document.getElementById('btn-show-preview').addEventListener('click', showMobilePreview);
@@ -1714,7 +1717,7 @@ ${buildAffiliateSlotBlock(affiliateSlots)}
    <ul><li> for checklists, <strong> for the numbers that matter, <blockquote> for a single practical
    tip per section.
 
-6. **Affiliate placements:** see the AFFILIATE PLACEMENTS list above. Drop each `[[AFF:n]]` marker
+6. **Affiliate placements:** see the AFFILIATE PLACEMENTS list above. Drop each "[[AFF:n]]" marker
    on its own line at the right point in the article. If no list was given, do not write any
    booking buttons at all.
 
