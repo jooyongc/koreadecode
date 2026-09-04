@@ -138,6 +138,31 @@
   color: var(--pink);
 }
 
+/* ---- Tagline: the promise, between the title and the four buttons ---- */
+.hero-tagline {
+  margin: 0 0 var(--space-xl);
+  max-width: 34em;
+}
+
+.hero-tagline strong {
+  display: block;
+  font-family: var(--font-body);
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.hero-tagline span {
+  display: block;
+  font-family: var(--font-reading);
+  font-size: clamp(0.98rem, 1.3vw, 1.12rem);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
 .hero-description {
   font-family: var(--font-reading);
   font-size: clamp(1rem, 1.4vw, 1.15rem);
@@ -839,6 +864,11 @@
 
   .hero-title {
     font-size: clamp(3rem, 16vw, 5rem);
+  }
+
+  .hero-tagline {
+    max-width: none;
+    margin-bottom: var(--space-lg);
   }
 
   .hero-figure-wrap {
