@@ -125,6 +125,20 @@ const KD_AFFILIATE_PARTNERS = {
         text: '#000000',
         url: 'https://www.kkday.com/',
     },
+    trip: {
+        label: 'Trip.com',
+        cta: 'Check price on Trip.com',
+        accent: '#5cc8ff',
+        text: '#000000',
+        url: 'https://www.trip.com/',
+    },
+    agoda: {
+        label: 'Agoda',
+        cta: 'Check price on Agoda',
+        accent: '#b3a5ff',
+        text: '#000000',
+        url: 'https://www.agoda.com/',
+    },
 };
 
 /**
@@ -299,8 +313,8 @@ function renderAffiliateSlots() {
             <input class="form-input aff-slot-url" data-slot="${i}" placeholder="https://affiliate-link..." style="font-size:12px;">
             <input class="form-input aff-slot-desc" data-slot="${i}" placeholder="What it is, e.g. Half-day DMZ tour" style="font-size:12px;">
             <select class="form-select aff-slot-provider" data-slot="${i}" style="font-size:12px;">
-                <option value="klook">Klook</option>
-                <option value="kkday">KKday</option>
+                ${Object.entries(KD_AFFILIATE_PARTNERS).map(([key, p]) =>
+                    `<option value="${key}">${p.label}</option>`).join('')}
             </select>
         </div>
     `).join('');
@@ -2332,8 +2346,8 @@ ${KD_STYLE_RULES}
    <p style="color:#cfcfcf;margin:0 0 12px;font-size:0.95rem;line-height:1.6;">[One line saying what the reader is booking and why booking ahead helps]</p>
    <a href="#affiliate" target="_blank" rel="sponsored nofollow noopener" style="display:inline-block;background:#cdff00;color:#000;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem;">Check price on Klook &rarr;</a>
    </div>
-   For a second or third placement, swap to data-provider="kkday", colour #ff6bdf and the label
-   "Check price on KKday".
+   The provider, colour and button label are applied automatically from the marker &mdash;
+   just place the marker.
 
 5. **Structure:** 4-6 sections with <h2> (and <h3> where needed). <ul><li> for checklists,
    <strong> for the numbers that matter, <blockquote> for one practical tip per section.
