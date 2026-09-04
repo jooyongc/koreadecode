@@ -44,7 +44,7 @@ function renderWeather(weather) {
   el.innerHTML = weather.map(w => `
     <li class="now-item">
       <i class="ph ph-${esc(w.icon)} now-wicon" aria-hidden="true"></i>
-      <span class="now-label">${esc(w.city)}<span class="now-ko">${esc(w.cityKo)}</span></span>
+      <span class="now-label">${esc(w.city)}</span>
       <span class="now-value">${w.tempC}&deg;<span class="now-unit">C</span></span>
       <span class="now-sub">${esc(w.label)}${w.high != null ? ` &middot; ${w.high}&deg;/${w.low}&deg;` : ''}</span>
     </li>

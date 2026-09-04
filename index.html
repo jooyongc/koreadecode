@@ -182,6 +182,16 @@
             </div>
         </section>
 
+        <!-- ===== SPONSORED STRIP (rotating) ===== -->
+        <section class="promo-banner no-print" id="promo-banner" aria-label="Sponsored offers">
+            <div class="container">
+                <div class="promo-strip">
+                    <div class="promo-track"></div>
+                    <div class="promo-nav"></div>
+                </div>
+            </div>
+        </section>
+
         <!-- ===== LATEST POSTS SECTION ===== -->
         <section class="section" id="latest-posts-section">
             <div class="container">
@@ -222,46 +232,6 @@
             </div>
         </section>
 
-        <!-- ===== MISS PARK ===== -->
-        <section class="section section-lg misspark-section" id="misspark-section">
-            <div class="container misspark-layout">
-
-                <div class="misspark-portrait">
-                    <img src="/assets/img/miss-park-portrait.webp"
-                         alt="Portrait of Miss Park, editor of Korea Decode"
-                         width="760" height="1108"
-                         loading="lazy"
-                         onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
-                    <p class="misspark-quote">&ldquo;If I wouldn&rsquo;t send my own friend there, it&rsquo;s not going in the guide.&rdquo;</p>
-                </div>
-
-                <div class="misspark-copy">
-                    <p class="section-kicker">meet your guide</p>
-                    <h2>Who is <span class="accent-pink">Miss Park</span>?</h2>
-                    <p>
-                        She was born in Korea. She works as a licensed tour guide and a Korean language
-                        teacher, and she meets travellers from all over the world every week &mdash; which is
-                        where most of these guides come from.
-                    </p>
-
-                    <div class="misspark-facts">
-                        <div class="misspark-fact">
-                            <strong>Born and based in Korea</strong>
-                            <span>Not a recycled listicle from abroad</span>
-                        </div>
-                        <div class="misspark-fact">
-                            <strong>Tour guide &amp; Korean teacher</strong>
-                            <span>She answers these questions in person all week</span>
-                        </div>
-                        <div class="misspark-fact">
-                            <strong>Honest picks</strong>
-                            <span>Affiliate links disclosed on every guide</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
 
 
         <!-- ===== STATS STRIP ===== -->
@@ -284,54 +254,7 @@
             </div>
         </section>
 
-        <!-- ===== WHAT IS KOREA DECODE ===== -->
-        <section class="section editorial-section" id="editorial-section">
-            <div class="container">
-                <div class="editorial-intro">
-                    <p class="section-kicker">the short version</p>
-                    <h2>What is <span class="accent">Korea Decode</span>?</h2>
-                    <p>
-                        Korea Decode is a practical English-language guide to South Korea. Not a culture blog,
-                        not a news feed &mdash; a set of guides built to answer the questions people actually have
-                        before and during a trip: what to book, how to get there, what it costs, what to order,
-                        and what to bring home.
-                    </p>
-                    <p>
-                        Every guide falls into one of four buckets. <strong>Book</strong> covers tickets, tours,
-                        and passes worth reserving ahead. <strong>Plan</strong> covers routes, transport,
-                        timing, and etiquette. <strong>Shop</strong> covers K-Beauty, tax refunds, and
-                        souvenirs. <strong>Food</strong> covers ordering, prices, spice levels, and where to go
-                        when it is midnight and you are hungry.
-                    </p>
-                </div>
-            </div>
-        </section>
 
-        <!-- ===== WHY KOREA DECODE (SEO / AdSense content) ===== -->
-        <section class="section editorial-about" id="editorial-about">
-            <div class="container container-narrow">
-                <h2>Why <span class="accent">Korea Decode</span>?</h2>
-                <p>
-                    Most English-language Korea content is written far from Korea. It ages badly: prices drift,
-                    restaurants move, tours get discontinued, and the &ldquo;hidden gem&rdquo; in the listicle has
-                    a ninety-minute queue. Korea Decode is written in Seoul, and guides are revisited when the
-                    facts on the ground change.
-                </p>
-                <p>
-                    The format is deliberately plain. Each guide opens with a short answer for readers who only
-                    want the recommendation, then backs it up with a comparison table, specific costs in won and
-                    dollars, the nearest subway station and exit, and the caveats that decide whether something
-                    suits your trip. Where a tour or product can be booked online, the link is there &mdash;
-                    labelled, and disclosed.
-                </p>
-                <p>
-                    If you are planning a first trip to Seoul, working out whether Busan is worth two days or
-                    four, rebuilding your skincare shelf from Olive Young, or trying to read a menu that has no
-                    pictures, start with the four categories above. If something is still unclear, Decode This
-                    will answer it directly.
-                </p>
-            </div>
-        </section>
 
     </main>
 
@@ -344,11 +267,13 @@
         import { initAnalytics } from '/assets/js/analytics.js';
         import { initHome } from '/assets/js/home.js';
         import { initKoreaNow } from '/assets/js/korea-now.js';
+        import { initPromoBanner } from '/assets/js/promo-banner.js';
 
         initPage();
         initAnalytics();
         initHome();
         initKoreaNow();
+        initPromoBanner();
     </script>
 
 </body>

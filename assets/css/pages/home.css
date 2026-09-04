@@ -147,7 +147,7 @@
   margin-bottom: var(--space-xl);
 }
 
-/* ---- Four category buttons, shaped like the site's CTA buttons ---- */
+/* ---- Four category buttons: solid, obviously tappable ---- */
 .hero-cats {
   display: flex;
   flex-wrap: wrap;
@@ -159,37 +159,55 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 132px;
-  padding: 18px 28px;
-  border: 1px solid var(--border-light);
+  min-width: 136px;
+  padding: 18px 30px;
+  border: none;
   border-radius: var(--radius);
-  background: transparent;
-  color: var(--text-primary);
+  background: var(--cat-color);
+  color: #000;
   font-family: var(--font-body);
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.1em;
   line-height: 1;
   white-space: nowrap;
-  transition: background var(--transition), border-color var(--transition),
-              color var(--transition), transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 4px 18px var(--cat-glow);
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
 }
 
-/* Each category fills with its own colour on hover. */
 .hero-cat:hover,
 .hero-cat:focus-visible {
-  background: var(--cat-color, var(--neon));
-  border-color: var(--cat-color, var(--neon));
   color: #000;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px var(--cat-glow, rgba(205, 255, 0, 0.3));
+  transform: translateY(-3px);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 34px var(--cat-glow-strong);
   outline: none;
 }
 
-.hero-cat[data-cat="Book"] { --cat-color: var(--neon);   --cat-glow: rgba(205, 255, 0, 0.32); }
-.hero-cat[data-cat="Plan"] { --cat-color: var(--pink);   --cat-glow: rgba(255, 107, 223, 0.32); }
-.hero-cat[data-cat="Shop"] { --cat-color: var(--orange); --cat-glow: rgba(255, 140, 66, 0.32); }
-.hero-cat[data-cat="Food"] { --cat-color: #ffffff;       --cat-glow: rgba(255, 255, 255, 0.25); }
+.hero-cat:active {
+  transform: translateY(-1px);
+}
+
+.hero-cat[data-cat="Book"] {
+  --cat-color: var(--neon);
+  --cat-glow: rgba(205, 255, 0, 0.22);
+  --cat-glow-strong: rgba(205, 255, 0, 0.45);
+}
+.hero-cat[data-cat="Plan"] {
+  --cat-color: var(--pink);
+  --cat-glow: rgba(255, 107, 223, 0.22);
+  --cat-glow-strong: rgba(255, 107, 223, 0.45);
+}
+.hero-cat[data-cat="Shop"] {
+  --cat-color: var(--orange);
+  --cat-glow: rgba(255, 140, 66, 0.22);
+  --cat-glow-strong: rgba(255, 140, 66, 0.45);
+}
+.hero-cat[data-cat="Food"] {
+  --cat-color: #ffffff;
+  --cat-glow: rgba(255, 255, 255, 0.18);
+  --cat-glow-strong: rgba(255, 255, 255, 0.38);
+}
 
 /* Trust line under the CTAs */
 .hero-trust {
@@ -350,6 +368,196 @@
 }
 
 /* ============================================
+   SPONSORED STRIP — rotating white banner
+   ============================================ */
+.promo-banner {
+  padding: var(--space-xl) 0 0;
+}
+
+.promo-strip {
+  position: relative;
+  background: #f6f6ef;
+  color: #14140f;
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) var(--space-xl);
+  overflow: hidden;
+}
+
+/* Slides stack on top of each other; only the active one is laid out. */
+.promo-track {
+  display: grid;
+}
+
+.promo-slide {
+  grid-area: 1 / 1;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  animation: fadeIn 320ms ease both;
+}
+
+.promo-slide.is-active {
+  display: flex;
+}
+
+.promo-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.promo-tag {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #6c6c60;
+  border: 1px solid #cfcfc2;
+  border-radius: 4px;
+  padding: 2px 7px;
+  margin-bottom: 8px;
+}
+
+.promo-headline {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: #14140f;
+  margin: 0;
+}
+
+.promo-blurb {
+  font-family: var(--font-reading);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #4a4a40;
+  margin: 6px 0 0;
+  max-width: 72ch;
+}
+
+.promo-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.promo-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 14px 26px;
+  background: #14140f;
+  color: #f6f6ef;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background var(--transition), transform var(--transition), color var(--transition);
+}
+
+.promo-cta:hover,
+.promo-cta:focus-visible {
+  background: var(--neon);
+  color: #000;
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.promo-partner {
+  font-family: var(--font-reading);
+  font-size: 0.7rem;
+  color: #6c6c60;
+}
+
+/* ---- controls ---- */
+.promo-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: var(--space-md);
+}
+
+.promo-arrow {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid #cfcfc2;
+  background: transparent;
+  color: #4a4a40;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.promo-arrow:hover,
+.promo-arrow:focus-visible {
+  background: #14140f;
+  border-color: #14140f;
+  color: #f6f6ef;
+  outline: none;
+}
+
+.promo-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.promo-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #cfcfc2;
+  transition: background var(--transition), transform var(--transition);
+}
+
+.promo-dot.is-active {
+  background: #14140f;
+  transform: scale(1.3);
+}
+
+.promo-dot:focus-visible {
+  outline: 2px solid #14140f;
+  outline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+  .promo-strip {
+    padding: var(--space-lg);
+  }
+
+  .promo-slide {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .promo-action {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .promo-cta {
+    width: 100%;
+  }
+}
+
+/* ============================================
    SECTION HEADERS
    ============================================ */
 .section-header {
@@ -500,14 +708,6 @@
   min-width: 84px;
 }
 
-.now-ko {
-  font-family: var(--font-hand);
-  font-size: 1rem;
-  font-weight: 400;
-  color: var(--text-muted);
-  margin-left: 6px;
-}
-
 .now-value {
   font-family: var(--font-display);
   font-size: 1.5rem;
@@ -550,87 +750,6 @@
 }
 
 /* ============================================
-   MISS PARK — who she is
-   ============================================ */
-.misspark-section {
-  border-top: 1px solid var(--border);
-  /* No tinted backdrop here: the portrait fades to transparent at its edges,
-     so any wash behind it would show up as a visible rectangle. */
-  background: var(--bg-main);
-}
-
-.misspark-layout {
-  display: grid;
-  grid-template-columns: 0.62fr 1.38fr;
-  gap: var(--space-3xl);
-  align-items: center;
-}
-
-.misspark-portrait {
-  position: relative;
-}
-
-.misspark-portrait img,
-.misspark-portrait svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/* Sits under the artwork rather than over it — the image already has a name
-   tag in its bottom-left corner. */
-.misspark-quote {
-  margin-top: var(--space-md);
-  border-left: 3px solid var(--pink);
-  padding: 2px 0 2px var(--space-md);
-  font-family: var(--font-hand);
-  font-size: 1.35rem;
-  line-height: 1.35;
-  color: #fff;
-}
-
-.misspark-copy h2 {
-  margin-bottom: var(--space-md);
-}
-
-.misspark-copy h2 .accent-pink { font-style: italic; }
-
-.misspark-copy p {
-  margin-bottom: var(--space-md);
-  font-size: 1rem;
-  line-height: 1.85;
-}
-
-.misspark-facts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-md);
-  margin-top: var(--space-lg);
-}
-
-.misspark-fact {
-  border-left: 2px solid var(--neon);
-  padding-left: var(--space-md);
-}
-
-.misspark-fact:nth-child(2) { border-color: var(--pink); }
-.misspark-fact:nth-child(3) { border-color: var(--orange); }
-
-.misspark-fact strong {
-  display: block;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-
-.misspark-fact span {
-  font-family: var(--font-reading);
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-/* ============================================
    STATS STRIP
    ============================================ */
 .stats-strip {
@@ -665,38 +784,6 @@
   letter-spacing: 0.14em;
   color: var(--text-muted);
   margin-top: var(--space-sm);
-}
-
-/* ============================================
-   EDITORIAL
-   ============================================ */
-.editorial-intro {
-  margin-bottom: var(--space-2xl);
-  max-width: var(--max-width-narrow);
-}
-
-.editorial-intro h2 {
-  margin-bottom: var(--space-lg);
-}
-
-.editorial-intro p {
-  margin-bottom: var(--space-md);
-  font-size: 1rem;
-  line-height: 1.85;
-}
-
-.editorial-about {
-  border-top: 1px solid var(--border);
-}
-
-.editorial-about h2 {
-  margin-bottom: var(--space-lg);
-}
-
-.editorial-about p {
-  font-size: 1rem;
-  line-height: 1.85;
-  margin-bottom: var(--space-md);
 }
 
 /* Skeleton card */

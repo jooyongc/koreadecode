@@ -7,16 +7,16 @@
  *
  * GET /api/korea-now
  *   { updated, fx: { base:'KRW', rates:[{code,label,krw,flag}] },
- *     weather: [{ city, cityKo, tempC, tempF, code, label, icon, high, low }] }
+ *     weather: [{ city, tempC, tempF, code, label, icon, high, low }] }
  *
  * Any upstream failure degrades to null for that half; the page hides what is
  * missing rather than showing a stale or invented number.
  */
 
 const CITIES = [
-  { city: 'Seoul',  cityKo: '서울', lat: 37.5665, lon: 126.9780 },
-  { city: 'Busan',  cityKo: '부산', lat: 35.1796, lon: 129.0756 },
-  { city: 'Jeju',   cityKo: '제주', lat: 33.4996, lon: 126.5312 },
+  { city: 'Seoul', lat: 37.5665, lon: 126.9780 },
+  { city: 'Busan', lat: 35.1796, lon: 129.0756 },
+  { city: 'Jeju',  lat: 33.4996, lon: 126.5312 },
 ];
 
 // Currencies most Korea Decode readers arrive with.
@@ -103,7 +103,6 @@ async function fetchWeather() {
       const w = describeWeather(code);
       return {
         city: c.city,
-        cityKo: c.cityKo,
         tempC: Math.round(t),
         tempF: Math.round(t * 9 / 5 + 32),
         code,
