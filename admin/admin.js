@@ -1755,20 +1755,42 @@ ${voiceGuide}
 ${jobVoice}
 ${toneOverride ? `**TONE OVERRIDE:** ${toneOverride}` : ''}
 
-**EXAMPLE OPENING (match this energy and style, but DO NOT copy verbatim):**
-"${exampleOpening}"
-
-**Task:** Write a ~${wordCount}-word blog post for 'Korea Decode'.
+**Task:** Write a ~${wordCount}-word PRACTICAL GUIDE for 'Korea Decode'.
 **Topic:** "${title}"
 **Core Subject:** "${topic}"
 **Target Keywords:** ${keywords.join(', ')}
 
-**RULES:**
-1. First person ("I", "my"). Share personal opinions and experiences fitting YOUR background. NEVER sound like a generic AI blog.
-2. Structure: Hook intro (NO self-intro). 3-5 sections with <h2>/<h3>. Use <ul><li>, <strong>, <blockquote>.
-3. Place exactly **${actualImgCount}** image markers: <p>[IMG]</p> spaced evenly through the article.
-4. HTML only. No <html>, <body>, <h1>, or markdown.
-5. Strong conclusion with call-to-action.${likesIntegration}
+**ARTICLE FORMAT — PRACTICAL GUIDE (NOT ESSAY):**
+
+1. **Opening:** Start with the reader's problem or decision ("Trying to figure out X? Here's exactly what you need to know."). NO self-introduction. Get to the point fast.
+
+2. **Quick Answer Box:** Right after the intro, include a summary box:
+   <div style="background:#1a1a2e;border-left:4px solid #cdff1f;padding:16px 20px;border-radius:8px;margin:20px 0;">
+   <strong style="color:#cdff1f;">Quick Answer:</strong>
+   <p style="color:#ccc;">[1-2 sentence recommendation for the reader who doesn't want to read the full article]</p>
+   </div>
+
+3. **Comparison Table:** Include at least ONE HTML <table> comparing options (prices, features, pros/cons). Tables help readers decide and boost time-on-page.
+
+4. **Affiliate Placeholders:** Where a bookable tour, ticket, or purchasable product fits naturally, insert:
+   <div class="affiliate-cta" data-provider="klook" style="background:#1a1a2e;border-radius:12px;padding:16px 20px;margin:20px 0;text-align:center;">
+   <p style="color:#ccc;margin:0 0 8px;">[Brief product description, e.g., "Skip the line with a pre-booked DMZ tour"]</p>
+   <a href="#affiliate" style="display:inline-block;background:#cdff1f;color:#000;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Book on Klook →</a>
+   </div>
+   Place 2-4 of these throughout the article where they add value. Use contextual placement (after explaining why something is worth doing, not randomly).
+
+5. **Structure:** Use <h2> and <h3> for sections. Include <ul><li> lists for practical tips. Use <strong> for key info. Use <blockquote> for pro tips.
+
+6. Place exactly **${actualImgCount}** image markers: <p>[IMG]</p> spaced evenly through the article.
+
+7. **Practical Details:** Include specific prices (in KRW and USD), hours, addresses, nearest subway stations, or "how to get there" info when relevant.
+
+8. **Ending:** Close with a "Book Now" or "What You Need" summary section that links back to the recommended options. Then add:
+   <p><em>This article contains affiliate links. We may earn a small commission at no extra cost to you when you book through our links.</em></p>
+
+9. HTML only. No <html>, <body>, <h1>, or markdown.${likesIntegration}
+
+**IMPORTANT:** Every paragraph should help the reader DECIDE or ACT. If a section doesn't answer "what should I do?" or "how much does it cost?" — rewrite it to be useful.
 
 **Output:** Only the article HTML body.`;
 
