@@ -4,15 +4,20 @@ import { normalizeCategory } from '/assets/js/categories.js';
 /* Build stamp. If the module fails to parse this never runs, and the red warning
    baked into admin/index.html stays on screen — which is exactly how a stale or
    broken admin.js announces itself. */
-const KD_ADMIN_BUILD = '2026-09-04c';
+const KD_ADMIN_BUILD = '2026-09-04f';
 console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
-document.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('admin-build');
-    if (el) {
-        el.textContent = 'build ' + KD_ADMIN_BUILD + ' \u00b7 sources + affiliate slots active';
+function stampAdminBuild() {
+    document.querySelectorAll('[data-admin-build]').forEach(el => {
+        el.textContent = 'build ' + KD_ADMIN_BUILD +
+            ' \u00b7 sources, affiliate slots, ad manager, table-safe editor';
         el.style.color = 'var(--text-muted)';
-    }
-});
+    });
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', stampAdminBuild);
+} else {
+    stampAdminBuild();
+}
 
 // --- AI CALL: via server-side proxy (functions/ai-proxy.js) ---
 async function callAI(prompt, options = {}) {
@@ -649,6 +654,25 @@ let affiliateCodes = {}; // Map of aff-id → raw HTML code
 let pendingUploadFile = null; // File object waiting to be uploaded
 let imgSearchPage = 1; // current image search page
 
+/**
+ * Stand-in for Quill when its CDN script does not load. It satisfies the handful
+ * of calls the rest of the admin makes (`root.innerHTML`, `setText`, `getText`,
+ * `setContents`, `clipboard.dangerouslyPasteHTML`, `on`) against a detached div,
+ * so the editor degrades to HTML-only instead of throwing on every action.
+ */
+function makeFallbackEditor() {
+    const root = document.createElement('div');
+    return {
+        root,
+        on() {},
+        setContents() { root.innerHTML = ''; },
+        setText(t) { root.textContent = t || ''; },
+        getText() { return root.textContent || ''; },
+        getLength() { return (root.textContent || '').length; },
+        clipboard: { dangerouslyPasteHTML(html) { root.innerHTML = html || ''; } },
+    };
+}
+
 // --- CORE INITIALIZATION ---
 async function init() {
     // Reference sources + affiliate slots first: they depend on nothing else, so a
@@ -657,20 +681,37 @@ async function init() {
     renderAffiliateSlots();
     initAdManager();
 
-    // Initialize Quill Editor
-    quill = new Quill('#editor-container', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'blockquote'],
-                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                ['link', 'clean']
-            ]
+    // Initialize Quill Editor. Wrapped because Quill comes from a CDN: if that
+    // request is blocked, an unguarded throw here would take out every button
+    // wired up below it — the whole admin would look dead for one missing script.
+    try {
+        quill = new Quill('#editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'blockquote'],
+                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                    ['link', 'clean']
+                ]
+            }
+        });
+        quill.on('text-change', calculateSEOScore);
+        initImageResizer();
+    } catch (e) {
+        console.error('[Admin] Quill failed to initialise:', e);
+        quill = makeFallbackEditor();
+        const wrap = document.querySelector('.editor-wrapper');
+        if (wrap) {
+            wrap.insertAdjacentHTML('afterbegin',
+                '<p style="color:var(--danger);font-size:13px;margin:0 0 8px;">' +
+                'The rich-text editor did not load (blocked script or no connection). ' +
+                'You can still write and save in the HTML view — or reload the page to retry.</p>');
         }
-    });
-    quill.on('text-change', calculateSEOScore);
-    initImageResizer();
+        const ta = document.getElementById('html-source-editor');
+        const box = document.getElementById('editor-container');
+        if (ta && box) { ta.style.display = 'block'; box.style.display = 'none'; isHtmlMode = true; }
+    }
 
     // Auto-generate slug when title changes
     const titleInput = document.getElementById('ai-suggested-title');
@@ -855,10 +896,13 @@ async function init() {
 
 // --- VIEW SWITCHING ---
 const switchView = (viewName) => {
+    const section = document.getElementById(`view-${viewName}`);
+    if (!section) { console.warn('[Admin] no such view:', viewName); return; }
+
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-    document.getElementById(`view-${viewName}`).classList.add('active');
+    section.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    document.querySelector(`.nav-item[data-view="${viewName}"]`).classList.add('active');
+    document.querySelector(`.nav-item[data-view="${viewName}"]`)?.classList.add('active');
 
     if (viewName === 'posts') loadPosts();
     if (viewName === 'dashboard') loadDashboard();
@@ -1449,6 +1493,46 @@ async function removeDuplicates() {
     }
 }
 
+/**
+ * Load article HTML into the editor without destroying it.
+ *
+ * Quill only understands a small set of formats. Anything richer — comparison
+ * tables, the quick-answer box, affiliate CTA blocks, figures — is silently
+ * flattened into loose paragraphs the moment it passes through
+ * clipboard.dangerouslyPasteHTML(). That is what turned tables into scrambled
+ * body text. So: rich content opens in HTML mode, plain prose in the visual
+ * editor, and saving already works from either one.
+ *
+ * @param {string} html - Article body
+ */
+function loadIntoEditor(html) {
+    const RICH = /<(table|div|figure|aside|iframe|script)\b/i;
+    const needsHtmlMode = RICH.test(html || '');
+
+    if (needsHtmlMode) {
+        const ta = document.getElementById('html-source-editor');
+        const quillContainer = document.querySelector('#editor-container');
+        const btn = document.getElementById('btn-toggle-html');
+
+        ta.value = html;
+        quill.setContents([]);              // keep the two views from disagreeing
+        quillContainer.style.display = 'none';
+        ta.style.display = 'block';
+        btn.classList.add('active');
+        btn.innerHTML = '<i class="ph ph-eye"></i> Visual';
+        isHtmlMode = true;
+
+        const note = document.getElementById('editor-mode-note');
+        if (note) note.style.display = 'block';
+    } else {
+        if (isHtmlMode) toggleHtmlSource();
+        const note = document.getElementById('editor-mode-note');
+        if (note) note.style.display = 'none';
+        quill.clipboard.dangerouslyPasteHTML(html);
+    }
+    calculateSEOScore();
+}
+
 window.editPost = async (id) => {
     editingPostId = id;
     switchView('ai-writer');
@@ -1476,9 +1560,9 @@ window.editPost = async (id) => {
     // Clear editor before loading new content
     quill.setContents([]);
 
-    // Pre-process affiliate blocks before loading into Quill
+    // Pre-process affiliate blocks, then load without flattening tables/blocks
     const editorContent = processContentForEdit(p.content || '');
-    quill.clipboard.dangerouslyPasteHTML(editorContent);
+    loadIntoEditor(editorContent);
     activeImage = p.image;
     if (activeImage) {
         document.getElementById('selected-ai-img').src = activeImage;
@@ -1740,7 +1824,7 @@ delete it or replace it with a fact.
         content = generateTemplateContent(author, topic, title, '');
     }
 
-    quill.clipboard.dangerouslyPasteHTML(content);
+    loadIntoEditor(content);
 
     document.getElementById('step-2').classList.remove('active');
     document.getElementById('step-3').style.opacity = '1';
@@ -2652,8 +2736,8 @@ window.toggleHtmlSource = () => {
     } else {
         // Warn if HTML contains script tags that Quill will strip
         const htmlContent = htmlEditor.value;
-        if (/<script[\s>]/i.test(htmlContent)) {
-            if (!confirm('Warning: Switching to Visual mode will strip <script> tags (affiliate widgets, embeds). Your content will be saved correctly if you publish while staying in HTML mode.\n\nSwitch anyway?')) {
+        if (/<(table|div|figure|aside|iframe|script)\b/i.test(htmlContent)) {
+            if (!confirm('Careful: the visual editor cannot hold tables, the quick-answer box, affiliate blocks or embeds. Switching now will flatten them into plain text and you cannot undo it.\n\nStay in HTML mode to keep them. Switch anyway?')) {
                 return;
             }
         }
@@ -2664,6 +2748,8 @@ window.toggleHtmlSource = () => {
         btn.classList.remove('active');
         btn.innerHTML = '<i class="ph ph-code"></i> HTML';
         isHtmlMode = false;
+        const note = document.getElementById('editor-mode-note');
+        if (note) note.style.display = 'none';
         calculateSEOScore();
     }
 };
@@ -2907,7 +2993,13 @@ function initImageResizer() {
         editorEl.appendChild(toolbar);
     }
 
-    document.querySelector('.ql-editor').addEventListener('click', (e) => {
+    // If Quill failed to load (blocked CDN, offline), .ql-editor never exists.
+    // Bailing out here keeps the rest of init() — and every other button on the
+    // page — alive instead of dying on a null.
+    const qlEditor = document.querySelector('.ql-editor');
+    if (!qlEditor) { console.warn('[Admin] Quill editor missing — image resizer disabled'); return; }
+
+    qlEditor.addEventListener('click', (e) => {
         if (e.target.tagName === 'IMG') {
             e.preventDefault();
             showToolbar(e.target);

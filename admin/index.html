@@ -161,7 +161,7 @@
         <div class="view-header">
             <h1 id="writer-heading">AI Content Creator</h1>
             <p>Grounded on your reference links, written in the Miss Park house voice</p>
-            <p id="admin-build" style="font-size:11px;color:var(--danger);margin-top:4px;">
+            <p id="admin-build" data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
                 admin.js did not load &mdash; you are seeing a cached or broken version.
             </p>
         </div>
@@ -293,6 +293,13 @@
                 <button id="btn-reset-ai" class="btn btn-outline btn-sm"><i class="ph ph-arrow-counter-clockwise"></i> Reset</button>
             </div>
 
+            <p id="editor-mode-note" style="display:none;font-size:12px;color:var(--text-muted);margin:0 0 8px;padding:8px 10px;border-left:3px solid var(--primary);background:var(--bg-input);border-radius:0 6px 6px 0;">
+                <i class="ph ph-code"></i>
+                This draft contains a table, a quick-answer box or an affiliate block, so it opened in
+                HTML mode. Edit the text between the tags and save from here &mdash; switching to the
+                visual editor would flatten those blocks.
+            </p>
+
             <div class="editor-wrapper">
                 <div id="editor-container"></div>
                 <textarea id="html-source-editor" class="html-source-editor"></textarea>
@@ -318,6 +325,10 @@
         <div class="view-header">
             <h1>Ad Manager</h1>
             <p>The rotating strip on the homepage, between &ldquo;Korea right now&rdquo; and the guide list</p>
+            <p data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
+                admin.js did not load &mdash; you are seeing a cached or broken version, so the
+                buttons on this page will do nothing. Hard-refresh (Ctrl/Cmd + Shift + R).
+            </p>
         </div>
 
         <div class="card" style="margin-bottom:16px;">
@@ -812,6 +823,6 @@
     </div>
 </div>
 
-<script type="module" src="/admin/admin.js?v=2026-09-04c"></script>
+<script type="module" src="/admin/admin.js?v=2026-09-04f"></script>
 </body>
 </html>
