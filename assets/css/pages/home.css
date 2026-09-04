@@ -11,7 +11,7 @@
   min-height: auto;
   display: flex;
   align-items: center;
-  padding: var(--space-lg) 0 var(--space-2xl);
+  padding: var(--space-2xl) 0 var(--space-3xl);
   overflow: hidden;
   background: var(--bg-main);
 }
@@ -80,7 +80,7 @@
   z-index: 2;
   display: grid;
   grid-template-columns: 1.35fr 0.65fr;
-  align-items: center;
+  align-items: start;
   gap: var(--space-2xl);
 }
 
@@ -246,7 +246,7 @@
   width: 100%;
   max-width: 270px;
   margin-left: auto;
-  padding-top: 96px;   /* room for the bubble above her */
+  padding-top: 86px;   /* room for the bubble above her */
 }
 
 .hero-figure-frame {
