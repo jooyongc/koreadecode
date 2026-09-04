@@ -60,6 +60,10 @@
         <i class="ph ph-robot"></i>
         <span>Automation</span>
     </div>
+    <div class="nav-item" data-view="ads">
+        <i class="ph ph-megaphone"></i>
+        <span>Ad Manager</span>
+    </div>
     <div class="nav-item" data-view="site-settings">
         <i class="ph ph-browser"></i>
         <span>Site Settings</span>
@@ -315,6 +319,48 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- ===== AD MANAGER VIEW ===== -->
+    <section id="view-ads" class="view-section">
+        <div class="view-header">
+            <h1>Ad Manager</h1>
+            <p>The rotating strip on the homepage, between &ldquo;Korea right now&rdquo; and the guide list</p>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h3 style="margin:0;">Placements</h3>
+                    <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted);">
+                        Shown in this order, one at a time, 7 seconds each. Inactive rows are skipped.
+                    </p>
+                </div>
+                <button id="btn-ad-add" class="btn btn-outline btn-sm">
+                    <i class="ph ph-plus"></i> Add placement
+                </button>
+            </div>
+            <div id="ad-list" style="padding:4px 0;"></div>
+            <div style="display:flex;gap:10px;align-items:center;padding:14px 0 4px;border-top:1px solid var(--border);margin-top:8px;">
+                <button id="btn-ad-save" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk"></i> Save &amp; publish
+                </button>
+                <button id="btn-ad-reload" class="btn btn-outline btn-sm">
+                    <i class="ph ph-arrow-counter-clockwise"></i> Discard changes
+                </button>
+                <span id="ad-save-status" style="font-size:13px;"></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 style="margin:0;">Live preview</h3></div>
+            <div id="ad-preview" style="padding:8px 0;"></div>
+            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
+                Every paid placement shows a &ldquo;Sponsored&rdquo; label and its link is tagged
+                <code>rel="sponsored"</code>. Google requires both; leaving them off risks your AdSense
+                account and your search ranking.
+            </p>
         </div>
     </section>
 

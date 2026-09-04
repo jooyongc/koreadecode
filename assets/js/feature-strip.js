@@ -5,8 +5,12 @@
  * placement, so every one is labelled and its link carries rel="sponsored".
  *
  * ─────────────────────────────────────────────────────────────────────────
- *  HOW TO EDIT THE BANNERS
- *  Change the SLOTS array below. Nothing else needs touching.
+ *  WHERE THE PLACEMENTS COME FROM
+ *  Admin → Ad Manager, stored in Supabase (site_settings / 'feature_strip').
+ *  Editing an ad there is a save, not a deploy.
+ *
+ *  The array below is only the fallback used when nothing has been saved yet
+ *  or the database cannot be reached.
  *
  *    headline  — the hook, phrased as a question. Keep it under ~48 chars.
  *    blurb     — one supporting line. Keep it under ~90 chars.
@@ -21,7 +25,7 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-const SLOTS = [
+const FALLBACK_SLOTS = [
   {
     headline: 'How to book a train in Korea?',
     blurb: 'KTX seats sell out on weekends and holidays. Reserve before you fly.',
@@ -49,6 +53,32 @@ const SLOTS = [
 ];
 
 const ROTATE_MS = 7000;
+
+/** Filled from the CMS at init; falls back to FALLBACK_SLOTS. */
+let SLOTS = FALLBACK_SLOTS;
+
+/**
+ * Load the placements saved in the Ad Manager.
+ * Anything incomplete or switched off is dropped here rather than half-rendered.
+ */
+async function loadSlots() {
+    try {
+        const { supabase } = await import('/assets/js/supabase-config.js');
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', 'feature_strip')
+            .single();
+
+        if (error || !data?.value?.slots) return FALLBACK_SLOTS;
+
+        const live = data.value.slots.filter(s => s && s.active !== false && s.headline && s.url);
+        return live.length ? live : [];
+    } catch (err) {
+        console.warn('[FeatureStrip] using fallback placements:', err?.message || err);
+        return FALLBACK_SLOTS;
+    }
+}
 
 let index = 0;
 let timer = null;
@@ -109,11 +139,13 @@ function stop() {
   if (timer) { clearInterval(timer); timer = null; }
 }
 
-export function initFeatureStrip() {
+export async function initFeatureStrip() {
   const section = document.getElementById('feature-strip');
   if (!section) return;
 
-  // No slots configured — remove the strip rather than leaving an empty band.
+  SLOTS = await loadSlots();
+
+  // Nothing to show — remove the strip rather than leaving an empty band.
   if (SLOTS.length === 0) { section.remove(); return; }
 
   const track = section.querySelector('.fstrip-track');

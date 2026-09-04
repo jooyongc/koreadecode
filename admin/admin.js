@@ -643,6 +643,7 @@ async function init() {
     // later failure (blocked CDN, Quill hiccup) cannot stop them from being wired up.
     document.getElementById('btn-fetch-sources')?.addEventListener('click', fetchReferenceSources);
     renderAffiliateSlots();
+    initAdManager();
 
     // Initialize Quill Editor
     quill = new Quill('#editor-container', {
@@ -867,6 +868,7 @@ const switchView = (viewName) => {
     if (viewName === 'personas') loadPersonas();
     if (viewName === 'settings') loadPersonas();
     if (viewName === 'site-settings') loadHeroSettings();
+    if (viewName === 'ads') loadAdSlots();
     if (viewName === 'ai-writer') {
         if (!editingPostId) resetAI();
         refreshPersonaSelect();
@@ -928,6 +930,254 @@ function updateKeyStatusIndicator(synced) {
     } else {
         indicator.innerHTML = '<i class="ph ph-cloud-slash" style="color: var(--text-muted);"></i> <span style="color: var(--text-muted);">Local only</span>';
     }
+}
+
+/* ============================================================================
+   AD MANAGER
+   The homepage feature strip is stored in site_settings under the key
+   'feature_strip', so editing an ad is a save here — no deploy, no code change.
+   ========================================================================== */
+
+const AD_SETTINGS_KEY = 'feature_strip';
+const AD_MAX_SLOTS = 6;
+
+/** Working copy of the placements while the editor is open. */
+let adSlots = [];
+
+function blankAdSlot() {
+    return { active: true, sponsored: true, headline: '', blurb: '', cta: '', url: '', partner: '' };
+}
+
+/** Shipped defaults, used the first time the Ad Manager is opened. */
+function defaultAdSlots() {
+    return [{
+        active: true, sponsored: true,
+        headline: 'How to book a train in Korea?',
+        blurb: 'KTX seats sell out on weekends and holidays. Reserve before you fly.',
+        cta: 'Check KTX passes', url: 'https://www.klook.com/', partner: 'Klook',
+    }];
+}
+
+async function loadAdSlots() {
+    const status = document.getElementById('ad-save-status');
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', AD_SETTINGS_KEY)
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+
+        const stored = data?.value?.slots;
+        adSlots = Array.isArray(stored) && stored.length ? stored.map(s => ({ ...blankAdSlot(), ...s }))
+                                                         : defaultAdSlots();
+        if (status) status.innerHTML = '';
+    } catch (e) {
+        console.error('[Ads] load failed:', e);
+        adSlots = defaultAdSlots();
+        if (status) status.innerHTML = `<span style="color:var(--danger);">Could not load saved ads (${e.message}). Showing defaults.</span>`;
+    }
+    renderAdRows();
+}
+
+function renderAdRows() {
+    const list = document.getElementById('ad-list');
+    if (!list) return;
+
+    // A validation message about row #3 is misleading once row #3 is gone.
+    const status = document.getElementById('ad-save-status');
+    if (status && status.dataset.sticky !== '1') status.innerHTML = '';
+
+    if (adSlots.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:14px 0;">No placements yet. The strip is hidden on the homepage until you add one.</p>';
+        updateAdPreview();
+        return;
+    }
+
+    list.innerHTML = adSlots.map((s, i) => `
+        <div class="ad-row" data-i="${i}" style="border:1px solid var(--border);border-radius:8px;padding:14px;margin:10px 0;${s.active ? '' : 'opacity:.55;'}">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <strong style="font-size:12px;color:var(--text-muted);">#${i + 1}</strong>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+                    <input type="checkbox" class="ad-active" ${s.active ? 'checked' : ''}> Active
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+                    <input type="checkbox" class="ad-sponsored" ${s.sponsored ? 'checked' : ''}> Paid / sponsored
+                </label>
+                <span style="flex:1;"></span>
+                <button class="btn btn-outline btn-sm ad-up"   ${i === 0 ? 'disabled' : ''} title="Move up"><i class="ph ph-arrow-up"></i></button>
+                <button class="btn btn-outline btn-sm ad-down" ${i === adSlots.length - 1 ? 'disabled' : ''} title="Move down"><i class="ph ph-arrow-down"></i></button>
+                <button class="btn btn-outline btn-sm ad-del" style="color:var(--danger);border-color:var(--danger);" title="Delete"><i class="ph ph-trash"></i></button>
+            </div>
+            <div class="grid-2" style="gap:10px;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Headline</label>
+                    <input class="form-input ad-headline" maxlength="60" value="${escHtml(s.headline)}" placeholder="How to book a train in Korea?">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Button label</label>
+                    <input class="form-input ad-cta" maxlength="28" value="${escHtml(s.cta)}" placeholder="Check KTX passes">
+                </div>
+            </div>
+            <div class="form-group" style="margin:10px 0 0;">
+                <label class="form-label">Supporting line</label>
+                <input class="form-input ad-blurb" maxlength="110" value="${escHtml(s.blurb)}" placeholder="KTX seats sell out on weekends. Reserve before you fly.">
+            </div>
+            <div class="grid-2" style="gap:10px;margin-top:10px;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Link URL</label>
+                    <input class="form-input ad-url" value="${escHtml(s.url)}" placeholder="https://...">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Partner name (optional)</label>
+                    <input class="form-input ad-partner" maxlength="24" value="${escHtml(s.partner)}" placeholder="Klook">
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    updateAdPreview();
+}
+
+/** Pull the current field values back into adSlots. */
+function syncAdSlotsFromDOM() {
+    document.querySelectorAll('.ad-row').forEach(row => {
+        const i = Number(row.dataset.i);
+        if (!adSlots[i]) return;
+        adSlots[i] = {
+            active:    row.querySelector('.ad-active').checked,
+            sponsored: row.querySelector('.ad-sponsored').checked,
+            headline:  row.querySelector('.ad-headline').value.trim(),
+            blurb:     row.querySelector('.ad-blurb').value.trim(),
+            cta:       row.querySelector('.ad-cta').value.trim(),
+            url:       row.querySelector('.ad-url').value.trim(),
+            partner:   row.querySelector('.ad-partner').value.trim(),
+        };
+    });
+}
+
+function updateAdPreview() {
+    const box = document.getElementById('ad-preview');
+    if (!box) return;
+
+    const live = adSlots.filter(s => s.active && s.headline && s.url);
+    if (live.length === 0) {
+        box.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Nothing to show &mdash; the strip will be hidden on the homepage.</p>';
+        return;
+    }
+
+    box.innerHTML = live.map(s => `
+        <div style="background:#f6f6ef;color:#14140f;border-radius:14px;padding:18px 22px;margin-bottom:10px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+                ${s.sponsored ? '<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#6c6c60;border:1px solid #cfcfc2;border-radius:4px;padding:2px 7px;margin-bottom:6px;">Sponsored</span>' : ''}
+                <div style="font-size:20px;font-weight:800;">${escHtml(s.headline)}</div>
+                ${s.blurb ? `<div style="font-size:13px;color:#4a4a40;margin-top:4px;">${escHtml(s.blurb)}</div>` : ''}
+            </div>
+            <div style="text-align:center;">
+                <span style="display:inline-block;background:#14140f;color:#f6f6ef;padding:12px 22px;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">${escHtml(s.cta || 'Learn more')} &rarr;</span>
+                ${s.partner ? `<div style="font-size:11px;color:#6c6c60;margin-top:5px;">via ${escHtml(s.partner)}</div>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function saveAdSlots() {
+    syncAdSlotsFromDOM();
+
+    const status = document.getElementById('ad-save-status');
+    const btn = document.getElementById('btn-ad-save');
+
+    // Only complete rows are worth publishing.
+    const bad = adSlots.findIndex(s => s.active && (!s.headline || !s.url));
+    if (bad !== -1) {
+        status.innerHTML = `<span style="color:var(--danger);">Placement #${bad + 1} needs a headline and a link before it can go live.</span>`;
+        return;
+    }
+    const badUrl = adSlots.findIndex(s => s.url && !/^https?:\/\//i.test(s.url));
+    if (badUrl !== -1) {
+        status.innerHTML = `<span style="color:var(--danger);">Placement #${badUrl + 1}: the link must start with http:// or https://</span>`;
+        return;
+    }
+
+    btn.disabled = true;
+    status.innerHTML = '<span style="color:var(--text-muted);">Saving...</span>';
+
+    try {
+        const payload = { slots: adSlots };
+        const { data: existing } = await supabase
+            .from('site_settings').select('id').eq('key', AD_SETTINGS_KEY).single();
+
+        if (existing) {
+            const { error } = await supabase.from('site_settings')
+                .update({ value: payload, updated_at: new Date().toISOString() })
+                .eq('key', AD_SETTINGS_KEY);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.from('site_settings')
+                .insert({ key: AD_SETTINGS_KEY, value: payload });
+            if (error) throw error;
+        }
+
+        const liveCount = adSlots.filter(s => s.active && s.headline && s.url).length;
+        status.dataset.sticky = '1';
+        status.innerHTML = `<span style="color:var(--success);"><i class="ph ph-check-circle"></i> Published &mdash; ${liveCount} placement${liveCount === 1 ? '' : 's'} live on the homepage.</span>`;
+        setTimeout(() => { status.innerHTML = ''; status.dataset.sticky = '0'; }, 5000);
+    } catch (e) {
+        console.error('[Ads] save failed:', e);
+        status.innerHTML = `<span style="color:var(--danger);"><i class="ph ph-warning-circle"></i> ${e.message}</span>`;
+    }
+    btn.disabled = false;
+}
+
+function initAdManager() {
+    const list = document.getElementById('ad-list');
+    if (!list) return;
+
+    document.getElementById('btn-ad-add').addEventListener('click', () => {
+        syncAdSlotsFromDOM();
+        if (adSlots.length >= AD_MAX_SLOTS) {
+            document.getElementById('ad-save-status').innerHTML =
+                `<span style="color:var(--danger);">${AD_MAX_SLOTS} placements is the maximum &mdash; more than that and nobody sees the last ones.</span>`;
+            return;
+        }
+        adSlots.push(blankAdSlot());
+        renderAdRows();
+    });
+
+    document.getElementById('btn-ad-save').addEventListener('click', saveAdSlots);
+    document.getElementById('btn-ad-reload').addEventListener('click', loadAdSlots);
+
+    // Row buttons
+    list.addEventListener('click', (e) => {
+        const row = e.target.closest('.ad-row');
+        if (!row) return;
+        const i = Number(row.dataset.i);
+
+        if (e.target.closest('.ad-del')) {
+            syncAdSlotsFromDOM();
+            adSlots.splice(i, 1);
+            renderAdRows();
+        } else if (e.target.closest('.ad-up') && i > 0) {
+            syncAdSlotsFromDOM();
+            [adSlots[i - 1], adSlots[i]] = [adSlots[i], adSlots[i - 1]];
+            renderAdRows();
+        } else if (e.target.closest('.ad-down') && i < adSlots.length - 1) {
+            syncAdSlotsFromDOM();
+            [adSlots[i], adSlots[i + 1]] = [adSlots[i + 1], adSlots[i]];
+            renderAdRows();
+        }
+    });
+
+    // Live preview as you type.
+    list.addEventListener('input', () => { syncAdSlotsFromDOM(); updateAdPreview(); });
+
+    // Only the checkboxes change how a row looks, so only they redraw the list —
+    // redrawing on a text field's change event would yank focus while editing.
+    list.addEventListener('change', (e) => {
+        syncAdSlotsFromDOM();
+        if (e.target.matches('.ad-active, .ad-sponsored')) renderAdRows();
+        else updateAdPreview();
+    });
 }
 
 // --- SITE SETTINGS: HERO ---
@@ -1608,86 +1858,15 @@ window.runAIPhase2 = async () => {
     if (!title) return alert('Please generate or select a title first.');
 
     const btn = document.querySelector('#step-2 .btn-primary');
-    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Fetching images & writing...';
+    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing the guide...';
     btn.disabled = true;
 
     // Single house byline — no personas.
     const persona = KD_AUTHOR;
 
-    // 1. Fetch Images from multi-source (Unsplash + Pexels via proxy)
-    let allImages = [];
-    try {
-        // Generate diverse image search queries via AI
-        let imageQueries = [
-            `${topic} ${keywords.slice(0, 2).join(' ')} korea`,
-            topic
-        ];
-        try {
-            const iqPrompt = `Generate 3 diverse image search queries for a blog post about "${topic}" in Korea. Return JSON array only: ["food closeup query", "street/scenery query", "cultural activity query"]. Short queries (2-4 words each). No explanation.`;
-            const iqRaw = await callAI(iqPrompt, { generationConfig: { temperature: 0.3 } });
-            const iqParsed = parseAIJSON(iqRaw);
-            if (Array.isArray(iqParsed) && iqParsed.length >= 2) imageQueries = iqParsed;
-        } catch (e) {
-            console.warn("[Images] AI query generation failed, using defaults:", e);
-        }
-
-        console.log("[Images] Queries:", imageQueries);
-
-        // Fetch from Unsplash (first 2 queries) and Pexels (3rd query) in parallel
-        const fetchPromises = [];
-        imageQueries.slice(0, 2).forEach(q => {
-            fetchPromises.push(
-                fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(q)}&count=3`)
-                    .then(r => r.json()).catch(() => ({ images: [] }))
-            );
-        });
-        if (imageQueries.length >= 3) {
-            fetchPromises.push(
-                fetch(`/image-proxy?source=pexels&query=${encodeURIComponent(imageQueries[2])}&count=3`)
-                    .then(r => r.json()).catch(() => ({ images: [] }))
-            );
-        }
-
-        const results = await Promise.all(fetchPromises);
-        const seenUrls = new Set();
-        // Interleave sources for diversity
-        const maxLen = Math.max(...results.map(r => (r.images || []).length));
-        for (let i = 0; i < maxLen; i++) {
-            for (const result of results) {
-                const imgs = result.images || [];
-                if (i < imgs.length && !seenUrls.has(imgs[i].url)) {
-                    seenUrls.add(imgs[i].url);
-                    allImages.push(imgs[i]);
-                }
-            }
-        }
-        console.log(`[Images] Found ${allImages.length} unique images from ${results.length} sources`);
-    } catch (e) {
-        console.error("Image fetch error:", e);
-    }
-
-    // Fallback: try simple Unsplash proxy search if we got nothing
-    if (allImages.length < 3) {
-        try {
-            const res = await fetch(`/image-proxy?source=unsplash&query=${encodeURIComponent(topic + ' korea')}&count=5`);
-            const data = await res.json();
-            const existingUrls = new Set(allImages.map(i => i.url));
-            (data.images || []).forEach(img => {
-                if (!existingUrls.has(img.url)) allImages.push(img);
-            });
-        } catch (e) {
-            console.error("Image fallback error:", e);
-        }
-    }
-
-    if (allImages.length > 0 && !activeImage) {
-        activeImage = allImages[0].url;
-        document.getElementById('selected-ai-img').src = activeImage;
-        document.getElementById('selected-ai-img').style.display = 'block';
-        document.getElementById('ai-img-placeholder').style.display = 'none';
-    }
-    const contentImages = allImages.slice(1, 4);
-    const imgCount = contentImages.length;
+    // Images are NOT fetched automatically any more: stock photos were often a poor
+    // match for the topic. Use "Insert Image" in step 3 to place your own, and the
+    // image picker in step 2 for the featured image.
 
     // 2. Generate Content with AI
     let content = '';
@@ -1734,8 +1913,8 @@ ${buildAffiliateSlotBlock(affiliateSlots)}
    on its own line at the right point in the article. If no list was given, do not write any
    booking buttons at all.
 
-7. **IMAGES — MANDATORY:** place exactly **${imgCount}** image markers, each as <p>[IMG]</p> alone on
-   its own line, spaced evenly through the article.
+7. **NO IMAGES:** do not write any <img>, <figure> or image placeholder of any kind.
+   Illustrations are added by the editor afterwards.
 
 8. **Ending:** a short "What to do next" section — the recommended option, the runner-up, and the one
    thing to sort out before arriving. No motivational sign-off.
@@ -1760,29 +1939,11 @@ delete it or replace it with a fact.
             rawContent = rawContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
         }
 
-        // Replace image placeholders with actual images (multi-source attribution)
-        contentImages.forEach(img => {
-            const sourceName = img.source === 'pexels' ? 'Pexels' : 'Unsplash';
-            const sourceUrl = img.source === 'pexels'
-                ? 'https://www.pexels.com/'
-                : 'https://unsplash.com/?utm_source=korea_decode&utm_medium=referral';
-            const userLink = img.source === 'pexels'
-                ? img.user_link
-                : `${img.user_link}?utm_source=korea_decode&utm_medium=referral`;
-            const imgHtml = `<figure><img src="${img.url}" alt="${img.alt}" style="width:100%;border-radius:8px;"><figcaption>Photo by <a href="${userLink}" target="_blank">${img.user}</a> on <a href="${sourceUrl}" target="_blank">${sourceName}</a></figcaption></figure>`;
-            // Match multiple placeholder formats
-            if (rawContent.includes('<p>[IMG]</p>')) {
-                rawContent = rawContent.replace('<p>[IMG]</p>', imgHtml);
-            } else if (rawContent.includes('[IMG]')) {
-                rawContent = rawContent.replace('[IMG]', imgHtml);
-            } else if (rawContent.includes('[INSERT_IMAGE_HERE]')) {
-                rawContent = rawContent.replace('[INSERT_IMAGE_HERE]', imgHtml);
-            }
-        });
-        // Remove any leftover placeholders
-        rawContent = rawContent.replace(/<p>\[IMG\]<\/p>/g, '');
-        rawContent = rawContent.replace(/\[IMG\]/g, '');
-        rawContent = rawContent.replace(/\[INSERT_IMAGE_HERE\]/g, '');
+        // Strip any image placeholder the model wrote anyway.
+        rawContent = rawContent
+            .replace(/<p>\s*\[IMG\]\s*<\/p>/gi, '')
+            .replace(/\[IMG\]/gi, '')
+            .replace(/\[INSERT_IMAGE_HERE\]/gi, '');
 
         // House style, then real affiliate links in place of the markers
         rawContent = scrubSlang(rawContent);
