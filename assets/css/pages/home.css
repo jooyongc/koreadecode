@@ -370,11 +370,11 @@
 /* ============================================
    SPONSORED STRIP — rotating white banner
    ============================================ */
-.promo-banner {
+.feature-strip {
   padding: var(--space-xl) 0 0;
 }
 
-.promo-strip {
+.fstrip {
   position: relative;
   background: #f6f6ef;
   color: #14140f;
@@ -384,11 +384,11 @@
 }
 
 /* Slides stack on top of each other; only the active one is laid out. */
-.promo-track {
+.fstrip-track {
   display: grid;
 }
 
-.promo-slide {
+.fstrip-item {
   grid-area: 1 / 1;
   display: none;
   align-items: center;
@@ -397,16 +397,16 @@
   animation: fadeIn 320ms ease both;
 }
 
-.promo-slide.is-active {
+.fstrip-item.is-active {
   display: flex;
 }
 
-.promo-text {
+.fstrip-text {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.promo-tag {
+.fstrip-tag {
   display: inline-block;
   font-family: var(--font-body);
   font-size: 0.62rem;
@@ -420,7 +420,7 @@
   margin-bottom: 8px;
 }
 
-.promo-headline {
+.fstrip-title {
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 2.2vw, 1.75rem);
   font-weight: 800;
@@ -430,7 +430,7 @@
   margin: 0;
 }
 
-.promo-blurb {
+.fstrip-sub {
   font-family: var(--font-reading);
   font-size: 0.9rem;
   line-height: 1.5;
@@ -439,7 +439,7 @@
   max-width: 72ch;
 }
 
-.promo-action {
+.fstrip-action {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -447,7 +447,7 @@
   flex-shrink: 0;
 }
 
-.promo-cta {
+.fstrip-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -464,22 +464,22 @@
   transition: background var(--transition), transform var(--transition), color var(--transition);
 }
 
-.promo-cta:hover,
-.promo-cta:focus-visible {
+.fstrip-btn:hover,
+.fstrip-btn:focus-visible {
   background: var(--neon);
   color: #000;
   transform: translateY(-2px);
   outline: none;
 }
 
-.promo-partner {
+.fstrip-by {
   font-family: var(--font-reading);
   font-size: 0.7rem;
   color: #6c6c60;
 }
 
 /* ---- controls ---- */
-.promo-nav {
+.fstrip-nav {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -487,7 +487,7 @@
   margin-top: var(--space-md);
 }
 
-.promo-arrow {
+.fstrip-arrow {
   width: 26px;
   height: 26px;
   display: flex;
@@ -502,21 +502,21 @@
   transition: background var(--transition), color var(--transition), border-color var(--transition);
 }
 
-.promo-arrow:hover,
-.promo-arrow:focus-visible {
+.fstrip-arrow:hover,
+.fstrip-arrow:focus-visible {
   background: #14140f;
   border-color: #14140f;
   color: #f6f6ef;
   outline: none;
 }
 
-.promo-dots {
+.fstrip-dots {
   display: flex;
   align-items: center;
   gap: 7px;
 }
 
-.promo-dot {
+.fstrip-dot {
   width: 7px;
   height: 7px;
   padding: 0;
@@ -526,33 +526,33 @@
   transition: background var(--transition), transform var(--transition);
 }
 
-.promo-dot.is-active {
+.fstrip-dot.is-active {
   background: #14140f;
   transform: scale(1.3);
 }
 
-.promo-dot:focus-visible {
+.fstrip-dot:focus-visible {
   outline: 2px solid #14140f;
   outline-offset: 3px;
 }
 
 @media (max-width: 768px) {
-  .promo-strip {
+  .fstrip {
     padding: var(--space-lg);
   }
 
-  .promo-slide {
+  .fstrip-item {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-md);
   }
 
-  .promo-action {
+  .fstrip-action {
     align-items: flex-start;
     width: 100%;
   }
 
-  .promo-cta {
+  .fstrip-btn {
     width: 100%;
   }
 }
