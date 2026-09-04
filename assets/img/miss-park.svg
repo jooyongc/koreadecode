@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800" role="img" aria-labelledby="mpTitle mpDesc">
+  <title id="mpTitle">Miss Park</title>
+  <desc id="mpDesc">Original flat-vector illustration of Miss Park, the Korea Decode guide: a smiling woman with a bob haircut, a neon green scarf and a black jacket, waving hello.</desc>
+
+  <defs>
+    <linearGradient id="mpBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#131313"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+    <radialGradient id="mpGlow" cx="50%" cy="34%" r="50%">
+      <stop offset="0%" stop-color="#cdff00" stop-opacity="0.30"/>
+      <stop offset="60%" stop-color="#ff6bdf" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mpJacket" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#242424"/>
+      <stop offset="100%" stop-color="#0d0d0d"/>
+    </linearGradient>
+    <linearGradient id="mpHair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#26232b"/>
+      <stop offset="100%" stop-color="#111014"/>
+    </linearGradient>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="600" height="800" fill="url(#mpBg)"/>
+  <rect width="600" height="800" fill="url(#mpGlow)"/>
+
+  <!-- rim light arcs -->
+  <path d="M118 300a182 182 0 0 1 84-176" fill="none" stroke="#cdff00" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round"/>
+  <path d="M482 320a182 182 0 0 0-70-186" fill="none" stroke="#ff6bdf" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- ===== body ===== -->
+  <g>
+    <!-- jacket -->
+    <path d="M300 420c-64 0-118 22-150 58-26 30-40 74-46 122h392c-6-48-20-92-46-122-32-36-86-58-150-58z" fill="url(#mpJacket)"/>
+    <!-- jacket opening -->
+    <path d="M262 432l38 52 38-52" fill="none" stroke="#000" stroke-opacity="0.65" stroke-width="6" stroke-linejoin="round"/>
+    <!-- neon jacket trim -->
+    <path d="M150 478c-26 30-40 74-46 122" fill="none" stroke="#cdff00" stroke-width="5" stroke-linecap="round" stroke-opacity="0.85"/>
+    <path d="M450 478c26 30 40 74 46 122" fill="none" stroke="#ff8c42" stroke-width="5" stroke-linecap="round" stroke-opacity="0.8"/>
+
+    <!-- neck -->
+    <path d="M264 352h72v70h-72z" fill="#e8bfa4"/>
+    <!-- neon scarf -->
+    <path d="M300 404c-38 0-66 10-78 24 20 16 48 24 78 24s58-8 78-24c-12-14-40-24-78-24z" fill="#cdff00"/>
+    <path d="M368 430c14 20 16 44 10 66l-30-10c8-20 10-40 6-54z" fill="#b7e600"/>
+  </g>
+
+  <!-- ===== waving arm ===== -->
+  <g>
+    <!-- upper arm + forearm, raised -->
+    <path d="M436 512c14-26 34-46 56-62" fill="none" stroke="#1e1e1e" stroke-width="48" stroke-linecap="round"/>
+    <path d="M436 512c14-26 34-46 56-62" fill="none" stroke="#2e2e2e" stroke-width="42" stroke-linecap="round"/>
+    <!-- cuff -->
+    <path d="M478 462l24-16" fill="none" stroke="#ff8c42" stroke-width="7" stroke-linecap="round" stroke-opacity="0.85"/>
+    <!-- palm -->
+    <path d="M500 448c-4-16 6-30 22-32l30-4c14-2 24 8 22 22l-4 30c-2 16-16 26-32 24l-16-2c-14-2-24-12-24-26z" fill="#f2c9ae"/>
+    <!-- fingers -->
+    <path d="M512 414v-26" fill="none" stroke="#f2c9ae" stroke-width="15" stroke-linecap="round"/>
+    <path d="M534 410v-30" fill="none" stroke="#f2c9ae" stroke-width="15" stroke-linecap="round"/>
+    <path d="M556 414v-24" fill="none" stroke="#f2c9ae" stroke-width="15" stroke-linecap="round"/>
+    <!-- thumb -->
+    <path d="M566 448l18 4" fill="none" stroke="#f2c9ae" stroke-width="16" stroke-linecap="round"/>
+    <!-- finger separations -->
+    <path d="M523 404v14M545 402v16" fill="none" stroke="#dda98c" stroke-width="3" stroke-linecap="round"/>
+    <!-- little motion marks -->
+    <path d="M586 400c8-6 12-14 12-24M580 382c6-8 8-16 6-26" fill="none" stroke="#cdff00" stroke-width="5" stroke-linecap="round" stroke-opacity="0.8"/>
+  </g>
+
+  <!-- ===== hair back ===== -->
+  <path d="M300 106c-84 0-140 60-140 148 0 62 8 108 18 146h50c-14-52-18-96-18-130 0-58 36-96 90-96s90 38 90 96c0 34-4 78-18 130h50c10-38 18-84 18-146 0-88-56-148-140-148z" fill="url(#mpHair)"/>
+  <!-- pink highlight strand -->
+  <path d="M404 232c10 34 12 78 4 122" fill="none" stroke="#ff6bdf" stroke-width="9" stroke-linecap="round" stroke-opacity="0.9"/>
+
+  <!-- ===== face ===== -->
+  <ellipse cx="300" cy="256" rx="92" ry="104" fill="#f5d7c0"/>
+  <!-- ears -->
+  <ellipse cx="208" cy="264" rx="14" ry="20" fill="#eec6ab"/>
+  <ellipse cx="392" cy="264" rx="14" ry="20" fill="#eec6ab"/>
+
+  <!-- bangs -->
+  <path d="M300 132c-62 0-100 42-102 96 0 8 8 12 12 5 16-27 44-45 74-49 34-4 66 12 88 40 6 7 14 3 13-6-6-52-38-86-85-86z" fill="#1b1a1f"/>
+  <path d="M212 236c-6 30-4 54 2 74l-14 2c-8-24-10-52-4-78z" fill="#1b1a1f"/>
+  <path d="M388 236c6 30 4 54-2 74l14 2c8-24 10-52 4-78z" fill="#1b1a1f"/>
+
+  <!-- smiling eyes -->
+  <path d="M244 254c8-13 26-13 34 0" fill="none" stroke="#1b1a1f" stroke-width="9" stroke-linecap="round"/>
+  <path d="M322 254c8-13 26-13 34 0" fill="none" stroke="#1b1a1f" stroke-width="9" stroke-linecap="round"/>
+  <!-- brows -->
+  <path d="M240 222c10-8 26-9 38-4" fill="none" stroke="#2a262f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M322 218c12-5 28-4 38 4" fill="none" stroke="#2a262f" stroke-width="7" stroke-linecap="round"/>
+  <!-- blush -->
+  <ellipse cx="242" cy="290" rx="20" ry="11" fill="#ff6bdf" opacity="0.35"/>
+  <ellipse cx="358" cy="290" rx="20" ry="11" fill="#ff6bdf" opacity="0.35"/>
+  <!-- nose -->
+  <path d="M300 274v12" fill="none" stroke="#dda98c" stroke-width="5" stroke-linecap="round"/>
+  <!-- smile -->
+  <path d="M278 306c8 12 36 12 44 0" fill="none" stroke="#c4506a" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- earring -->
+  <circle cx="208" cy="292" r="7" fill="#cdff00"/>
+  <circle cx="392" cy="292" r="7" fill="#ff8c42"/>
+</svg>

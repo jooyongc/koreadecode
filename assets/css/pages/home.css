@@ -1,111 +1,348 @@
 /* ============================================
    KOREA DECODE — Home Page CSS
+   Redesign 2026: cinematic split hero + Miss Park
    ============================================ */
 
-/* --- Hero --- */
+/* ============================================
+   HERO — cinematic split
+   ============================================ */
 .hero {
-  min-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: var(--space-3xl) 0;
   position: relative;
+  min-height: calc(100vh - var(--header-height));
+  display: flex;
+  align-items: center;
+  padding: var(--space-3xl) 0 var(--space-2xl);
   overflow: hidden;
+  background: var(--bg-main);
 }
 
-/* Background image layer */
-.hero-bg {
+/* Ambient color glows behind everything */
+.hero-glow {
   position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-.hero-bg img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 40%;
-}
-
-/* Dark gradient overlay for text readability */
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0.85) 0%,
-      rgba(0, 0, 0, 0.7) 40%,
-      rgba(0, 0, 0, 0.35) 100%
-    ),
-    linear-gradient(
-      to top,
-      rgba(0, 0, 0, 0.9) 0%,
-      transparent 40%
-    );
+  border-radius: 50%;
+  filter: blur(90px);
   pointer-events: none;
+  z-index: 0;
+  animation: glowShift 9s ease-in-out infinite;
 }
 
-/* Subtle accent glow */
+.hero-glow--neon {
+  width: 46vw;
+  height: 46vw;
+  max-width: 620px;
+  max-height: 620px;
+  top: -12%;
+  left: -10%;
+  background: radial-gradient(circle, rgba(205, 255, 0, 0.22) 0%, transparent 68%);
+}
+
+.hero-glow--pink {
+  width: 42vw;
+  height: 42vw;
+  max-width: 560px;
+  max-height: 560px;
+  bottom: -18%;
+  right: 2%;
+  background: radial-gradient(circle, rgba(255, 107, 223, 0.24) 0%, transparent 68%);
+  animation-delay: -3s;
+}
+
+.hero-glow--orange {
+  width: 30vw;
+  height: 30vw;
+  max-width: 400px;
+  max-height: 400px;
+  bottom: 8%;
+  left: 22%;
+  background: radial-gradient(circle, rgba(255, 140, 66, 0.18) 0%, transparent 66%);
+  animation-delay: -6s;
+}
+
+/* Fine grain / scanline texture for the cinematic feel */
 .hero::after {
   content: '';
   position: absolute;
-  top: 20%;
-  left: -5%;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(204, 255, 0, 0.08) 0%, transparent 60%);
+  inset: 0;
   z-index: 1;
   pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.018) 0px,
+    rgba(255, 255, 255, 0.018) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.7;
 }
 
-/* Content above overlay */
-.hero-content {
+.hero-grid {
   position: relative;
   z-index: 2;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: center;
+  gap: var(--space-2xl);
 }
 
-.hero-label {
-  font-family: var(--font-body);
-  font-size: 0.75rem;
+/* ---- Hero copy (left) ---- */
+.hero-copy {
+  max-width: 620px;
+}
+
+.hero-hello {
+  font-family: var(--font-hand);
+  font-size: clamp(1.4rem, 2.4vw, 2rem);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--accent);
-  margin-bottom: var(--space-md);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  color: var(--pink);
+  margin-bottom: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.hero h1 {
+.hero-hello::after {
+  content: '';
+  width: 54px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--pink), transparent);
+  border-radius: 2px;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(3.2rem, 11vw, 8.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.045em;
   margin-bottom: var(--space-lg);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  text-transform: none;
 }
 
-.hero h1 .highlight {
-  color: var(--accent);
+.hero-title .line {
+  display: block;
+}
+
+.hero-title .word-decode {
+  color: var(--text-primary);
+  text-shadow: 0 0 60px rgba(205, 255, 0, 0.18);
+}
+
+.hero-title .word-korea {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--neon);
+  padding-left: 0.06em;
+}
+
+.hero-title .dot {
+  color: var(--pink);
 }
 
 .hero-description {
-  font-size: 1.15rem;
-  max-width: 600px;
+  font-family: var(--font-reading);
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  line-height: 1.75;
+  color: var(--text-secondary);
+  max-width: 30em;
   margin-bottom: var(--space-xl);
-  color: rgba(255, 255, 255, 0.85);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-.hero .btn-outline {
-  backdrop-filter: blur(4px);
 }
 
 .hero-actions {
   display: flex;
   gap: var(--space-md);
   flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
 }
 
-/* --- Featured Section --- */
+/* Neon primary CTA */
+.hero-actions .btn-primary {
+  background: var(--neon);
+  color: #000;
+  box-shadow: 0 0 0 rgba(205, 255, 0, 0);
+}
+
+.hero-actions .btn-primary:hover {
+  box-shadow: 0 8px 40px rgba(205, 255, 0, 0.35);
+}
+
+.hero-actions .btn-outline {
+  border-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+}
+
+.hero-actions .btn-outline:hover {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+/* Trust line under the CTAs */
+.hero-trust {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  font-family: var(--font-reading);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.hero-trust .dot-sep {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--border-light);
+}
+
+.hero-trust strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ---- Hero figure (right) — Miss Park ---- */
+.hero-figure {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 420px;
+}
+
+/* Wrapper keeps the handwritten tags outside the frame's overflow clip */
+.hero-figure-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+}
+
+.hero-figure-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 200px 200px 24px 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(205, 255, 0, 0.10) 0%, transparent 60%),
+    linear-gradient(180deg, #101010 0%, #000 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(205, 255, 0, 0.10),
+    0 30px 90px rgba(0, 0, 0, 0.8);
+  animation: floaty 7s ease-in-out infinite;
+}
+
+.hero-figure-frame img,
+.hero-figure-frame svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+/* Fallback illustration shows only when no photo is set */
+.miss-park-photo[hidden] { display: none; }
+
+/* Sticker: handwritten name tag */
+.miss-park-tag {
+  position: absolute;
+  left: -10px;
+  bottom: 42px;
+  z-index: 3;
+  background: var(--neon);
+  color: #000;
+  font-family: var(--font-hand);
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 6px 20px 8px;
+  border-radius: var(--radius-pill);
+  transform: rotate(-6deg);
+  box-shadow: 0 10px 30px rgba(205, 255, 0, 0.25);
+  white-space: nowrap;
+}
+
+.miss-park-sub {
+  position: absolute;
+  right: -6px;
+  top: 40px;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 107, 223, 0.4);
+  color: var(--pink);
+  font-family: var(--font-hand);
+  font-size: 1.2rem;
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  transform: rotate(5deg);
+  white-space: nowrap;
+}
+
+/* Scroll cue */
+.hero-scroll {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-lg);
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hero-scroll .line {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(to bottom, var(--neon), transparent);
+}
+
+/* ============================================
+   MARQUEE STRIP
+   ============================================ */
+.brand-strip {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-sec);
+  overflow: hidden;
+  padding: var(--space-md) 0;
+}
+
+.brand-strip-track {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  white-space: nowrap;
+  animation: marquee 28s linear infinite;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.brand-strip-track span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.brand-strip-track em {
+  color: var(--neon);
+  font-style: italic;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ============================================
+   SECTION HEADERS
+   ============================================ */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -116,23 +353,247 @@
 }
 
 .section-header h2 {
-  font-size: clamp(1.3rem, 3vw, 2rem);
+  font-size: clamp(1.6rem, 3.4vw, 2.5rem);
 }
 
 .section-header .view-all {
-  font-size: 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--neon);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
-/* --- Category Filter --- */
+.section-kicker {
+  font-family: var(--font-hand);
+  font-size: 1.35rem;
+  color: var(--pink);
+  margin-bottom: 2px;
+}
+
+/* ============================================
+   CATEGORY FILTER
+   ============================================ */
 .category-filter {
   margin-bottom: var(--space-xl);
 }
 
-/* --- Decode Preview Section --- */
+.chip[data-category="Book"].active,
+.chip[data-category="Book"]:hover {
+  background: var(--neon);
+  border-color: var(--neon);
+  color: #000;
+}
+
+.chip[data-category="Plan"].active,
+.chip[data-category="Plan"]:hover {
+  background: var(--pink);
+  border-color: var(--pink);
+  color: #000;
+}
+
+.chip[data-category="Shop"].active,
+.chip[data-category="Shop"]:hover {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #000;
+}
+
+.chip[data-category="Eat"].active,
+.chip[data-category="Eat"]:hover {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
+/* ============================================
+   THE 4 CATEGORIES — Book / Plan / Shop / Eat
+   ============================================ */
+.category-highlights {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+
+.category-card {
+  position: relative;
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  overflow: hidden;
+  transition: transform var(--transition), border-color var(--transition);
+  color: inherit;
+}
+
+.category-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--cat-color, var(--neon));
+  opacity: 0.9;
+}
+
+.category-card::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  bottom: -40px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: var(--cat-color, var(--neon));
+  opacity: 0.06;
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--cat-color, var(--neon));
+}
+
+.category-card:hover::after {
+  opacity: 0.14;
+  transform: scale(1.15);
+}
+
+.category-card[data-cat="Book"] { --cat-color: var(--neon); }
+.category-card[data-cat="Plan"] { --cat-color: var(--pink); }
+.category-card[data-cat="Shop"] { --cat-color: var(--orange); }
+.category-card[data-cat="Eat"]  { --cat-color: #ffffff; }
+
+.category-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--cat-color, var(--neon)) 14%, transparent);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-md);
+  font-size: 1.5rem;
+  color: var(--cat-color, var(--neon));
+}
+
+.category-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+  color: var(--text-primary);
+}
+
+.category-card .cat-tagline {
+  font-family: var(--font-hand);
+  font-size: 1.2rem;
+  color: var(--cat-color, var(--neon));
+  margin-bottom: var(--space-sm);
+}
+
+.category-card p {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* ============================================
+   MISS PARK — who she is
+   ============================================ */
+.misspark-section {
+  border-top: 1px solid var(--border);
+  background:
+    radial-gradient(70% 120% at 85% 0%, rgba(255, 107, 223, 0.08) 0%, transparent 60%),
+    var(--bg-main);
+}
+
+.misspark-layout {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: var(--space-3xl);
+  align-items: center;
+}
+
+.misspark-portrait {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #121212, #000);
+  aspect-ratio: 4 / 5;
+}
+
+.misspark-portrait img,
+.misspark-portrait svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.misspark-quote {
+  position: absolute;
+  left: var(--space-md);
+  right: var(--space-md);
+  bottom: var(--space-md);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  font-family: var(--font-hand);
+  font-size: 1.3rem;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.misspark-copy h2 {
+  margin-bottom: var(--space-md);
+}
+
+.misspark-copy h2 .accent-pink { font-style: italic; }
+
+.misspark-copy p {
+  margin-bottom: var(--space-md);
+  font-size: 1rem;
+  line-height: 1.85;
+}
+
+.misspark-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.misspark-fact {
+  border-left: 2px solid var(--neon);
+  padding-left: var(--space-md);
+}
+
+.misspark-fact:nth-child(2) { border-color: var(--pink); }
+.misspark-fact:nth-child(3) { border-color: var(--orange); }
+
+.misspark-fact strong {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.misspark-fact span {
+  font-family: var(--font-reading);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ============================================
+   DECODE PREVIEW
+   ============================================ */
 .decode-preview {
   background: var(--bg-sec);
   border: 1px solid var(--border);
@@ -160,20 +621,28 @@
 }
 
 .decode-preview-demo .demo-q {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+  font-family: var(--font-hand);
+  font-size: 1.25rem;
+  color: var(--pink);
   margin-bottom: var(--space-md);
   padding-left: var(--space-md);
-  border-left: 2px solid var(--accent);
+  border-left: 2px solid var(--pink);
 }
 
 .decode-preview-demo .demo-a {
+  font-family: var(--font-reading);
   font-size: 0.85rem;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
-/* --- Stats Strip --- */
+.decode-preview-demo .demo-a strong {
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   STATS STRIP
+   ============================================ */
 .stats-strip {
   display: flex;
   justify-content: center;
@@ -189,20 +658,28 @@
 
 .stat-number {
   font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--accent);
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--neon);
+  line-height: 1;
 }
+
+.stat-item:nth-child(2) .stat-number { color: var(--pink); }
+.stat-item:nth-child(3) .stat-number { color: var(--orange); }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
   color: var(--text-muted);
-  margin-top: var(--space-xs);
+  margin-top: var(--space-sm);
 }
 
-/* --- Editorial Section --- */
+/* ============================================
+   EDITORIAL
+   ============================================ */
 .editorial-intro {
   margin-bottom: var(--space-2xl);
   max-width: var(--max-width-narrow);
@@ -215,57 +692,9 @@
 .editorial-intro p {
   margin-bottom: var(--space-md);
   font-size: 1rem;
-  line-height: 1.8;
+  line-height: 1.85;
 }
 
-.category-highlights {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-lg);
-}
-
-.category-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  transition: all var(--transition);
-}
-
-.category-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-}
-
-.category-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-dim);
-  border-radius: var(--radius);
-  margin-bottom: var(--space-md);
-  font-size: 1.5rem;
-  color: var(--accent);
-}
-
-.category-card h3 {
-  font-family: var(--font-body);
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-transform: none;
-  margin-bottom: var(--space-sm);
-  color: var(--text-primary);
-}
-
-.category-card p {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  line-height: 1.6;
-}
-
-/* --- Editorial About Section --- */
 .editorial-about {
   border-top: 1px solid var(--border);
 }
@@ -276,33 +705,73 @@
 
 .editorial-about p {
   font-size: 1rem;
-  line-height: 1.8;
+  line-height: 1.85;
   margin-bottom: var(--space-md);
 }
 
-/* --- Skeleton Card --- */
+/* Skeleton card */
 .skeleton-card .card-image {
   aspect-ratio: 16/9;
 }
 
+/* ============================================
+   RESPONSIVE
+   ============================================ */
 @media (max-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2xl);
+  }
+
+  .hero {
+    min-height: auto;
+    padding-bottom: var(--space-3xl);
+  }
+
+  .hero-figure {
+    order: -1;
+    min-height: auto;
+  }
+
+  .hero-figure-wrap {
+    max-width: 320px;
+  }
+
+  .hero-scroll { display: none; }
+
   .category-highlights {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .misspark-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .misspark-portrait {
+    max-width: 380px;
   }
 }
 
 @media (max-width: 768px) {
-  .hero {
-    min-height: 70vh;
-    padding: var(--space-2xl) 0;
+  .hero-title {
+    font-size: clamp(3rem, 16vw, 5rem);
   }
 
-  .hero-bg img {
-    object-position: center center;
+  .hero-figure-wrap {
+    max-width: 260px;
   }
+
+  .hero-figure-frame {
+    border-radius: 140px 140px 20px 20px;
+  }
+
+  .miss-park-tag { font-size: 1.2rem; left: -4px; bottom: 26px; }
+  .miss-park-sub { font-size: 1rem; right: -2px; top: 22px; }
 
   .decode-preview {
     grid-template-columns: 1fr;
+    padding: var(--space-lg);
   }
 
   .stats-strip {
@@ -313,4 +782,6 @@
   .category-highlights {
     grid-template-columns: 1fr;
   }
+
+  .brand-strip-track { font-size: 0.95rem; }
 }

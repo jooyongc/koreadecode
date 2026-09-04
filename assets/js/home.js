@@ -1,12 +1,23 @@
 /**
  * Korea Decode — Home Page JavaScript
  * Fetches latest posts, renders cards, handles category filtering, populates stats.
+ *
+ * 2026 redesign: categories are now Book / Plan / Shop / Eat.
+ * Legacy posts (K-Food, K-Beauty, Travel, K-Pop, Culture) are mapped on the fly,
+ * so nothing in Supabase has to be migrated for the filters to work.
  */
 
 import { supabase } from '/assets/js/supabase-config.js';
+import { normalizeCategory, categoryFilterValues } from '/assets/js/categories.js';
+
+export { CATEGORIES, normalizeCategory, categoryFilterValues } from '/assets/js/categories.js';
 
 const POSTS_LIMIT = 6;
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1550424683-1498c8c52d8e?w=800&q=80';
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
 
 /**
  * Format a date string into a human-readable format.
@@ -24,17 +35,16 @@ function formatDate(dateString) {
 }
 
 /**
- * Generate a URL-safe slug from a title (fallback if slug is missing).
- * @param {string} title
+ * Escape a string for safe insertion into HTML.
+ * @param {string} str
  * @returns {string}
  */
-function generateSlug(title) {
-    return title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+function esc(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
 /**
@@ -56,7 +66,7 @@ function getPostUrl(post) {
  */
 function createPostCard(post) {
     const image = post.image || DEFAULT_IMAGE;
-    const category = post.category || 'Culture';
+    const category = normalizeCategory(post.category);
     const title = post.title || 'Untitled';
     const date = formatDate(post.created_at);
     const views = post.views || 0;
@@ -67,21 +77,20 @@ function createPostCard(post) {
     if (post.excerpt) {
         excerpt = post.excerpt;
     } else if (post.content) {
-        // Strip HTML tags and take first 120 chars
         const stripped = post.content.replace(/<[^>]*>/g, '');
         excerpt = stripped.substring(0, 120).trim();
         if (stripped.length > 120) excerpt += '...';
     }
 
     return `
-        <a href="${url}" class="card fade-in-up" style="text-decoration:none;color:inherit;">
+        <a href="${esc(url)}" class="card fade-in-up" data-cat="${esc(category)}" style="text-decoration:none;color:inherit;">
             <div class="card-image">
-                <img src="${image}" alt="${title}" loading="lazy">
+                <img src="${esc(image)}" alt="${esc(title)}" loading="lazy">
             </div>
             <div class="card-body">
-                <div class="card-category">${category}</div>
-                <h3 class="card-title">${title}</h3>
-                ${excerpt ? `<p class="card-excerpt">${excerpt}</p>` : ''}
+                <div class="card-category">${esc(category)}</div>
+                <h3 class="card-title">${esc(title)}</h3>
+                ${excerpt ? `<p class="card-excerpt">${esc(excerpt)}</p>` : ''}
                 <div class="card-meta">
                     <span class="card-meta-item">
                         <i class="ph ph-calendar-blank"></i>
@@ -97,9 +106,13 @@ function createPostCard(post) {
     `;
 }
 
+/* ============================================================
+   DATA
+   ============================================================ */
+
 /**
  * Fetch the latest published posts from Supabase.
- * @param {string|null} category - Optional category filter
+ * @param {string|null} category - 'all' or one of CATEGORIES
  * @param {number} limit - Number of posts to fetch
  * @returns {Promise<Array>}
  */
@@ -112,7 +125,7 @@ async function fetchLatestPosts(category = null, limit = POSTS_LIMIT) {
         .limit(limit);
 
     if (category && category !== 'all') {
-        query = query.eq('category', category);
+        query = query.in('category', categoryFilterValues(category));
     }
 
     const { data, error } = await query;
@@ -140,6 +153,23 @@ async function fetchPostCount() {
     return count || 0;
 }
 
+/* ============================================================
+   RENDER
+   ============================================================ */
+
+function skeletonMarkup(count = 3) {
+    return Array(count).fill(`
+        <div class="card skeleton-card">
+            <div class="card-image skeleton"></div>
+            <div class="card-body">
+                <div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div>
+                <div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div>
+                <div class="skeleton" style="height:14px;width:80%;"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
 /**
  * Render post cards into the grid.
  * @param {Array} posts
@@ -151,7 +181,8 @@ function renderPosts(posts) {
     if (posts.length === 0) {
         grid.innerHTML = `
             <div class="empty-state" style="grid-column:1/-1;">
-                <p>No posts found in this category yet. Check back soon!</p>
+                <p class="hand-note">Nothing here yet &mdash; I&rsquo;m working on it.</p>
+                <p>No guides in this category so far. Try another one, or check back soon.</p>
             </div>
         `;
         return;
@@ -159,7 +190,6 @@ function renderPosts(posts) {
 
     grid.innerHTML = posts.map((post, idx) => {
         const card = createPostCard(post);
-        // Add stagger delay class
         return card.replace('class="card fade-in-up"', `class="card fade-in-up delay-${(idx % 4) + 1}"`);
     }).join('');
 }
@@ -177,26 +207,12 @@ function setupCategoryFilter() {
 
         const category = chip.dataset.category;
 
-        // Update active state
         chipsContainer.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
 
-        // Show loading skeletons
         const grid = document.getElementById('posts-grid');
-        if (grid) {
-            grid.innerHTML = Array(3).fill(`
-                <div class="card skeleton-card">
-                    <div class="card-image skeleton"></div>
-                    <div class="card-body">
-                        <div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div>
-                        <div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div>
-                        <div class="skeleton" style="height:14px;width:80%;"></div>
-                    </div>
-                </div>
-            `).join('');
-        }
+        if (grid) grid.innerHTML = skeletonMarkup(3);
 
-        // Fetch and render
         const posts = await fetchLatestPosts(category, POSTS_LIMIT);
         renderPosts(posts);
     });
@@ -213,7 +229,6 @@ async function populateStats() {
         statArticles.textContent = count.toLocaleString();
     }
 
-    // Estimate monthly readers based on total views (rough heuristic)
     const { data, error } = await supabase
         .from('posts')
         .select('views')
@@ -223,14 +238,19 @@ async function populateStats() {
         const totalViews = data.reduce((sum, p) => sum + (p.views || 0), 0);
         const statReaders = document.getElementById('stat-readers');
         if (statReaders) {
-            // Display total views as a proxy metric
             statReaders.textContent = totalViews > 0 ? totalViews.toLocaleString() : '--';
         }
     }
 }
 
+/* ============================================================
+   HERO — CMS overrides (optional)
+   ============================================================ */
+
 /**
- * Load hero settings from site_settings and apply to the hero section.
+ * Load hero settings from site_settings and apply them over the markup defaults.
+ * The HTML already ships with the finished copy, so anything missing from the
+ * CMS simply leaves the designed default in place — no blank hero, ever.
  */
 async function loadHeroSettings() {
     try {
@@ -240,80 +260,65 @@ async function loadHeroSettings() {
             .eq('key', 'hero')
             .single();
 
-        // Defaults if site_settings fails
-        const defaults = {
-            label: 'Welcome to Korea Decode',
-            title_before: 'Decoding',
-            title_highlight: 'Korea',
-            title_after: ', One Story at a Time',
-            description: 'Your English-language guide to Korean culture, food, beauty, travel, and trends.',
-            cta_primary_text: 'Read Blog',
-            cta_primary_url: '/blog',
-            cta_secondary_text: 'Try Decode This',
-            cta_secondary_url: '/decode'
-        };
-
-        const h = (error || !data) ? defaults : { ...defaults, ...data.value };
-        if (error || !data) {
-            console.warn('[Home] No hero settings found, using defaults:', error?.message);
+        if (error || !data || !data.value) {
+            if (error) console.warn('[Home] No hero settings found, using page defaults:', error.message);
+            return;
         }
 
-        // Apply hero background image
-        const heroImg = document.getElementById('hero-bg-img');
-        if (heroImg && h.bg_image) {
-            heroImg.src = h.bg_image;
+        const h = data.value;
+
+        // Handwritten greeting
+        if (h.label) {
+            const el = document.getElementById('hero-label');
+            if (el) el.textContent = h.label;
         }
 
-        // Apply hero label
-        const heroLabel = document.querySelector('.hero-label');
-        if (heroLabel) heroLabel.textContent = h.label;
-
-        // Apply hero title
-        const heroH1 = document.querySelector('.hero-content h1');
-        if (heroH1) heroH1.innerHTML = `${h.title_before} <span class="highlight">${h.title_highlight}</span>${h.title_after}`;
-
-        // Apply hero description
-        const heroDesc = document.querySelector('.hero-description');
-        if (heroDesc) heroDesc.textContent = h.description;
-
-        // Apply CTA buttons
-        const actions = document.querySelector('.hero-actions');
-        if (actions) {
-            const primaryBtn = actions.querySelector('.btn-primary');
-            const secondaryBtn = actions.querySelector('.btn-outline');
-            if (primaryBtn) {
-                primaryBtn.textContent = h.cta_primary_text;
-                primaryBtn.href = h.cta_primary_url;
-            }
-            if (secondaryBtn) {
-                secondaryBtn.textContent = h.cta_secondary_text;
-                secondaryBtn.href = h.cta_secondary_url;
-            }
+        // Big display title: "DECODE" / "Korea."
+        const titleEl = document.getElementById('hero-title');
+        if (titleEl && (h.title_top || h.title_bottom)) {
+            const top = esc(h.title_top || 'DECODE');
+            const bottom = esc(h.title_bottom || 'Korea');
+            titleEl.innerHTML =
+                `<span class="line word-decode">${top}</span>` +
+                `<span class="line word-korea">${bottom}<span class="dot">.</span></span>`;
         }
 
-        // Fade in hero content
-        const heroContent = document.querySelector('.hero-content');
-        if (heroContent) heroContent.style.opacity = '1';
+        if (h.description) {
+            const el = document.getElementById('hero-description');
+            if (el) el.textContent = h.description;
+        }
+
+        const primary = document.getElementById('hero-cta-primary');
+        if (primary) {
+            if (h.cta_primary_text) primary.textContent = h.cta_primary_text;
+            if (h.cta_primary_url) primary.href = h.cta_primary_url;
+        }
+
+        const secondary = document.getElementById('hero-cta-secondary');
+        if (secondary) {
+            if (h.cta_secondary_text) secondary.textContent = h.cta_secondary_text;
+            if (h.cta_secondary_url) secondary.href = h.cta_secondary_url;
+        }
+
+        // Miss Park portrait can be swapped from the CMS
+        if (h.miss_park_image) {
+            const img = document.getElementById('miss-park-photo');
+            if (img) img.src = h.miss_park_image;
+        }
 
     } catch (err) {
         console.error('[Home] Failed to load hero settings:', err);
-        // Still show hero with empty content visible
-        const heroContent = document.querySelector('.hero-content');
-        if (heroContent) heroContent.style.opacity = '1';
     }
 }
 
-/**
- * Initialize the home page.
- */
-export async function initHome() {
-    // Set up category filter
-    setupCategoryFilter();
+/* ============================================================
+   INIT
+   ============================================================ */
 
-    // Load hero settings from CMS
+export async function initHome() {
+    setupCategoryFilter();
     loadHeroSettings();
 
-    // Fetch and render latest posts
     try {
         const posts = await fetchLatestPosts(null, POSTS_LIMIT);
         renderPosts(posts);
@@ -323,12 +328,11 @@ export async function initHome() {
         if (grid) {
             grid.innerHTML = `
                 <div class="empty-state" style="grid-column:1/-1;">
-                    <p>Unable to load posts. Please try again later.</p>
+                    <p>Unable to load guides right now. Please try again later.</p>
                 </div>
             `;
         }
     }
 
-    // Populate stats
     populateStats();
 }

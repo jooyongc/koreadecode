@@ -415,7 +415,7 @@
   margin: 24px 0;
 }
 .travel-deal-hero h2 {
-  font-family: 'Syncopate', sans-serif;
+  font-family: var(--font-display);
   font-size: 1.4rem;
   color: var(--accent, #CCFF00);
   margin-bottom: 8px;
@@ -465,4 +465,95 @@
 }
 .affiliate-disclosure strong {
   color: var(--text-white, #fff);
+}
+
+
+/* ============================================
+   ARTICLE BODY BLOCKS (2026 redesign)
+   Quick answer box, comparison tables, affiliate CTAs
+   ============================================ */
+
+.quick-answer {
+  background: var(--bg-sec) !important;
+  border-left: 4px solid var(--neon) !important;
+  border-radius: var(--radius) !important;
+}
+
+.quick-answer strong {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--neon) !important;
+}
+
+/* Comparison tables inside posts */
+.post-content table,
+.blog-content table,
+.ql-editor table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-family: var(--font-reading);
+  font-size: 0.9rem;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.post-content table th,
+.blog-content table th,
+.ql-editor table th {
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--neon);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-sec);
+}
+
+.post-content table td,
+.blog-content table td,
+.ql-editor table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.post-content table tr:hover td,
+.blog-content table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* In-article affiliate CTA */
+.affiliate-cta {
+  transition: border-color var(--transition), transform var(--transition);
+}
+
+.affiliate-cta:hover {
+  transform: translateY(-2px);
+}
+
+.affiliate-cta a:hover {
+  filter: brightness(1.1);
+}
+
+.affiliate-cta[data-provider="kkday"] {
+  border-left-color: var(--pink) !important;
+}
+
+/* Handwritten pull quotes in posts */
+.post-content blockquote,
+.blog-content blockquote {
+  font-family: var(--font-hand);
+  font-size: 1.4rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  border-left: 3px solid var(--pink);
+  padding: 4px 0 4px 20px;
+  margin: 28px 0;
 }

@@ -6,7 +6,10 @@
 const SITE_NAME = 'Korea Decode';
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/blog', label: 'Blog' },
+  { href: '/blog?category=Book', label: 'Book' },
+  { href: '/blog?category=Plan', label: 'Plan' },
+  { href: '/blog?category=Shop', label: 'Shop' },
+  { href: '/blog?category=Eat', label: 'Eat' },
   { href: '/decode', label: 'Decode' },
   { href: '/about', label: 'About' },
 ];
@@ -18,7 +21,19 @@ function getCurrentPath() {
 
 function isActive(href) {
   const current = getCurrentPath();
+
+  // Links with a query string (e.g. /blog?category=Book) must match the category too
+  const [path, query] = href.split('?');
+  if (query) {
+    if (!current.startsWith(path)) return false;
+    const wanted = new URLSearchParams(query).get('category');
+    const actual = new URLSearchParams(window.location.search).get('category');
+    return wanted === actual;
+  }
+
   if (href === '/') return current === '/';
+  // A bare /blog link should not light up while a category filter is applied
+  if (href === '/blog' && new URLSearchParams(window.location.search).get('category')) return false;
   return current.startsWith(href);
 }
 
@@ -81,19 +96,19 @@ export function injectFooter() {
       <div class="footer-grid">
         <div class="footer-brand">
           <a href="/" class="site-logo">Korea <span class="logo-accent">Decode</span></a>
-          <p>Your AI-powered guide to Korean culture, food, travel, and trends. Decoding Korea, one story at a time.</p>
+          <p>Practical Korea guides, written in Seoul by Miss Park. Book it, plan it, shop it, eat it &mdash; with real prices and real addresses.</p>
         </div>
         <div class="footer-section">
           <h4>Explore</h4>
-          <a href="/blog">Blog</a>
+          <a href="/blog">All Guides</a>
           <a href="/decode">Decode This</a>
         </div>
         <div class="footer-section">
           <h4>Categories</h4>
-          <a href="/blog?category=K-Food">K-Food</a>
-          <a href="/blog?category=K-Beauty">K-Beauty</a>
-          <a href="/blog?category=Travel">Travel</a>
-          <a href="/blog?category=K-Pop">K-Pop</a>
+          <a href="/blog?category=Book">Book</a>
+          <a href="/blog?category=Plan">Plan</a>
+          <a href="/blog?category=Shop">Shop</a>
+          <a href="/blog?category=Eat">Eat</a>
         </div>
         <div class="footer-section">
           <h4>Info</h4>
@@ -171,7 +186,7 @@ export function injectCookieBanner() {
       margin-top: 6px;
     }
     .cookie-text a {
-      color: #CCFF00;
+      color: #cdff00;
       text-decoration: underline;
       text-underline-offset: 2px;
     }
@@ -191,11 +206,11 @@ export function injectCookieBanner() {
       transition: all 0.2s;
     }
     .cookie-btn-accept {
-      background: #CCFF00;
+      background: #cdff00;
       color: #000;
     }
     .cookie-btn-accept:hover {
-      background: #e0ff4d;
+      background: #dcff4d;
     }
     .cookie-btn-reject {
       background: transparent;

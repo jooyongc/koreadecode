@@ -1,4 +1,5 @@
 import { supabase } from '/assets/js/supabase-config.js';
+import { normalizeCategory } from '/assets/js/categories.js';
 
 // --- AI CALL: via server-side proxy (functions/ai-proxy.js) ---
 async function callAI(prompt, options = {}) {
@@ -25,6 +26,240 @@ async function callAI(prompt, options = {}) {
         console.error("[AI] Proxy failed:", e);
         throw new Error("AI Error: " + e.message);
     }
+}
+
+/* ============================================================================
+   KOREA DECODE — EDITORIAL ENGINE (2026)
+   ----------------------------------------------------------------------------
+   No personas. Every article is written in one house voice: Miss Park, a
+   Korean writer who actually lives in Korea. Practical guide format, plain
+   English, no slang, no invented life stories. Affiliate banners are inserted
+   automatically at sensible points in the article body.
+   ========================================================================== */
+
+/** The four site categories. Stored on every new post. */
+const KD_CATEGORIES = ['Book', 'Plan', 'Shop', 'Eat'];
+
+/**
+ * The single byline for the whole site. Replaces the old per-post persona system.
+ * These fields are what get written to the post's writer_* columns.
+ */
+const KD_AUTHOR = {
+    name: 'Miss Park',
+    job: 'Editor, Korea Decode',
+    bio: 'Korean writer based in Seoul. Tests, prices and checks everything Korea Decode recommends.',
+    avatar: 'M',
+};
+
+/**
+ * The house voice. Shared by every content prompt so manual and automated
+ * posts read like the same publication.
+ */
+const MISS_PARK_VOICE = `
+**WHO IS WRITING:** Korea Decode is written by "Miss Park" — a Korean writer who lives in Korea.
+This is a house voice, not a character to act out. Do NOT invent a biography, a nationality other
+than Korean, an age, a job title, a backstory, or personal anecdotes that did not happen. Do NOT
+open with a self-introduction. Never write "Hello, I'm..." or "As a 27-year-old...".
+
+**WHAT THE VOICE SOUNDS LIKE:**
+- Calm, specific, and useful — like a knowledgeable local answering a friend's question by text.
+- Korean perspective is expressed through FACTS, not personality: what locals actually do, what a
+  thing really costs here, which option Koreans choose and why, what tourists routinely get wrong.
+- First person is allowed but rare, and only for judgement calls ("I would book this one ahead" /
+  "I would skip this"). Never for fabricated experiences.
+- Confident recommendations. Say which option is better and why, rather than listing everything
+  neutrally.
+- Respectful about Korea and about the reader. No stereotypes, no "exotic" framing, no gushing.
+`.trim();
+
+/**
+ * Hard style rules. The slang ban is the important one — the old persona system
+ * produced Gen-Z filler that read as machine-written and aged badly.
+ */
+const KD_STYLE_RULES = `
+**LANGUAGE RULES — STRICT:**
+1. NO SLANG and NO internet speak. Banned outright: "vibe", "vibe check", "no cap", "low-key",
+   "high-key", "obsessed", "iconic", "slay", "bestie", "girlie", "hits different", "living for it",
+   "game-changer", "must-have", "literally" (as filler), "honestly" (as filler), "omg", "y'all",
+   "insane", "crazy good", "chef's kiss", "unhinged", "rizz", "fire" (as praise), "goated".
+2. NO hype adjectives as a substitute for information: "amazing", "incredible", "breathtaking",
+   "hidden gem", "must-visit", "bucket list", "you won't believe". Replace each with a fact.
+3. NO emoji anywhere in the article body.
+4. NO exclamation marks except inside a direct quote.
+5. NO AI throat-clearing: "In today's fast-paced world", "Whether you're a seasoned traveler or...",
+   "Let's dive in", "In conclusion", "It's worth noting that".
+6. NO fabricated specifics. If you are not confident about a price, an address, or an opening time,
+   describe the range and say what it depends on, or tell the reader to check on the day. Never
+   invent a phone number, a URL, or a review quote.
+7. Plain international English. Short sentences. Contractions are fine. Korean terms are written in
+   romanisation with Hangul in brackets on first use, e.g. sundubu-jjigae (순두부찌개).
+8. Prices always in KRW with an approximate USD figure in brackets.
+`.trim();
+
+/** Affiliate partners available for in-article banners. */
+const KD_AFFILIATE_PARTNERS = {
+    klook: {
+        label: 'Klook',
+        cta: 'Check price on Klook',
+        accent: '#cdff00',
+        text: '#000000',
+        url: 'https://www.klook.com/',
+    },
+    kkday: {
+        label: 'KKday',
+        cta: 'Check price on KKday',
+        accent: '#ff6bdf',
+        text: '#000000',
+        url: 'https://www.kkday.com/',
+    },
+};
+
+/**
+ * Build one in-article affiliate banner.
+ * The markup is self-contained (inline styles) so it survives the Quill editor
+ * and renders identically on the live blog.
+ *
+ * @param {object} opts
+ * @param {string} opts.provider - 'klook' | 'kkday'
+ * @param {string} opts.text - One line explaining what the reader is booking
+ * @param {string} [opts.cta] - Button label
+ * @param {string} [opts.url] - Destination (affiliate link goes here)
+ * @returns {string} HTML
+ */
+function buildAffiliateBanner({ provider = 'klook', text = '', cta = '', url = '' } = {}) {
+    const p = KD_AFFILIATE_PARTNERS[provider] || KD_AFFILIATE_PARTNERS.klook;
+    const body = text || 'Book this ahead — popular dates sell out.';
+    const button = cta || p.cta;
+    const href = url || p.url;
+    return `<div class="affiliate-cta" data-provider="${provider}" style="background:#111;border:1px solid ${p.accent}33;border-left:4px solid ${p.accent};border-radius:12px;padding:18px 20px;margin:28px 0;">
+<p style="color:#cfcfcf;margin:0 0 12px;font-size:0.95rem;line-height:1.6;">${body}</p>
+<a href="${href}" target="_blank" rel="sponsored nofollow noopener" style="display:inline-block;background:${p.accent};color:${p.text};padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem;">${button} &rarr;</a>
+</div>`;
+}
+
+/** Standard disclosure appended to every article that carries affiliate links. */
+const KD_AFFILIATE_DISCLOSURE = `<aside class="affiliate-disclosure"><strong>Disclosure:</strong> some links in this guide are affiliate links. If you book through them, Korea Decode may earn a small commission at no extra cost to you. It never changes which options we recommend.</aside>`;
+
+/**
+ * Guarantee that an article body carries affiliate banners, spaced through the text.
+ *
+ * The model is asked to place them contextually; this is the safety net that runs
+ * afterwards. It counts what the model produced and tops up to `min` by inserting
+ * banners before evenly-spaced <h2> headings (never before the first one, never at
+ * the very end), alternating between partners.
+ *
+ * @param {string} html - Article body HTML
+ * @param {object} [opts]
+ * @param {number} [opts.min=2] - Minimum banners in the article
+ * @param {number} [opts.max=4] - Never exceed this many
+ * @param {string} [opts.topic] - Used for the banner copy
+ * @returns {string} HTML with banners and disclosure
+ */
+function injectAffiliateBanners(html, opts = {}) {
+    const { min = 2, max = 4, topic = '' } = opts;
+    if (!html) return html;
+
+    const existing = (html.match(/class="affiliate-cta"/g) || []).length;
+
+    // Too many? Leave it — trimming risks breaking the model's markup.
+    if (existing >= min) {
+        return html.includes('affiliate-disclosure') ? html : html + '\n' + KD_AFFILIATE_DISCLOSURE;
+    }
+
+    const needed = Math.min(min - existing, max - existing);
+    if (needed <= 0) return html;
+
+    // Split on <h2> so banners land at natural section breaks.
+    const parts = html.split(/(?=<h2[\s>])/i);
+    if (parts.length < 3) {
+        // Not enough headings to space them out — fall back to paragraph breaks.
+        const paras = html.split(/(?=<p[\s>])/i);
+        if (paras.length < 4) {
+            return html + '\n' + buildAffiliateBanner({
+                provider: 'klook',
+                text: topic
+                    ? `Planning ${topic}? Compare tours and tickets before you go — booking ahead is usually cheaper than buying on the day.`
+                    : 'Compare tours and tickets before you go — booking ahead is usually cheaper than buying on the day.',
+            }) + '\n' + KD_AFFILIATE_DISCLOSURE;
+        }
+        const at = Math.floor(paras.length / 2);
+        paras.splice(at, 0, buildAffiliateBanner({
+            provider: 'klook',
+            text: topic
+                ? `Booking ${topic} in advance usually costs less than buying at the counter, and popular time slots go first.`
+                : 'Booking in advance usually costs less than buying at the counter, and popular time slots go first.',
+        }));
+        return paras.join('') + '\n' + KD_AFFILIATE_DISCLOSURE;
+    }
+
+    // Candidate slots: every <h2> except the first section and the last.
+    const slots = [];
+    for (let i = 1; i < parts.length; i++) slots.push(i);
+    const chosen = [];
+    const step = Math.max(1, Math.floor(slots.length / (needed + 1)));
+    for (let n = 1; n <= needed; n++) {
+        const idx = slots[Math.min(slots.length - 1, n * step)];
+        if (idx !== undefined && !chosen.includes(idx)) chosen.push(idx);
+    }
+
+    const providers = ['klook', 'kkday'];
+    const copy = [
+        topic
+            ? `Booking ${topic} ahead is usually cheaper than paying at the gate, and the popular time slots go first.`
+            : 'Booking ahead is usually cheaper than paying at the gate, and the popular time slots go first.',
+        'Prefer a guided version with hotel pickup? Compare what each operator actually includes before you pay.',
+        'Short on time? A skip-the-line ticket saves the queue on weekends and public holidays.',
+        'Travelling as a group? Per-person prices usually drop once you book together.',
+    ];
+
+    // Insert from the end so earlier indices stay valid.
+    chosen.sort((a, b) => b - a).forEach((idx, n) => {
+        parts.splice(idx, 0, buildAffiliateBanner({
+            provider: providers[n % providers.length],
+            text: copy[n % copy.length],
+        }) + '\n');
+    });
+
+    let out = parts.join('');
+    if (!out.includes('affiliate-disclosure')) out += '\n' + KD_AFFILIATE_DISCLOSURE;
+    return out;
+}
+
+/**
+ * Last-resort cleanup for slang the model slipped in anyway.
+ * Only removes filler that is safe to delete or swap without changing meaning.
+ * @param {string} html
+ * @returns {string}
+ */
+function scrubSlang(html) {
+    if (!html) return html;
+    const swaps = [
+        [/\bvibe check\b/gi, 'atmosphere'],
+        // Plural forms first so subject-verb agreement survives the swap
+        [/\bthe vibes are\b/gi, 'the atmosphere is'],
+        [/\bvibes were\b/gi, 'atmosphere was'],
+        [/\bvibes\b/gi, 'atmosphere'],
+        [/\bvibe\b/gi, 'atmosphere'],
+        [/\bno cap\b/gi, ''],
+        [/\blow-?key\b/gi, ''],
+        [/\bhigh-?key\b/gi, ''],
+        [/\bI'?m obsessed\b/gi, 'I rate it highly'],
+        [/\bhits different\b/gi, 'stands out'],
+        [/\bgame-?changer\b/gi, 'a genuine improvement'],
+        [/\bhidden gem\b/gi, 'lesser-known spot'],
+        [/\bmust-?visit\b/gi, 'worth the trip'],
+        [/\bbucket list\b/gi, 'trip highlight'],
+        [/\bchef'?s kiss\b/gi, ''],
+        [/\bbestie\b/gi, ''],
+        [/\bslay(s|ed)?\b/gi, ''],
+        [/\bliterally\s+/gi, ''],
+        [/\bhonestly,\s*/gi, ''],
+        [/\byou won'?t believe\b/gi, 'here is'],
+    ];
+    let out = html;
+    swaps.forEach(([re, to]) => { out = out.replace(re, to); });
+    // Tidy double spaces introduced by deletions
+    return out.replace(/ {2,}/g, ' ').replace(/\s+([,.])/g, '$1');
 }
 
 function cleanJSONResponse(text) {
@@ -912,7 +1147,8 @@ window.editPost = async (id) => {
     if (error || !p) return;
 
     document.getElementById('ai-suggested-title').value = p.title;
-    document.getElementById('ai-category').value = p.category;
+    // Legacy posts still carry old labels (K-Food, Travel...) — map them onto Book/Plan/Shop/Eat
+    document.getElementById('ai-category').value = normalizeCategory(p.category);
 
     // Load slug field
     const slugInput = document.getElementById('ai-slug');
@@ -984,41 +1220,31 @@ window.runAIPhase1 = async () => {
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Brainstorming SEO Plan...';
     btn.disabled = true;
 
-    // Get selected persona for title generation
-    const personaId = document.getElementById('ai-persona-select').value;
-    let persona = availablePersonas.find(p => p.id === personaId);
-    let personaContext = '';
-    if (persona) {
-        const voiceGuide = getVoiceGuide(persona.nationality);
-        const jobVoice = getJobVoice(persona.job);
-        const likesAngle = persona.likes ? `\n- Since this writer is passionate about "${persona.likes}", angle the titles to connect the topic with that interest where possible. For example, if their interest is "Spicy food" and the topic is "Myeongdong", lean into the spicy food angle.` : '';
-        personaContext = `
-**Writer Persona Context (titles MUST reflect this voice):**
-- Name: ${persona.name}, a ${persona.age} ${persona.gender} ${persona.nationality} ${persona.job}
-- Passionate about: ${persona.likes}${likesAngle}
-
-**VOICE GUIDE (follow this carefully for title tone):**
-${voiceGuide}
-
-**PROFESSIONAL ANGLE:**
-${jobVoice}
-
-- The titles should sound like something THIS specific person would write — not generic blog titles.
-`;
-    }
-
     try {
         const prompt = `
-Analyze the topic: "${topic}".
-${personaContext}
-Your task is to generate a comprehensive SEO plan for a blog post on this topic for the website 'Korea Decode'.
+You are the editor of 'Korea Decode', a practical English-language guide to Korea written from Seoul.
 
-Provide your response in a clean JSON format, like this:
+Topic: "${topic}"
+
+${MISS_PARK_VOICE}
+
+Produce an SEO plan for a practical guide on this topic.
+
+**TITLE RULES:**
+- Titles describe what the reader will be able to DO or DECIDE after reading. Search-intent first.
+- Preferred shapes: "How to ...", "... : What It Costs and How to Book", "Is ... Worth It?",
+  "Where to ... in Seoul (and What to Skip)", "... Guide for First-Time Visitors".
+- Include the primary keyword naturally. Aim for 50-60 characters.
+- NO slang, NO clickbait, NO "hidden gem", "must-visit", "ultimate", "you won't believe",
+  "amazing", "epic", "bucket list". NO emoji. NO exclamation marks.
+- Do not promise specifics you cannot support (no invented prices in the title).
+
+Return clean JSON only, in exactly this shape:
 {
   "suggested_titles": [
-    "Unique, engaging, SEO-friendly title that matches the writer's voice 1",
-    "Alternative creative title reflecting the persona's perspective 2",
-    "Another compelling title with the writer's unique angle 3"
+    "Practical, search-led title 1",
+    "Practical, search-led title 2",
+    "Practical, search-led title 3"
   ],
   "seo_keywords": [
     "primary keyword",
@@ -1028,8 +1254,6 @@ Provide your response in a clean JSON format, like this:
     "related topic"
   ]
 }
-
-Ensure the titles are captivating, reflect the writer's unique personality and expertise, and the keywords are highly relevant for ranking on Google.
 `;
 
         let rawText = await callAI(prompt, {
@@ -1083,7 +1307,6 @@ window.runAIPhase2 = async () => {
     const title = document.getElementById('ai-suggested-title').value;
     const topic = document.getElementById('ai-topic').value;
     const keywords = Array.from(document.querySelectorAll('#ai-keywords-container .suggestion-chip')).map(el => el.innerText);
-    const personaId = document.getElementById('ai-persona-select').value;
 
     if (!title) return alert('Please generate or select a title first.');
 
@@ -1091,18 +1314,8 @@ window.runAIPhase2 = async () => {
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Fetching images & writing...';
     btn.disabled = true;
 
-    let persona = availablePersonas.find(p => p.id === personaId);
-    if (!persona) {
-        persona = {
-            name: "Korea Decode Editor",
-            nationality: "Seoul",
-            job: "Travel Guide",
-            likes: "everything",
-            age: "30s",
-            gender: "Non-binary",
-            bio: "Your guide to all things Korea."
-        };
-    }
+    // Single house byline — no personas.
+    const persona = KD_AUTHOR;
 
     // 1. Fetch Images from multi-source (Unsplash + Pexels via proxy)
     let allImages = [];
@@ -1183,49 +1396,66 @@ window.runAIPhase2 = async () => {
     let content = '';
 
     try {
-        const voiceGuide = getVoiceGuide(persona.nationality);
-        const jobVoice = getJobVoice(persona.job);
-        const personaConfig = getPersonaConfig(persona);
-        const exampleOpening = getExampleOpening(persona);
-
-        const likesIntegration = persona.likes ? `\n5. **PERSONAL INTERESTS:** Naturally weave "${persona.likes}" into the article. Don't force it — find organic connections between the topic and this interest. Maybe a comparison, a personal anecdote, or a specific recommendation related to it.` : '';
-
         const prompt = `
-**You ARE ${persona.name}. Stay in character for the ENTIRE article.**
+**Task:** Write a practical guide for 'Korea Decode'.
 
-**Your Identity:**
-- ${persona.age} ${persona.gender} from ${persona.nationality}, working as a ${persona.job}
-- Passionate about: ${persona.likes}
-- Bio: "${persona.bio}"
+${MISS_PARK_VOICE}
 
-**YOUR UNIQUE VOICE (CRITICAL — follow strictly):**
-${voiceGuide}
-
-**YOUR PROFESSIONAL LENS:**
-${jobVoice}
-
-**EXAMPLE OPENING (match this energy and style, but DO NOT copy it verbatim):**
-"${exampleOpening}"
-
-**Task:** Write a blog post for 'Korea Decode'.
-
-**Topic:** "${title}"
+**Title:** "${title}"
 **Core Subject:** "${topic}"
 **Target Keywords:** ${keywords.join(', ')}
 
-**RULES:**
-1. **Voice:** First person ("I", "my"). Share personal opinions, experiences, and reactions that fit YOUR background. A ${persona.nationality} ${persona.job} would notice different things than other writers — highlight THOSE unique observations. NEVER sound like a generic AI blog post.
-2. **Structure:**
-   - Hook intro (NO self-introduction like "Hello, I'm..."). Jump straight into an engaging opening that matches the example style above.
-   - 3-5 sections with <h2>/<h3> tags. Use <ul><li> for lists, <strong> for key terms, <blockquote> for personal tips.
-   - Strong conclusion with call-to-action.
-3. **IMAGES — MANDATORY:** You MUST place exactly **${imgCount}** image markers in the article. Write the text **[IMG]** alone on its own line, wrapped in a paragraph tag like this: <p>[IMG]</p>. Space them evenly through the article (roughly every 2-3 paragraphs). This is REQUIRED — do not skip this.
-4. **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <blockquote>.${likesIntegration}
+${KD_STYLE_RULES}
+
+**ARTICLE FORMAT — PRACTICAL GUIDE, NOT AN ESSAY:**
+
+1. **Opening (2-3 sentences max):** Start with the reader's decision or problem, e.g. "Trying to work
+   out whether X is worth booking? Here is what it costs and how it actually works." No self-
+   introduction, no scene-setting, no history lesson.
+
+2. **Quick Answer box** immediately after the intro:
+   <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
+   <strong style="color:#cdff00;">Quick answer:</strong>
+   <p style="color:#ccc;margin:6px 0 0;">[One or two sentences for the reader who will not read the rest]</p>
+   </div>
+
+3. **Comparison table:** at least one HTML <table> comparing the real options — price, time needed,
+   who it suits, what is included. Keep it to 3-5 rows.
+
+4. **Practical specifics throughout:** prices in KRW with an approximate USD figure, opening hours,
+   the nearest subway line/station and exit number, how long things take, what to book ahead and what
+   to buy on the day. Where a figure varies, give the range and say what it depends on.
+
+5. **Structure:** 4-6 sections using <h2> (and <h3> where a section needs sub-points). Use
+   <ul><li> for checklists, <strong> for the numbers that matter, <blockquote> for a single practical
+   tip per section.
+
+6. **Affiliate placements:** where a bookable tour, ticket, pass or product genuinely fits, insert
+   this block — 2 to 3 times in the article, always AFTER you have explained why the thing is worth
+   doing, never at the very top and never two in a row:
+   <div class="affiliate-cta" data-provider="klook" style="background:#111;border:1px solid #cdff0033;border-left:4px solid #cdff00;border-radius:12px;padding:18px 20px;margin:28px 0;">
+   <p style="color:#cfcfcf;margin:0 0 12px;font-size:0.95rem;line-height:1.6;">[One line saying what the reader is booking and why booking ahead helps]</p>
+   <a href="#affiliate" target="_blank" rel="sponsored nofollow noopener" style="display:inline-block;background:#cdff00;color:#000;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem;">Check price on Klook &rarr;</a>
+   </div>
+   For a second or third placement you may swap the provider to KKday by using data-provider="kkday"
+   and the colour #ff6bdf with the label "Check price on KKday".
+
+7. **IMAGES — MANDATORY:** place exactly **${imgCount}** image markers, each as <p>[IMG]</p> alone on
+   its own line, spaced evenly through the article.
+
+8. **Ending:** a short "What to do next" section — the recommended option, the runner-up, and the one
+   thing to sort out before arriving. No motivational sign-off.
+
+9. **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <table>, <blockquote>.
+
+**TEST BEFORE YOU FINISH:** every paragraph must help the reader decide or act. If a paragraph does
+not answer "what should I do?", "how much is it?", "how do I get there?" or "is it worth it?",
+delete it or replace it with a fact.
 
 **Output:** Only the article HTML body. No explanations before or after.`;
 
         let rawContent = await callAI(prompt, {
-            generationConfig: { temperature: personaConfig.temperature, topP: personaConfig.topP }
+            generationConfig: { temperature: 0.55, topP: 0.9 }
         });
 
         // Clean markdown code blocks from response
@@ -1259,6 +1489,10 @@ ${jobVoice}
         rawContent = rawContent.replace(/<p>\[IMG\]<\/p>/g, '');
         rawContent = rawContent.replace(/\[IMG\]/g, '');
         rawContent = rawContent.replace(/\[INSERT_IMAGE_HERE\]/g, '');
+
+        // House style + guaranteed affiliate placements
+        rawContent = scrubSlang(rawContent);
+        rawContent = injectAffiliateBanners(rawContent, { min: 2, max: 4, topic });
         content = rawContent;
 
     } catch (e) {
@@ -1277,24 +1511,32 @@ ${jobVoice}
     btn.disabled = false;
 };
 
+/**
+ * Fallback skeleton used when the AI call fails. Deliberately empty of claims —
+ * it is a structure for the editor to fill in, not publishable copy.
+ */
 function generateTemplateContent(persona, topic, title, imgHtml) {
     return `
-                <p>Hello! I'm <strong>${persona.name}</strong>, a ${persona.age} ${persona.nationality} ${persona.job}.</p>
-                <p>As someone who loves <strong>${persona.likes}</strong>, I was so excited to check out <strong>${topic}</strong>.</p>
-                <br>
-                <h2>Why ${persona.name} Recommends This</h2>
-                <p>Coming from ${persona.nationality}, I've always found Korean ${topic} fascinating. It's totally different from what I'm used to!</p>
-                <br>
+                <p><em>Draft skeleton — AI generation failed, fill this in before publishing.</em></p>
+                <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
+                    <strong style="color:#cdff00;">Quick answer:</strong>
+                    <p style="color:#ccc;margin:6px 0 0;">[One or two sentences: what should the reader do about ${topic}?]</p>
+                </div>
+                <h2>What it costs</h2>
+                <p>[Price in KRW with an approximate USD figure. Note what the price depends on.]</p>
                 ${imgHtml}
-                <br>
-                <h3>My Professional Tip</h3>
-                <p>Since I work as a ${persona.job}, I noticed the details that others might miss.</p>
+                <h2>How to get there</h2>
+                <p>[Subway line, station, exit number. How long it takes from central Seoul.]</p>
+                <h2>What to book ahead</h2>
+                <p>[What sells out, what can be bought on the day.]</p>
+                ${buildAffiliateBanner({ provider: 'klook', text: `Booking ${topic} ahead is usually cheaper than paying at the gate.` })}
+                <h2>What to do next</h2>
                 <ul>
-                    <li><strong>Vibe Check:</strong> Perfect for ${persona.age}'s Gen Z aesthetic.</li>
-                    <li><strong>Must Try:</strong> Don't leave without experiencing it fully!</li>
+                    <li><strong>Best option:</strong> [recommendation]</li>
+                    <li><strong>Runner-up:</strong> [alternative and who it suits]</li>
+                    <li><strong>Sort out first:</strong> [the one thing to arrange before arriving]</li>
                 </ul>
-                <br>
-                <p>Hope this helps you on your Korea trip! Let me know if you want more tips from a ${persona.nationality} local.</p>
+                ${KD_AFFILIATE_DISCLOSURE}
             `;
 }
 
@@ -1462,149 +1704,11 @@ function insertImageIntoBody(img) {
     quill.setSelection(index + 2);
 }
 
-// --- SHARED VOICE GUIDE FUNCTIONS ---
-function getVoiceGuide(nationality) {
-    const guides = {
-        'USA': `**VOCABULARY:** Use "honestly," "literally," "game-changer," "vibe check," "I'm obsessed," "low-key," "no cap." Comfortable with internet slang and Gen Z/millennial crossover language.
-**STRUCTURE:** Mix short punchy sentences with longer stream-of-consciousness ones. Use rhetorical questions ("Is it just me or...?"). Love em-dashes and parenthetical asides.
-**CULTURAL LENS:** Compare Korean experiences to American equivalents — Target vs Daiso, Starbucks vs Korean cafes, NYC subway vs Seoul metro. Reference American pop culture naturally.
-**QUIRKS:** Start sentences with "Okay so," "Listen," "Not gonna lie." Tend to hype things up. Use capitalization for emphasis ("THIS place").
-**EXAMPLE PHRASES:** "Okay so hear me out—", "This might be controversial but...", "I literally cannot stress this enough", "If you know, you know (IYKYK)"`,
-
-        'UK': `**VOCABULARY:** Use "rather," "spot on," "proper," "brilliant," "cheeky," "dodgy," "sorted." Comfortable with understatement and irony. Occasional "bloody" for emphasis.
-**STRUCTURE:** Longer, more complex sentences with subordinate clauses. Dry observations followed by a wry aside. Build up to the point with gentle preamble.
-**CULTURAL LENS:** Compare to British institutions — Greggs vs Korean bakeries, the Tube vs Seoul metro, pub culture vs Korean drinking culture. Reference British weather as universal benchmark.
-**QUIRKS:** Understate strong emotions ("not entirely terrible" = amazing). Self-deprecating humor. Hedge opinions with "one might argue" or "I dare say."
-**EXAMPLE PHRASES:** "I'd heard the claims, of course—", "Right then, let's get into it", "which, frankly, is no small feat", "I was pleasantly surprised, if I'm being honest"`,
-
-        'Australia': `**VOCABULARY:** Use "heaps," "reckon," "arvo," "brekkie," "no worries," "keen," "suss out," "chucked." Drop the g in -ing occasionally ("goin'," "lovin'").
-**STRUCTURE:** Casual, conversational flow. Short sentences mixed with friendly run-ons. Pose questions to the reader as if chatting at a pub.
-**CULTURAL LENS:** Compare to Australian outdoors/beach culture, BBQ vs Korean BBQ, Australian coffee culture vs Korean cafes. Reference distance and travel ("back home you'd drive 4 hours for this").
-**QUIRKS:** Abbreviate everything — "defs," "arvo," "brekkie." Call everyone "mate." Play down impressive things ("yeah it was alright" = incredible).
-**EXAMPLE PHRASES:** "Look, I'm not gonna sugarcoat it—", "Mate, you absolutely have to try this", "Reckon this is one of the best I've had", "No worries if that's not your thing, but—"`,
-
-        'France': `**VOCABULARY:** Naturally weave in French words — "ambiance," "je ne sais quoi," "quartier," "rapport qualite-prix." Use refined adjectives like "exquisite," "nuanced," "sophisticated."
-**STRUCTURE:** Elegant longer sentences with multiple clauses. Build atmosphere before delivering opinions. Philosophical observations woven into practical content.
-**CULTURAL LENS:** Compare Korean aesthetics and cuisine to French standards — patisserie vs Korean desserts, fashion sensibility, cafe culture. Always note quality and craftsmanship.
-**QUIRKS:** Strong opinions about food quality and presentation. Appreciate artistry in everyday things. Slightly skeptical first, then won over.
-**EXAMPLE PHRASES:** "One must admit, the attention to detail here is remarkable—", "As a Parisian, I was initially skeptical, but...", "There's a certain je ne sais quoi about this place", "The presentation alone deserves recognition"`,
-
-        'Germany': `**VOCABULARY:** Use precise language — "specifically," "particularly noteworthy," "efficiently organized," "practical." Occasional German terms like "Gemutlichkeit," "Wanderlust."
-**STRUCTURE:** Well-organized with clear progression. Topic sentences followed by supporting evidence. Include specifics — prices, hours, distances, transit details.
-**CULTURAL LENS:** Compare systems and efficiency — Korean transit punctuality, organizational methods, recycling systems, work culture. Appreciate engineering and infrastructure.
-**QUIRKS:** Include practical logistics that other writers skip. Rate value-for-money. Appreciate well-designed systems. Slightly structured even in casual writing.
-**EXAMPLE PHRASES:** "What immediately stands out is the efficiency of—", "From a practical standpoint, here's what you need to know", "The attention to systematic organization here is impressive", "At approximately 15,000 KRW, this represents excellent value"`,
-
-        'Singapore': `**VOCABULARY:** Use Singlish-flavored expressions — "shiok," "can lah," "wah," "damn power," "not bad leh." Mix formal English with casual Singlish naturally.
-**STRUCTURE:** Conversational and warm. Short exclamatory sentences mixed with detailed descriptions. Direct comparisons and food-focused observations.
-**CULTURAL LENS:** Compare Korean hawker/street food to Singapore's, MRT systems, multicultural neighborhoods, shopping culture. Note the Asian similarities and surprising differences.
-**QUIRKS:** Food-centric observations in every post. Note cleanliness and organization. Appreciate good deals and value. Community-oriented perspective.
-**EXAMPLE PHRASES:** "Wah, this one really not bad—", "Okay this is like our hawker center but level up sia", "Damn shiok, must try when you go", "Can lah, very worth the trip one"`,
-
-        'Japan': `**VOCABULARY:** Use precise, aesthetically-minded language. Occasional Japanese terms — "kawaii," "sugoi," "oishii." Appreciate "wabi-sabi" beauty and subtle details.
-**STRUCTURE:** Balanced, measured sentences. Observe small details that others miss. Build narrative through sensory descriptions — sight, sound, taste, texture.
-**CULTURAL LENS:** Korean-Japanese cultural bridge — similar yet different customs, food similarities (ramen vs ramyeon), aesthetic sensibilities, convenience store culture, fashion subcultures.
-**QUIRKS:** Notice textures, presentation, packaging. Appreciate seasonality. Quiet enthusiasm rather than loud excitement. Thoughtful comparisons that show deep cultural understanding.
-**EXAMPLE PHRASES:** "What struck me first was the delicate balance of—", "There's a quiet beauty to this place that reminded me of...", "The level of care in the presentation is something I truly appreciate", "As someone from Japan, the subtle differences are fascinating"`,
-
-        'Canada': `**VOCABULARY:** Use "for sure," "pretty solid," "eh," "toonie/loonie" references. Polite qualifiers like "I think," "in my experience." Comfortable multicultural vocabulary.
-**STRUCTURE:** Warm, inclusive, and well-balanced. Mix personal experience with helpful advice. Acknowledging multiple perspectives before sharing own opinion.
-**CULTURAL LENS:** Compare to Canadian multiculturalism — diverse food scenes, winter gear needs, politeness culture, nature appreciation, Tim Hortons vs Korean coffee chains.
-**QUIRKS:** Apologize unnecessarily. Compare weather constantly. Appreciate inclusivity and accessibility. Mention poutine at least once in food posts.
-**EXAMPLE PHRASES:** "Sorry, but I have to gush about this for a second—", "If you're coming from Canada, you'll really appreciate", "Pretty solid experience overall, I'd say", "This might remind you of home, but with a Korean twist"`
-    };
-
-    return guides[nationality] || `**VOCABULARY:** Use natural expressions from your cultural background. Be authentic to your linguistic heritage.
-**STRUCTURE:** Write with your natural rhythm — let your cultural background shape sentence patterns.
-**CULTURAL LENS:** Compare Korean experiences to what you know from home. Highlight surprising similarities and fascinating differences.
-**QUIRKS:** Let your unique perspective shine through. The most interesting observations come from unexpected cultural angles.
-**EXAMPLE PHRASES:** Share your genuine reactions. Write as you would naturally tell a friend about your Korea experience.`;
-}
-
-function getJobVoice(job) {
-    if (job.includes('Blogger') || job.includes('Nomad')) return `**EXPERTISE:** Travel logistics, hidden gems, budget optimization, destination comparison. Years of road-tested knowledge.
-**WRITING PATTERN:** Open with a hook from personal experience. Organize by practical sections (Getting There, What to Do, Budget Tips). End with "insider tip" that shows real expertise.
-**CONTENT FOCUS:** Actionable travel advice, honest cost breakdowns, off-the-beaten-path discoveries, "what I wish I knew before going" insights.`;
-
-    if (job.includes('Beauty') || job.includes('Skincare')) return `**EXPERTISE:** Ingredient science, product formulation, Korean beauty innovation, skincare routines, before/after analysis.
-**WRITING PATTERN:** Lead with the product/trend discovery moment. Break down technical details accessibly. Include personal skin journey and results.
-**CONTENT FOCUS:** Product deep-dives, ingredient breakdowns, K-Beauty vs Western beauty comparisons, routine building, shopping guides for beauty districts.`;
-
-    if (job.includes('Food') || job.includes('Critic')) return `**EXPERTISE:** Flavor profiling, cooking technique analysis, ingredient sourcing, restaurant ambiance assessment, food history and cultural context.
-**WRITING PATTERN:** Set the scene with atmosphere description. Analyze dishes systematically — appearance, aroma, taste, texture. Use precise culinary vocabulary. Rate with nuanced judgment, not simple stars.
-**CONTENT FOCUS:** Detailed dish analysis, restaurant reviews with context, street food deep-dives, regional cuisine differences, cooking class experiences, market tours.`;
-
-    if (job.includes('K-Pop') || job.includes('Stan')) return `**EXPERTISE:** Fandom culture, comeback analysis, idol training system, concert/fan event logistics, K-Pop industry business, music show voting.
-**WRITING PATTERN:** High energy opening that matches fandom excitement. Mix deep industry knowledge with personal fan reactions. Use fandom terminology naturally. Shift between analytical and emotional.
-**CONTENT FOCUS:** Concert venue reviews, fan pilgrimage locations, album/merch shopping, entertainment district guides, fandom meet-up culture, trainee life insights.`;
-
-    if (job.includes('Student')) return `**EXPERTISE:** Student life hacks, budget survival, campus culture, language learning journey, making Korean friends, navigating bureaucracy as a young foreigner.
-**WRITING PATTERN:** Relatable "figuring it out" narrative. Mix struggles with discoveries. Honest about challenges. Excited about small wins. Write like texting a friend back home about your day.
-**CONTENT FOCUS:** Affordable eats, student neighborhoods, language exchange tips, university culture, nightlife on a budget, dorm/housing reality, study cafe culture.`;
-
-    return `**EXPERTISE:** Professional knowledge in your field applied to Korean cultural context.
-**WRITING PATTERN:** Authoritative but accessible. Lead with unique professional insight, then broaden to general reader appeal.
-**CONTENT FOCUS:** Niche expertise applied to Korean experiences, professional observations that casual visitors would miss.`;
-}
-
-function getPersonaConfig(persona) {
-    const job = persona.job || '';
-    if (job.includes('K-Pop') || job.includes('Stan')) return { temperature: 0.9, topP: 0.95 };
-    if (job.includes('Food') || job.includes('Critic')) return { temperature: 0.6, topP: 0.9 };
-    if (job.includes('Student')) return { temperature: 0.85, topP: 0.92 };
-    if (job.includes('Beauty') || job.includes('Skincare')) return { temperature: 0.7, topP: 0.9 };
-    if (job.includes('Blogger') || job.includes('Nomad')) return { temperature: 0.75, topP: 0.92 };
-    return { temperature: 0.75, topP: 0.9 };
-}
-
-function getExampleOpening(persona) {
-    const nat = persona.nationality || '';
-    const job = persona.job || '';
-
-    const openings = {
-        'USA|Travel Blogger': "Okay, so I know literally everyone says you HAVE to visit this place — but hear me out, because there's a side of it nobody talks about.",
-        'USA|Digital Nomad': "Real talk: I've worked from cafes in 23 countries, and Korea just completely reset my standards for what a workspace can be.",
-        'USA|K-Pop Stan': "NOT ME literally screaming in the middle of the street when I realized where I was standing — this is THE spot, you guys.",
-        'USA|Food Critic': "I'll be honest — I walked in expecting the usual tourist trap situation. What I got instead completely changed my mind.",
-        'USA|Student': "So I'm sitting in my dorm room at 2am, scrolling through my photos from today, and I still can't believe this is my actual life right now.",
-        'UK|Travel Blogger': "I'll confess I arrived with a healthy dose of British skepticism — which lasted approximately forty-five minutes.",
-        'UK|Food Critic': "I'd heard the claims, of course — 'life-changing,' 'best you'll ever have,' the usual hyperbole. Reader, they were not exaggerating.",
-        'UK|Student': "Right, so nobody warned me that studying abroad in Korea would basically rewire my entire understanding of what 'going out' means.",
-        'UK|K-Pop Stan': "I flew twelve hours for a concert and an overpriced lightstick, and I'd do it again tomorrow without a moment's hesitation.",
-        'UK|Digital Nomad': "Finding a proper workspace abroad is rather like finding a decent cup of tea — far more difficult than it has any right to be. Until Seoul.",
-        'Australia|Travel Blogger': "Look, I've backpacked through most of Southeast Asia, but Korea hit different and I need to talk about why.",
-        'Australia|Food Critic': "Mate, I thought I knew good BBQ — we practically invented the thing in Australia. Then Seoul absolutely humbled me.",
-        'Australia|Student': "So my mates back home keep asking if I've gone 'full Korean' yet, and honestly? Yeah, kind of.",
-        'Australia|K-Pop Stan': "I dragged my travel mate to three different fan merch shops before breakfast and no, I do not feel bad about it.",
-        'France|Travel Blogger': "There are places that charm you slowly, and then there are places that seduce you immediately. This was undeniably the latter.",
-        'France|Food Critic': "As someone raised on French cuisine, I approach foreign kitchens with both curiosity and — I'll admit — a certain standard. This exceeded it.",
-        'Germany|Travel Blogger': "I'll start with what impressed me most: the infrastructure. Then we'll get to everything else, which was equally remarkable.",
-        'Germany|Food Critic': "I approached this with a systematic plan — five restaurants, three markets, two cooking classes. Here's my comprehensive assessment.",
-        'Singapore|Travel Blogger': "Wah, okay — coming from Singapore, I thought I knew Asian city life. Korea is like a parallel universe version that keeps surprising me.",
-        'Singapore|Food Critic': "As someone who grew up in Singapore's hawker culture, I have strong opinions about street food. Korea's street food scene? Damn shiok.",
-        'Japan|Travel Blogger': "The similarities between Korean and Japanese culture make the differences even more fascinating — and this experience perfectly illustrated why.",
-        'Japan|Food Critic': "There's a precision in Korean cooking that resonates deeply with Japanese culinary philosophy, yet the approach is entirely its own.",
-        'Canada|Travel Blogger': "Sorry in advance for how long this post is going to be — I just have SO many things to share about this experience.",
-        'Canada|Food Critic': "As a Canadian, I thought nothing could beat our multicultural food scene. Korea has entered the chat, and it's a serious contender."
-    };
-
-    // Try exact match
-    const key = `${nat}|${job}`;
-    if (openings[key]) return openings[key];
-
-    // Try partial job match
-    for (const [k, v] of Object.entries(openings)) {
-        const [oNat, oJob] = k.split('|');
-        if (oNat === nat && job.includes(oJob.split(' ')[0])) return v;
-    }
-
-    // Fallback by nationality
-    for (const [k, v] of Object.entries(openings)) {
-        if (k.startsWith(nat + '|')) return v;
-    }
-
-    return "There's something about Korea that gets under your skin — not all at once, but in small, unforgettable moments.";
-}
+/* --- SHARED VOICE GUIDE FUNCTIONS ---
+   Removed in the 2026 redesign. The old per-nationality / per-job voice guides
+   generated slang-heavy copy ("vibe check", "no cap", "low-key") and invented
+   personal anecdotes. Everything now runs through the single house voice defined
+   at the top of this file: MISS_PARK_VOICE + KD_STYLE_RULES. */
 
 // --- AUTOMATION PROFILES ---
 function loadAutoProfiles() {
@@ -1684,18 +1788,23 @@ function refreshAutoPersonaSelect() {
 
 // --- AUTOMATION AI GENERATION ---
 async function generateAutomationSEOPlan(topic, persona) {
-    let personaContext = '';
-    if (persona && persona.name !== 'Korea Decode Editor') {
-        const voiceGuide = getVoiceGuide(persona.nationality);
-        const likesAngle = persona.likes && persona.likes !== 'everything' ? `\nAngle the title to connect with their interest in "${persona.likes}" where natural.` : '';
-        personaContext = `Writer: ${persona.name}, a ${persona.age} ${persona.gender} ${persona.nationality} ${persona.job}.
-Voice summary: ${voiceGuide.split('\n')[0]}${likesAngle}
-Titles must reflect their unique voice — not generic blog titles.`;
-    }
-    const prompt = `Generate an SEO plan for a Korea Decode blog post.
+    const prompt = `Generate an SEO plan for a Korea Decode practical guide.
 Topic: "${topic}"
-${personaContext}
-Return JSON only: { "title": "SEO-optimized engaging title", "keywords": ["kw1","kw2","kw3","kw4","kw5"] }`;
+
+Korea Decode is an English guide to Korea written from Seoul. Titles describe what the reader will
+be able to do or decide after reading — search intent first. Aim for 50-60 characters, include the
+primary keyword naturally.
+
+Banned in titles: slang, emoji, exclamation marks, and the words "ultimate", "hidden gem",
+"must-visit", "amazing", "epic", "bucket list", "you won't believe".
+
+Also classify the topic into exactly one Korea Decode category:
+- "Book" — tours, tickets, passes, experiences worth reserving ahead
+- "Plan" — itineraries, transport, timing, etiquette, city logistics
+- "Shop" — K-Beauty, skincare, fashion, souvenirs, tax refunds
+- "Eat"  — restaurants, dishes, ordering, cafes, drinking
+
+Return JSON only: { "title": "practical, search-led title", "category": "Book|Plan|Shop|Eat", "keywords": ["kw1","kw2","kw3","kw4","kw5"] }`;
     const raw = await callAI(prompt, {
         generationConfig: { temperature: 0.4, topP: 0.85 }
     });
@@ -1732,70 +1841,66 @@ async function fetchAutomationImages(topic, keywords, count) {
 }
 
 async function generateAutomationArticle(topic, title, keywords, persona, wordCount, imgCount, toneOverride, images) {
-    const voiceGuide = getVoiceGuide(persona.nationality);
-    const jobVoice = getJobVoice(persona.job);
-    const personaConfig = getPersonaConfig(persona);
-    const exampleOpening = getExampleOpening(persona);
     const contentImages = images.slice(1, imgCount + 1);
     const actualImgCount = contentImages.length;
 
-    const likesIntegration = persona.likes && persona.likes !== 'everything' ? `\n6. **PERSONAL INTERESTS:** Naturally weave "${persona.likes}" into the article where it fits organically.` : '';
-
     const prompt = `
-**You ARE ${persona.name}. Stay in character for the ENTIRE article.**
-
-**Your Identity:**
-- ${persona.age} ${persona.gender} from ${persona.nationality}, working as a ${persona.job}
-- Passionate about: ${persona.likes}
-
-**YOUR UNIQUE VOICE:**
-${voiceGuide}
-
-**YOUR PROFESSIONAL LENS:**
-${jobVoice}
-${toneOverride ? `**TONE OVERRIDE:** ${toneOverride}` : ''}
-
 **Task:** Write a ~${wordCount}-word PRACTICAL GUIDE for 'Korea Decode'.
-**Topic:** "${title}"
+
+${MISS_PARK_VOICE}
+${toneOverride ? `\n**TONE NOTE (still within the rules above):** ${toneOverride}\n` : ''}
+**Title:** "${title}"
 **Core Subject:** "${topic}"
 **Target Keywords:** ${keywords.join(', ')}
 
-**ARTICLE FORMAT — PRACTICAL GUIDE (NOT ESSAY):**
+${KD_STYLE_RULES}
 
-1. **Opening:** Start with the reader's problem or decision ("Trying to figure out X? Here's exactly what you need to know."). NO self-introduction. Get to the point fast.
+**ARTICLE FORMAT — PRACTICAL GUIDE, NOT AN ESSAY:**
 
-2. **Quick Answer Box:** Right after the intro, include a summary box:
-   <div style="background:#1a1a2e;border-left:4px solid #cdff1f;padding:16px 20px;border-radius:8px;margin:20px 0;">
-   <strong style="color:#cdff1f;">Quick Answer:</strong>
-   <p style="color:#ccc;">[1-2 sentence recommendation for the reader who doesn't want to read the full article]</p>
+1. **Opening (2-3 sentences max):** the reader's decision or problem, then what this guide settles.
+   No self-introduction, no scene-setting.
+
+2. **Quick Answer box** straight after the intro:
+   <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
+   <strong style="color:#cdff00;">Quick answer:</strong>
+   <p style="color:#ccc;margin:6px 0 0;">[One or two sentences for the reader who will not read the rest]</p>
    </div>
 
-3. **Comparison Table:** Include at least ONE HTML <table> comparing options (prices, features, pros/cons). Tables help readers decide and boost time-on-page.
+3. **Comparison table:** at least one HTML <table> comparing the real options — price, time needed,
+   who it suits, what is included. 3-5 rows.
 
-4. **Affiliate Placeholders:** Where a bookable tour, ticket, or purchasable product fits naturally, insert:
-   <div class="affiliate-cta" data-provider="klook" style="background:#1a1a2e;border-radius:12px;padding:16px 20px;margin:20px 0;text-align:center;">
-   <p style="color:#ccc;margin:0 0 8px;">[Brief product description, e.g., "Skip the line with a pre-booked DMZ tour"]</p>
-   <a href="#affiliate" style="display:inline-block;background:#cdff1f;color:#000;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Book on Klook →</a>
+4. **Affiliate placements:** insert this block 2-3 times, always AFTER explaining why the thing is
+   worth doing, never at the very top and never two in a row:
+   <div class="affiliate-cta" data-provider="klook" style="background:#111;border:1px solid #cdff0033;border-left:4px solid #cdff00;border-radius:12px;padding:18px 20px;margin:28px 0;">
+   <p style="color:#cfcfcf;margin:0 0 12px;font-size:0.95rem;line-height:1.6;">[One line saying what the reader is booking and why booking ahead helps]</p>
+   <a href="#affiliate" target="_blank" rel="sponsored nofollow noopener" style="display:inline-block;background:#cdff00;color:#000;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.9rem;">Check price on Klook &rarr;</a>
    </div>
-   Place 2-4 of these throughout the article where they add value. Use contextual placement (after explaining why something is worth doing, not randomly).
+   For a second or third placement, swap to data-provider="kkday", colour #ff6bdf and the label
+   "Check price on KKday".
 
-5. **Structure:** Use <h2> and <h3> for sections. Include <ul><li> lists for practical tips. Use <strong> for key info. Use <blockquote> for pro tips.
+5. **Structure:** 4-6 sections with <h2> (and <h3> where needed). <ul><li> for checklists,
+   <strong> for the numbers that matter, <blockquote> for one practical tip per section.
 
-6. Place exactly **${actualImgCount}** image markers: <p>[IMG]</p> spaced evenly through the article.
+6. Place exactly **${actualImgCount}** image markers: <p>[IMG]</p>, each alone on its own line,
+   spaced evenly through the article.
 
-7. **Practical Details:** Include specific prices (in KRW and USD), hours, addresses, nearest subway stations, or "how to get there" info when relevant.
+7. **Practical specifics:** prices in KRW with an approximate USD figure, opening hours, nearest
+   subway line/station and exit number, how long things take, what to book ahead. Where a figure
+   varies, give the range and what it depends on. Never invent a number you are unsure of.
 
-8. **Ending:** Close with a "Book Now" or "What You Need" summary section that links back to the recommended options. Then add:
-   <p><em>This article contains affiliate links. We may earn a small commission at no extra cost to you when you book through our links.</em></p>
+8. **Ending:** a short "What to do next" section — recommended option, runner-up, and the one thing
+   to sort out before arriving. No motivational sign-off.
 
-9. HTML only. No <html>, <body>, <h1>, or markdown.${likesIntegration}
+9. HTML only. No <html>, <body>, <h1>, or markdown.
 
-**IMPORTANT:** Every paragraph should help the reader DECIDE or ACT. If a section doesn't answer "what should I do?" or "how much does it cost?" — rewrite it to be useful.
+**TEST BEFORE YOU FINISH:** every paragraph must help the reader decide or act. If a paragraph does
+not answer "what should I do?", "how much is it?", "how do I get there?" or "is it worth it?",
+delete it or replace it with a fact.
 
 **Output:** Only the article HTML body.`;
 
     let rawContent = await callAI(prompt, {
-        generationConfig: { temperature: personaConfig.temperature, topP: personaConfig.topP }
+        generationConfig: { temperature: 0.55, topP: 0.9 }
     });
     rawContent = rawContent.trim();
     if (rawContent.startsWith('```html')) rawContent = rawContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
@@ -1816,6 +1921,10 @@ ${toneOverride ? `**TONE OVERRIDE:** ${toneOverride}` : ''}
     });
     rawContent = rawContent.replace(/<p>\[IMG\]<\/p>/g, '').replace(/\[IMG\]/g, '');
 
+    // House style + guaranteed affiliate placements
+    rawContent = scrubSlang(rawContent);
+    rawContent = injectAffiliateBanners(rawContent, { min: 2, max: 4, topic });
+
     return rawContent;
 }
 
@@ -1828,15 +1937,12 @@ async function runAutomation() {
     const imgCount = parseInt(document.getElementById('auto-img-count').value);
     const outputStatus = document.getElementById('auto-output-status').value;
     const toneOverride = document.getElementById('auto-tone').value.trim();
-    const personaId = document.getElementById('auto-persona').value;
 
     if (topics.length === 0) return alert('Enter topics (one per line)');
     if (!startStr) return alert('Select start date');
 
-    let persona = availablePersonas.find(p => p.id === personaId);
-    if (!persona) {
-        persona = { name: 'Korea Decode Editor', nationality: 'Seoul', job: 'Travel Guide', likes: 'everything', age: '30s', gender: 'Non-binary', bio: 'Your guide to all things Korea.' };
-    }
+    // Single house byline — no personas.
+    const persona = KD_AUTHOR;
 
     const btn = document.getElementById('btn-run-automation');
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Generating...';
@@ -1870,6 +1976,10 @@ async function runAutomation() {
             const seoPlan = await generateAutomationSEOPlan(topicTrimmed, persona);
             const title = seoPlan.title || `${topicTrimmed} - Korea Decode`;
             const keywords = seoPlan.keywords || [];
+            // 'auto' (or an unset select) lets the AI classify into Book/Plan/Shop/Eat
+            const postCategory = (!category || category === 'auto')
+                ? (KD_CATEGORIES.includes(seoPlan.category) ? seoPlan.category : 'Plan')
+                : category;
             logMsg(`  -> Title: "${title}"`);
 
             // Step 2: Fetch Images
@@ -1886,7 +1996,7 @@ async function runAutomation() {
             const postData = {
                 title,
                 slug,
-                category,
+                category: postCategory,
                 content,
                 image: images.length > 0 ? images[0].url : '',
                 views: 0,
@@ -1894,8 +2004,8 @@ async function runAutomation() {
                 created_at: new Date(currentDate).toISOString(),
                 writer_name: persona.name,
                 writer_job: persona.job,
-                writer_bio: persona.bio || 'Writer at Korea Decode',
-                writer_avatar: persona.name[0] || 'E'
+                writer_bio: persona.bio || KD_AUTHOR.bio,
+                writer_avatar: KD_AUTHOR.avatar
             };
 
             const { error } = await supabase.from('posts').insert(postData);
@@ -2362,16 +2472,8 @@ window.publishPost = async () => {
 
     if (!title) return alert("Title is required");
 
-    // Get selected Persona info (flattened for Supabase)
-    const personaId = document.getElementById('ai-persona-select').value;
-    let persona = availablePersonas.find(p => p.id === personaId);
-    if (!persona) {
-        persona = {
-            name: "Korea Decode Editor",
-            job: "Editor",
-            bio: "Your guide to all things Korea."
-        };
-    }
+    // Single house byline — no personas.
+    const persona = KD_AUTHOR;
 
     try {
         if (editingPostId) {
@@ -2383,8 +2485,8 @@ window.publishPost = async () => {
                 image: activeImage || '',
                 writer_name: persona.name,
                 writer_job: persona.job,
-                writer_bio: persona.bio || "Writer at Korea Decode",
-                writer_avatar: persona.name[0] || "E"
+                writer_bio: persona.bio || KD_AUTHOR.bio,
+                writer_avatar: KD_AUTHOR.avatar
             };
             if (scheduleStr) {
                 updateData.status = 'scheduled';
@@ -2404,8 +2506,8 @@ window.publishPost = async () => {
                 status: scheduleStr ? 'scheduled' : 'published',
                 writer_name: persona.name,
                 writer_job: persona.job,
-                writer_bio: persona.bio || "Writer at Korea Decode",
-                writer_avatar: persona.name[0] || "E"
+                writer_bio: persona.bio || KD_AUTHOR.bio,
+                writer_avatar: KD_AUTHOR.avatar
             };
             if (scheduleStr) {
                 postData.created_at = new Date(scheduleStr).toISOString();

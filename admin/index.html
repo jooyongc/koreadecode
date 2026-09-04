@@ -177,23 +177,21 @@
                 <div class="form-group">
                     <label class="form-label">Category</label>
                     <select id="ai-category" class="form-select">
-                        <option value="Food & Drink">Food & Drink</option>
-                        <option value="Travel">Travel</option>
-                        <option value="Culture">Culture</option>
-                        <option value="K-Pop">K-Pop</option>
-                        <option value="K-Beauty">K-Beauty</option>
-                        <option value="Student Life">Student Life</option>
-                        <option value="News">News</option>
-                        <option value="Shopping">Shopping</option>
-                        <option value="Nightlife">Nightlife</option>
-                        <option value="Tips">Tips</option>
-                        <option value="Archive">Archive</option>
+                        <option value="Book">Book &mdash; tickets &amp; tours</option>
+                        <option value="Plan" selected>Plan &mdash; routes &amp; logistics</option>
+                        <option value="Shop">Shop &mdash; beauty &amp; souvenirs</option>
+                        <option value="Eat">Eat &mdash; food &amp; drinking</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Writer Persona</label>
-                    <select id="ai-persona-select" class="form-select">
-                        <option value="default">Default AI (Generic)</option>
+                    <label class="form-label">Byline</label>
+                    <div class="form-input" style="display:flex;align-items:center;gap:8px;opacity:0.85;">
+                        <i class="ph ph-user-circle"></i> Miss Park &mdash; Editor, Korea Decode
+                    </div>
+                    <!-- Personas were removed in the 2026 redesign: every article uses one house voice.
+                         The hidden select is kept so any legacy script reading it does not break. -->
+                    <select id="ai-persona-select" class="form-select" hidden>
+                        <option value="default">Miss Park (house voice)</option>
                     </select>
                 </div>
             </div>
@@ -400,24 +398,22 @@
                 </div>
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label">Persona</label>
-                        <select id="auto-persona" class="form-select">
-                            <option value="default">Default AI (Generic)</option>
+                        <label class="form-label">Byline</label>
+                        <div class="form-input" style="display:flex;align-items:center;gap:8px;opacity:0.85;">
+                            <i class="ph ph-user-circle"></i> Miss Park &mdash; house voice
+                        </div>
+                        <select id="auto-persona" class="form-select" hidden>
+                            <option value="default">Miss Park (house voice)</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Category</label>
                         <select id="auto-category" class="form-select">
-                            <option>Food & Drink</option>
-                            <option>Travel</option>
-                            <option>Culture</option>
-                            <option>K-Pop</option>
-                            <option>K-Beauty</option>
-                            <option>Student Life</option>
-                            <option selected>News</option>
-                            <option>Shopping</option>
-                            <option>Nightlife</option>
-                            <option>Tips</option>
+                            <option value="auto" selected>Auto &mdash; let AI classify</option>
+                            <option value="Book">Book &mdash; tickets &amp; tours</option>
+                            <option value="Plan">Plan &mdash; routes &amp; logistics</option>
+                            <option value="Shop">Shop &mdash; beauty &amp; souvenirs</option>
+                            <option value="Eat">Eat &mdash; food &amp; drinking</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -771,6 +767,7 @@
                             <label class="form-label">Provider</label>
                             <select id="aff-manage-provider" class="form-input">
                                 <option value="klook">Klook</option>
+                                <option value="kkday">KKday</option>
                                 <option value="coupang">Coupang</option>
                                 <option value="amazon">Amazon</option>
                                 <option value="custom" selected>Custom</option>
@@ -780,11 +777,10 @@
                             <label class="form-label">Category</label>
                             <select id="aff-manage-category" class="form-input">
                                 <option value="">-- None --</option>
-                                <option value="travel">Travel</option>
-                                <option value="beauty">Beauty</option>
-                                <option value="food">Food</option>
-                                <option value="kpop">K-Pop</option>
-                                <option value="culture">Culture</option>
+                                <option value="Book">Book</option>
+                                <option value="Plan">Plan</option>
+                                <option value="Shop">Shop</option>
+                                <option value="Eat">Eat</option>
                             </select>
                         </div>
                     </div>

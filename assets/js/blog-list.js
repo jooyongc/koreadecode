@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '/assets/js/supabase-config.js';
+import { normalizeCategory, categoryFilterValues } from '/assets/js/categories.js';
 
 const POSTS_PER_PAGE = 9;
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1550424683-1498c8c52d8e?w=800&q=80';
@@ -42,7 +43,7 @@ function getPostUrl(post) {
  */
 function createPostCard(post) {
     const image = post.image || DEFAULT_IMAGE;
-    const category = post.category || 'Culture';
+    const category = normalizeCategory(post.category);
     const title = post.title || 'Untitled';
     const date = formatDate(post.created_at);
     const views = post.views || 0;
@@ -125,7 +126,7 @@ async function fetchPosts(page = 1, category = null) {
         .eq('status', 'published');
 
     if (category && category !== 'all') {
-        countQuery = countQuery.eq('category', category);
+        countQuery = countQuery.in('category', categoryFilterValues(category));
     }
 
     const { count, error: countError } = await countQuery;
@@ -142,7 +143,7 @@ async function fetchPosts(page = 1, category = null) {
         .range(from, to);
 
     if (category && category !== 'all') {
-        dataQuery = dataQuery.eq('category', category);
+        dataQuery = dataQuery.in('category', categoryFilterValues(category));
     }
 
     const { data, error } = await dataQuery;
