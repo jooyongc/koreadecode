@@ -445,6 +445,30 @@ body {
     color: var(--text-main);
 }
 
+/* Notes tab editor: shorter than the article editor — a note is a paragraph or
+   two, not a page — but otherwise the same surface. */
+#note-editor-container {
+    min-height: 200px;
+    color: var(--text-main);
+}
+
+#note-editor-container .ql-editor {
+    min-height: 200px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-main);
+}
+
+#note-html-source {
+    min-height: 200px;
+}
+
+.note-tab {
+    display: inline-flex;
+    align-items: center;
+}
+
 .ql-toolbar.ql-snow {
     border: none !important;
     border-bottom: 1px solid var(--border) !important;

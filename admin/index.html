@@ -64,6 +64,10 @@
         <i class="ph ph-push-pin"></i>
         <span>Essentials</span>
     </div>
+    <div class="nav-item" data-view="notes">
+        <i class="ph ph-note-pencil"></i>
+        <span>Notes</span>
+    </div>
     <div class="nav-item" data-view="site-settings">
         <i class="ph ph-browser"></i>
         <span>Site Settings</span>
@@ -334,6 +338,17 @@
                 <textarea id="html-source-editor" class="html-source-editor"></textarea>
             </div>
 
+            <div class="form-group mt-16">
+                <label class="form-label">Pinned note &mdash; shown above this article</label>
+                <select id="post-pinned-note" class="form-select">
+                    <option value="">None</option>
+                </select>
+                <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;">
+                    Written in the <strong>Notes</strong> tab. Changing a note there updates it on
+                    every article that uses it, with no re-publishing.
+                </p>
+            </div>
+
             <div class="grid-2 mt-16">
                 <div class="form-group">
                     <label class="form-label">Schedule (optional)</label>
@@ -452,6 +467,67 @@
             <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
                 The box is inserted after the second heading of each article, or at the end if the
                 article is short. A guide is never linked from its own page.
+            </p>
+        </div>
+    </section>
+
+    <!-- ===== NOTES VIEW ===== -->
+    <section id="view-notes" class="view-section">
+        <div class="view-header">
+            <h1>Notes</h1>
+            <p>Three notepads. Pin one above any article from the writer&rsquo;s publish panel.</p>
+            <p data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
+                admin.js did not load &mdash; you are seeing a cached or broken version, so the
+                buttons on this page will do nothing. Hard-refresh (Ctrl/Cmd + Shift + R).
+            </p>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+            <div id="note-tabs" style="display:flex;gap:8px;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap;"></div>
+
+            <div class="grid-2" style="gap:10px;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Note name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">&mdash; only you see this</span></label>
+                    <input id="note-label" class="form-input" maxlength="40" placeholder="Autumn sale banner">
+                </div>
+                <div class="form-group" style="margin:0;display:flex;align-items:flex-end;">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding-bottom:10px;">
+                        <input type="checkbox" id="note-active"> Live &mdash; show this note on the articles that use it
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin:14px 0 0;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <label class="form-label" style="margin:0;">Note</label>
+                    <button id="btn-note-html" class="btn btn-outline btn-sm"><i class="ph ph-code"></i> HTML</button>
+                </div>
+                <div class="editor-wrapper">
+                    <div id="note-editor-container"></div>
+                    <textarea id="note-html-source" class="html-source-editor"></textarea>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;padding:14px 0 4px;border-top:1px solid var(--border);margin-top:14px;">
+                <button id="btn-note-save" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk"></i> Save &amp; publish
+                </button>
+                <button id="btn-note-reload" class="btn btn-outline btn-sm">
+                    <i class="ph ph-arrow-counter-clockwise"></i> Discard changes
+                </button>
+                <button id="btn-note-clear" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);">
+                    <i class="ph ph-eraser"></i> Empty this note
+                </button>
+                <span id="note-save-status" style="font-size:13px;"></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 style="margin:0;">Live preview</h3></div>
+            <div id="note-preview" style="padding:8px 0;"></div>
+            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
+                This is how the note appears on an article, directly under the headline and above
+                the first paragraph. An empty or off note is skipped, and the article renders as normal.
             </p>
         </div>
     </section>
@@ -913,6 +989,6 @@
     </div>
 </div>
 
-<script type="module" src="/admin/admin.js?v=2026-09-08a"></script>
+<script type="module" src="/admin/admin.js?v=2026-09-08b"></script>
 </body>
 </html>

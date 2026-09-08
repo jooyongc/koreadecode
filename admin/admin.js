@@ -4,12 +4,12 @@ import { normalizeCategory } from '/assets/js/categories.js';
 /* Build stamp. If the module fails to parse this never runs, and the red warning
    baked into admin/index.html stays on screen — which is exactly how a stale or
    broken admin.js announces itself. */
-const KD_ADMIN_BUILD = '2026-09-08a';
+const KD_ADMIN_BUILD = '2026-09-08b';
 console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
 function stampAdminBuild() {
     document.querySelectorAll('[data-admin-build]').forEach(el => {
         el.textContent = 'build ' + KD_ADMIN_BUILD +
-            ' \u00b7 source digest, length targets, essentials, article types';
+            ' \u00b7 notes, source digest, length targets, essentials';
         el.style.color = 'var(--text-muted)';
     });
 }
@@ -1057,6 +1057,7 @@ async function init() {
     renderAffiliateSlots();
     initAdManager();
     initEssentialsManager();
+    initNotesManager();
     initArticleTypePicker();
 
     // Initialize Quill Editor. Wrapped because Quill comes from a CDN: if that
@@ -1288,7 +1289,9 @@ const switchView = (viewName) => {
     if (viewName === 'site-settings') loadHeroSettings();
     if (viewName === 'ads') loadAdSlots();
     if (viewName === 'essentials') loadEssentials();
+    if (viewName === 'notes') loadNotes();
     if (viewName === 'ai-writer') {
+        ensureNotesLoaded();
         if (!editingPostId) resetAI();
     }
 };
@@ -1881,6 +1884,269 @@ function initEssentialsManager() {
     });
 }
 
+/* ============================================================================
+   NOTES
+   Three notepads, stored in site_settings under 'notes'. Each article picks one
+   (or none) from the publish panel, and the blog renderer drops it in under the
+   headline. Editing a note here changes it on every article using it, without
+   republishing any of them.
+   ========================================================================== */
+
+const NOTES_SETTINGS_KEY = 'notes';
+const NOTE_COUNT = 3;
+
+let noteItems = [];
+let activeNoteIndex = 0;
+let notesQuill = null;
+let noteHtmlMode = false;
+let notesLoaded = false;
+
+/** Load the notes once, so the writer's dropdown is filled without opening the tab. */
+async function ensureNotesLoaded() {
+    if (notesLoaded) { syncPinnedNoteOptions(); return; }
+    notesLoaded = true;
+    await loadNotes();
+}
+
+function blankNote(i) {
+    return { label: `Note ${i + 1}`, html: '', active: false };
+}
+
+function defaultNotes() {
+    return Array.from({ length: NOTE_COUNT }, (_, i) => blankNote(i));
+}
+
+async function loadNotes() {
+    const status = document.getElementById('note-save-status');
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', NOTES_SETTINGS_KEY)
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+
+        const stored = data?.value?.notes;
+        noteItems = Array.from({ length: NOTE_COUNT }, (_, i) => ({
+            ...blankNote(i),
+            ...(Array.isArray(stored) ? stored[i] : null),
+        }));
+        if (status) status.innerHTML = '';
+    } catch (e) {
+        console.error('[Notes] load failed:', e);
+        noteItems = defaultNotes();
+        if (status) status.innerHTML = `<span style="color:var(--danger);">Could not load saved notes (${e.message}).</span>`;
+    }
+    renderNoteTabs();
+    openNote(activeNoteIndex);
+    syncPinnedNoteOptions();
+}
+
+/** Pull whatever is on screen back into the note being edited. */
+function captureCurrentNote() {
+    const note = noteItems[activeNoteIndex];
+    if (!note) return;
+    note.label = document.getElementById('note-label')?.value.trim() || note.label;
+    note.active = !!document.getElementById('note-active')?.checked;
+    note.html = noteHtmlMode
+        ? (document.getElementById('note-html-source')?.value || '')
+        : (notesQuill ? notesQuill.root.innerHTML : '');
+    // Quill writes this placeholder into an untouched editor; it is not content.
+    if (/^\s*(<p>(<br\s*\/?>)?<\/p>\s*)+$/i.test(note.html)) note.html = '';
+}
+
+function openNote(i) {
+    activeNoteIndex = i;
+    const note = noteItems[i] || blankNote(i);
+
+    const labelEl = document.getElementById('note-label');
+    const activeEl = document.getElementById('note-active');
+    if (labelEl) labelEl.value = note.label || '';
+    if (activeEl) activeEl.checked = !!note.active;
+
+    if (noteHtmlMode) {
+        const ta = document.getElementById('note-html-source');
+        if (ta) ta.value = note.html || '';
+    } else if (notesQuill) {
+        notesQuill.clipboard.dangerouslyPasteHTML(note.html || '');
+    }
+
+    renderNoteTabs();
+    updateNotePreview();
+}
+
+function renderNoteTabs() {
+    const wrap = document.getElementById('note-tabs');
+    if (!wrap) return;
+    wrap.innerHTML = noteItems.map((n, i) => {
+        const on = i === activeNoteIndex;
+        const filled = !!(n.html || '').trim();
+        const dot = !filled ? '<span style="opacity:.4;">empty</span>'
+                  : n.active ? '<span style="color:var(--accent);">live</span>'
+                  : '<span style="color:var(--text-muted);">off</span>';
+        return `<button class="btn ${on ? 'btn-primary' : 'btn-outline'} btn-sm note-tab" data-i="${i}">
+            ${escHtml(n.label || `Note ${i + 1}`)} <span style="font-size:11px;margin-left:6px;">${dot}</span>
+        </button>`;
+    }).join('');
+}
+
+function updateNotePreview() {
+    const box = document.getElementById('note-preview');
+    if (!box) return;
+    captureCurrentNote();
+    const note = noteItems[activeNoteIndex];
+    const html = (note?.html || '').trim();
+
+    if (!html) {
+        box.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">This note is empty, so nothing is shown on the article.</p>';
+        return;
+    }
+    if (!note.active) {
+        box.innerHTML = `<p style="color:var(--danger);font-size:13px;margin:0 0 10px;">
+            Switched off &mdash; articles using this note show nothing until you tick &ldquo;Live&rdquo;.</p>
+            <div style="opacity:.45;">${notePreviewShell(html)}</div>`;
+        return;
+    }
+    box.innerHTML = notePreviewShell(html);
+}
+
+/** Mirrors the markup the blog renderer produces, so the preview is honest. */
+function notePreviewShell(html) {
+    return `<div style="background:#111;border:1px solid rgba(255,255,255,.12);border-left:3px solid #CCFF00;border-radius:4px;padding:18px 22px;color:#fff;line-height:1.7;font-size:14px;">${html}</div>`;
+}
+
+async function saveNotes() {
+    captureCurrentNote();
+
+    const status = document.getElementById('note-save-status');
+    const btn = document.getElementById('btn-note-save');
+
+    const emptyButLive = noteItems.findIndex(n => n.active && !(n.html || '').trim());
+    if (emptyButLive !== -1) {
+        status.innerHTML = `<span style="color:var(--danger);">Note ${emptyButLive + 1} is marked live but has nothing in it.</span>`;
+        return;
+    }
+
+    btn.disabled = true;
+    status.innerHTML = '<span style="color:var(--text-muted);">Saving...</span>';
+
+    try {
+        const payload = { notes: noteItems };
+        const { data: existing } = await supabase
+            .from('site_settings').select('id').eq('key', NOTES_SETTINGS_KEY).single();
+
+        if (existing) {
+            const { error } = await supabase.from('site_settings')
+                .update({ value: payload, updated_at: new Date().toISOString() })
+                .eq('key', NOTES_SETTINGS_KEY);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.from('site_settings')
+                .insert({ key: NOTES_SETTINGS_KEY, value: payload });
+            if (error) throw error;
+        }
+
+        const liveCount = noteItems.filter(n => n.active && (n.html || '').trim()).length;
+        status.innerHTML = `<span style="color:var(--success);"><i class="ph ph-check-circle"></i> Saved &mdash; ${liveCount} of ${NOTE_COUNT} notes live.</span>`;
+        setTimeout(() => { status.innerHTML = ''; }, 5000);
+        renderNoteTabs();
+        syncPinnedNoteOptions();
+    } catch (e) {
+        console.error('[Notes] save failed:', e);
+        status.innerHTML = `<span style="color:var(--danger);"><i class="ph ph-warning-circle"></i> ${e.message}</span>`;
+    }
+    btn.disabled = false;
+}
+
+/** Keep the writer's "Pinned note" dropdown showing the current note names. */
+function syncPinnedNoteOptions() {
+    const sel = document.getElementById('post-pinned-note');
+    if (!sel) return;
+    const keep = sel.value;
+    sel.innerHTML = '<option value="">None</option>' + noteItems.map((n, i) => {
+        const filled = (n.html || '').trim();
+        const state = !filled ? ' (empty)' : n.active ? '' : ' (off)';
+        return `<option value="${i + 1}">${escHtml(n.label || `Note ${i + 1}`)}${state}</option>`;
+    }).join('');
+    sel.value = keep;
+}
+
+function toggleNoteHtml() {
+    const btn = document.getElementById('btn-note-html');
+    const box = document.getElementById('note-editor-container');
+    const ta = document.getElementById('note-html-source');
+    if (!btn || !box || !ta) return;
+
+    if (!noteHtmlMode) {
+        ta.value = notesQuill ? notesQuill.root.innerHTML : '';
+        box.style.display = 'none';
+        ta.style.display = 'block';
+        btn.innerHTML = '<i class="ph ph-eye"></i> Visual';
+        noteHtmlMode = true;
+    } else {
+        if (notesQuill) notesQuill.root.innerHTML = ta.value;
+        ta.style.display = 'none';
+        box.style.display = 'flex';
+        btn.innerHTML = '<i class="ph ph-code"></i> HTML';
+        noteHtmlMode = false;
+    }
+    updateNotePreview();
+}
+
+function initNotesManager() {
+    const tabs = document.getElementById('note-tabs');
+    if (!tabs) return;
+
+    noteItems = defaultNotes();
+
+    try {
+        notesQuill = new Quill('#note-editor-container', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ header: [2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'blockquote'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['link', 'clean'],
+                ],
+            },
+        });
+        notesQuill.on('text-change', updateNotePreview);
+    } catch (e) {
+        // Quill blocked: fall back to writing the note as HTML.
+        console.warn('[Notes] Quill unavailable, using the HTML view:', e);
+        notesQuill = null;
+        const box = document.getElementById('note-editor-container');
+        const ta = document.getElementById('note-html-source');
+        if (box && ta) { box.style.display = 'none'; ta.style.display = 'block'; noteHtmlMode = true; }
+    }
+
+    tabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('.note-tab');
+        if (!btn) return;
+        captureCurrentNote();          // never lose what is on screen
+        openNote(Number(btn.dataset.i));
+    });
+
+    document.getElementById('btn-note-save').addEventListener('click', saveNotes);
+    document.getElementById('btn-note-reload').addEventListener('click', loadNotes);
+    document.getElementById('btn-note-html').addEventListener('click', toggleNoteHtml);
+
+    document.getElementById('btn-note-clear').addEventListener('click', () => {
+        if (!confirm('Empty this note? Articles pinned to it will show nothing until you write something new.')) return;
+        noteItems[activeNoteIndex] = blankNote(activeNoteIndex);
+        openNote(activeNoteIndex);
+    });
+
+    ['note-label', 'note-active'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => { captureCurrentNote(); renderNoteTabs(); updateNotePreview(); });
+        document.getElementById(id)?.addEventListener('change', () => { captureCurrentNote(); renderNoteTabs(); updateNotePreview(); });
+    });
+    document.getElementById('note-html-source')?.addEventListener('input', updateNotePreview);
+
+    renderNoteTabs();
+}
+
 // --- SITE SETTINGS: HERO ---
 async function loadHeroSettings() {
     try {
@@ -2219,6 +2485,11 @@ window.editPost = async (id) => {
         slugInput.value = p.slug || generateSlug(p.title);
     }
 
+    // Restore which note is pinned above this article.
+    await ensureNotesLoaded();
+    const pinSel = document.getElementById('post-pinned-note');
+    if (pinSel) pinSel.value = p.pinned_note ? String(p.pinned_note) : '';
+
     // Clear editor before loading new content
     quill.setContents([]);
 
@@ -2264,6 +2535,8 @@ window.resetAI = () => {
     document.getElementById('ai-img-query').value = '';
     document.getElementById('ai-category').selectedIndex = 0;
     document.getElementById('post-schedule').value = '';
+    const pinSelReset = document.getElementById('post-pinned-note');
+    if (pinSelReset) pinSelReset.value = '';
 
     // Clear reference sources and affiliate slots
     aiSources = [];
@@ -3477,6 +3750,9 @@ window.publishPost = async () => {
     const category = document.getElementById('ai-category').value;
     const content = getEditorContent();
     const scheduleStr = document.getElementById('post-schedule').value;
+    // '' means no note; the column stays null so the renderer skips it.
+    const pinnedRaw = document.getElementById('post-pinned-note')?.value || '';
+    const pinnedNote = pinnedRaw ? Number(pinnedRaw) : null;
 
     if (!title) return alert("Title is required");
 
@@ -3494,7 +3770,8 @@ window.publishPost = async () => {
                 writer_name: author.name,
                 writer_job: author.job,
                 writer_bio: author.bio || KD_AUTHOR.bio,
-                writer_avatar: KD_AUTHOR.avatar
+                writer_avatar: KD_AUTHOR.avatar,
+                pinned_note: pinnedNote
             };
             if (scheduleStr) {
                 updateData.status = 'scheduled';
@@ -3515,7 +3792,8 @@ window.publishPost = async () => {
                 writer_name: author.name,
                 writer_job: author.job,
                 writer_bio: author.bio || KD_AUTHOR.bio,
-                writer_avatar: KD_AUTHOR.avatar
+                writer_avatar: KD_AUTHOR.avatar,
+                pinned_note: pinnedNote
             };
             if (scheduleStr) {
                 postData.created_at = new Date(scheduleStr).toISOString();
