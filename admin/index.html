@@ -60,6 +60,10 @@
         <i class="ph ph-megaphone"></i>
         <span>Ad Manager</span>
     </div>
+    <div class="nav-item" data-view="essentials">
+        <i class="ph ph-push-pin"></i>
+        <span>Essentials</span>
+    </div>
     <div class="nav-item" data-view="site-settings">
         <i class="ph ph-browser"></i>
         <span>Site Settings</span>
@@ -176,6 +180,15 @@
                 <label class="form-label">Topic / Subject</label>
                 <input id="ai-topic" class="form-input" placeholder="e.g. Best Street Food in Myeongdong">
             </div>
+            <div class="form-group">
+                <label class="form-label">Article type</label>
+                <select id="ai-article-type" class="form-select">
+                    <option value="ota">Product review &mdash; one bookable thing, written to convert</option>
+                    <option value="essential">Essential how-to &mdash; the step-by-step every visitor needs</option>
+                    <option value="guide" selected>General guide &mdash; compare the options on a topic</option>
+                </select>
+                <p id="ai-article-type-hint" style="font-size:12px;color:var(--text-muted);margin:6px 0 0;"></p>
+            </div>
             <div class="grid-2">
                 <div class="form-group">
                     <label class="form-label">Category</label>
@@ -208,6 +221,20 @@
                     <span id="source-status" style="font-size:12px;color:var(--text-muted);"></span>
                 </div>
                 <div id="source-list" style="margin-top:10px;"></div>
+                <div id="source-digest" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Article length</label>
+                <select id="ai-length" class="form-select">
+                    <option value="standard">Standard &mdash; about 1,200 words</option>
+                    <option value="long" selected>Long &mdash; 1,800 words (house standard)</option>
+                    <option value="deep">In-depth &mdash; about 2,500 words</option>
+                </select>
+                <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;">
+                    If the first draft comes back short, it is sent back once to be filled out with
+                    real detail from the sources &mdash; never padded.
+                </p>
             </div>
 
             <button id="btn-run-ai-phase1" class="btn btn-ai w-full">
@@ -274,6 +301,8 @@
                 <div class="step-number">3</div>
                 <div class="step-title">Edit & Publish</div>
             </div>
+
+            <div id="draft-length" style="display:none;font-size:12px;margin:0 0 12px;"></div>
 
             <div class="seo-score-wrapper">
                 <span style="font-size:13px; color:var(--text-muted);">SEO Score</span>
@@ -362,6 +391,67 @@
                 Every paid placement shows a &ldquo;Sponsored&rdquo; label and its link is tagged
                 <code>rel="sponsored"</code>. Google requires both; leaving them off risks your AdSense
                 account and your search ranking.
+            </p>
+        </div>
+    </section>
+
+    <!-- ===== ESSENTIALS VIEW ===== -->
+    <section id="view-essentials" class="view-section">
+        <div class="view-header">
+            <h1>Essentials</h1>
+            <p>The &ldquo;Before you go&rdquo; box that appears inside every published article</p>
+            <p data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
+                admin.js did not load &mdash; you are seeing a cached or broken version, so the
+                buttons on this page will do nothing. Hard-refresh (Ctrl/Cmd + Shift + R).
+            </p>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h3 style="margin:0;">Pinned guides</h3>
+                    <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted);">
+                        Every reader sees these, whichever article they landed on. Keep them to the
+                        things nobody can skip: eSIM, airport to city, transit card, money.
+                    </p>
+                </div>
+                <button id="btn-ess-add" class="btn btn-outline btn-sm">
+                    <i class="ph ph-plus"></i> Add guide
+                </button>
+            </div>
+            <div id="ess-list" style="padding:4px 0;"></div>
+            <div style="display:flex;gap:10px;align-items:center;padding:14px 0 4px;border-top:1px solid var(--border);margin-top:8px;">
+                <button id="btn-ess-save" class="btn btn-primary">
+                    <i class="ph ph-floppy-disk"></i> Save &amp; publish
+                </button>
+                <button id="btn-ess-reload" class="btn btn-outline btn-sm">
+                    <i class="ph ph-arrow-counter-clockwise"></i> Discard changes
+                </button>
+                <span id="ess-save-status" style="font-size:13px;"></span>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header"><h3 style="margin:0;">Box heading</h3></div>
+            <div class="grid-2" style="gap:10px;padding:4px 0;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Label</label>
+                    <input id="ess-heading" class="form-input" maxlength="40" placeholder="Before you go">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Sub-line</label>
+                    <input id="ess-subheading" class="form-input" maxlength="90"
+                           placeholder="Four things worth sorting before you land.">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 style="margin:0;">Live preview</h3></div>
+            <div id="ess-preview" style="padding:8px 0;"></div>
+            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
+                The box is inserted after the second heading of each article, or at the end if the
+                article is short. A guide is never linked from its own page.
             </p>
         </div>
     </section>
@@ -823,6 +913,6 @@
     </div>
 </div>
 
-<script type="module" src="/admin/admin.js?v=2026-09-04f"></script>
+<script type="module" src="/admin/admin.js?v=2026-09-08a"></script>
 </body>
 </html>

@@ -4,12 +4,12 @@ import { normalizeCategory } from '/assets/js/categories.js';
 /* Build stamp. If the module fails to parse this never runs, and the red warning
    baked into admin/index.html stays on screen — which is exactly how a stale or
    broken admin.js announces itself. */
-const KD_ADMIN_BUILD = '2026-09-04f';
+const KD_ADMIN_BUILD = '2026-09-08a';
 console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
 function stampAdminBuild() {
     document.querySelectorAll('[data-admin-build]').forEach(el => {
         el.textContent = 'build ' + KD_ADMIN_BUILD +
-            ' \u00b7 sources, affiliate slots, ad manager, table-safe editor';
+            ' \u00b7 source digest, length targets, essentials, article types';
         el.style.color = 'var(--text-muted)';
     });
 }
@@ -113,6 +113,214 @@ const KD_STYLE_RULES = `
    romanisation with Hangul in brackets on first use, e.g. sundubu-jjigae (순두부찌개).
 8. Prices always in KRW with an approximate USD figure in brackets.
 `.trim();
+
+/* ============================================================================
+   ARTICLE TYPES
+   Three jobs, three shapes. A product review has to carry a reader from
+   "should I?" to "booked". An essential how-to has to answer one logistical
+   question completely, because it is the page that earns the site's trust.
+   A general guide compares options. Same voice and the same style rules in
+   all three; only the structure and the title shapes change.
+   ========================================================================== */
+
+const KD_ARTICLE_TYPES = {
+    ota: {
+        label: 'Product review',
+        hint: 'One bookable product: a tour, a pass, an eSIM, a ticket. Ends with a clear verdict and a booking link.',
+        titleShapes: `
+- Preferred shapes: "[Product] Review: Is It Worth It in 2026?", "[Product]: What It Costs and
+  What You Actually Get", "[Product] vs [Alternative]: Which One to Book", "How to Book [Product]".
+- The title names the specific product, not the category.`,
+        format: `
+**ARTICLE FORMAT — PRODUCT REVIEW, WRITTEN TO HELP SOMEONE DECIDE AND BOOK:**
+
+1. **Opening (2-3 sentences):** name the product, the price band, and the single decision the
+   reader is trying to make. No scene-setting.
+
+2. **Quick answer box** immediately after the intro:
+   <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
+   <strong style="color:#cdff00;">Quick answer:</strong>
+   <p style="color:#ccc;margin:6px 0 0;">[Who should book this, who should not, and roughly what it costs]</p>
+   </div>
+
+3. **What you actually get.** The concrete inclusions: duration, what is covered, what is not,
+   pickup or meeting point, group size, language. Separate what is included from what people
+   assume is included and is not.
+
+4. **What it costs.** A <table> of the real options (tiers, durations, or the main competing
+   sellers) with price in KRW and approximate USD, what each includes, and who it suits.
+
+5. **Who it suits, and who should skip it.** Be direct. Naming the reader who should NOT buy is
+   what makes the recommendation believable.
+
+6. **How to book, step by step.** Where to book, how far ahead, what to have ready (passport,
+   phone number, voucher), what happens on the day. Say what to do if plans change.
+
+7. **What goes wrong.** The two or three things that actually catch people out: sold-out dates,
+   pickup confusion, weather, a hidden add-on cost. Say how to avoid each.
+
+8. **Verdict.** A short "Book it if / Skip it if" pair, then the recommended option and one
+   runner-up. This is the last thing the reader sees before the final booking link.
+
+9. **Affiliate placements:** see the AFFILIATE PLACEMENTS list above. Put one marker right after
+   the cost table and one in the verdict, where a decision has just been made. Never stack two
+   markers together. If no list was given, write no booking buttons at all.`,
+    },
+
+    essential: {
+        label: 'Essential how-to',
+        hint: 'The logistics every visitor has to solve: eSIM, airport to city, T-money, money and cards. Answer it completely.',
+        titleShapes: `
+- Preferred shapes: "How to [do the thing] in Korea", "[Thing]: The Complete Guide for
+  First-Time Visitors", "Getting from [A] to [B]: Every Option Compared".
+- Plain and literal. Someone types this into Google at the airport.`,
+        format: `
+**ARTICLE FORMAT — ESSENTIAL HOW-TO. THIS PAGE HAS TO ANSWER THE QUESTION COMPLETELY:**
+
+1. **Opening (2 sentences):** state the question and say that the article answers it. Nothing else.
+
+2. **Quick answer box** immediately after the intro:
+   <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
+   <strong style="color:#cdff00;">Quick answer:</strong>
+   <p style="color:#ccc;margin:6px 0 0;">[The recommended option in one sentence, with the price]</p>
+   </div>
+
+3. **Every option compared** in a <table>: cost in KRW and approximate USD, how long it takes,
+   what you need in advance, who each option suits. Do not leave out the cheap awkward option or
+   the expensive easy one; the reader is choosing between them.
+
+4. **The recommended route, step by step.** Numbered steps a tired traveller can follow: where to
+   go, what the sign says, what to tap, what to show. Include station names and exit numbers,
+   counter locations, and how long each step takes.
+
+5. **If it goes wrong.** Late arrival, sold out, card declined, no data yet. One concrete fallback
+   for each.
+
+6. **Costs at a glance.** A short list of every fee involved so nobody is surprised.
+
+7. **Affiliate placements:** see the AFFILIATE PLACEMENTS list above. Place a marker only where a
+   product genuinely solves the step being described, and never more than two in the article.
+   The credibility of this page is worth more than one extra click. If no list was given, write
+   no booking buttons at all.`,
+    },
+
+    guide: {
+        label: 'General guide',
+        hint: 'Compare the options on a topic and say which to choose. The default for most articles.',
+        titleShapes: `
+- Preferred shapes: "How to ...", "... : What It Costs and How to Book", "Is ... Worth It?",
+  "Where to ... in Seoul (and What to Skip)", "... Guide for First-Time Visitors".`,
+        format: `
+**ARTICLE FORMAT — PRACTICAL GUIDE, NOT AN ESSAY:**
+
+1. **Opening (2-3 sentences max):** Start with the reader's decision or problem, e.g. "Trying to work
+   out whether X is worth booking? Here is what it costs and how it actually works." No self-
+   introduction, no scene-setting, no history lesson.
+
+2. **Quick Answer box** immediately after the intro:
+   <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
+   <strong style="color:#cdff00;">Quick answer:</strong>
+   <p style="color:#ccc;margin:6px 0 0;">[One or two sentences for the reader who will not read the rest]</p>
+   </div>
+
+3. **Comparison table:** at least one HTML <table> comparing the real options — price, time needed,
+   who it suits, what is included. Keep it to 3-5 rows.
+
+4. **Practical specifics throughout:** prices in KRW with an approximate USD figure, opening hours,
+   the nearest subway line/station and exit number, how long things take, what to book ahead and what
+   to buy on the day. Where a figure varies, give the range and say what it depends on.
+
+5. **Structure:** 4-6 sections using <h2> (and <h3> where a section needs sub-points). Use
+   <ul><li> for checklists, <strong> for the numbers that matter, <blockquote> for a single practical
+   tip per section.
+
+6. **Affiliate placements:** see the AFFILIATE PLACEMENTS list above. Drop each "[[AFF:n]]" marker
+   on its own line at the right point in the article. If no list was given, do not write any
+   booking buttons at all.
+
+7. **Ending:** a short "What to do next" section — the recommended option, the runner-up, and the one
+   thing to sort out before arriving. No motivational sign-off.`,
+    },
+};
+
+/* Length targets. The old prompt named no length at all, which is why drafts came
+   back short: the model stops as soon as it has covered the outline. */
+// 'long' is the house standard: 1,800 English words. `min` is the floor that
+// triggers the expansion pass, set close to the target so a draft that lands at
+// 1,600 gets sent back rather than published short.
+const KD_ARTICLE_LENGTHS = {
+    standard: { label: 'Standard', words: 1200, min: 1100 },
+    long:     { label: 'Long',     words: 1800, min: 1700 },
+    deep:     { label: 'In-depth', words: 2500, min: 2350 },
+};
+
+function currentLength() {
+    const v = document.getElementById('ai-length')?.value;
+    return KD_ARTICLE_LENGTHS[v] || KD_ARTICLE_LENGTHS.long;
+}
+
+/** Word count and target of the draft the editor is currently looking at. */
+let lastDraftWords = 0;
+let lastDraftTarget = null;
+
+/** Strip a markdown code fence the model wrapped its HTML in. */
+function stripCodeFence(s) {
+    let t = (s || '').trim();
+    if (/^```html/i.test(t)) return t.replace(/^```html\s*/i, '').replace(/\s*```$/, '').trim();
+    if (t.startsWith('```')) return t.replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+    return t;
+}
+
+/** Rough word count of an HTML draft, for checking a draft against its target. */
+function countWords(html) {
+    const text = (html || '')
+        .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&[a-z]+;|&#\d+;/gi, ' ');
+    return (text.match(/[A-Za-z0-9À-ɏ][A-Za-z0-9'’À-ɏ-]*/g) || []).length;
+}
+
+/**
+ * How to reach the target length without padding. Stated as instructions about
+ * what to add, because "write 1800 words" on its own produces repetition.
+ */
+function buildLengthBlock(len) {
+    return `
+**LENGTH: aim for about ${len.words} words. Do not stop before ${len.min}.**
+
+Reach that length by being MORE USEFUL, never by padding:
+- Give each option its own treatment. Instead of "there are three ways to get there", explain
+  each one: what it costs, how long it takes, where you catch it, what it is like with luggage,
+  and who it suits.
+- Add the step-by-step. What the reader does first, what the sign says, what they show, what
+  happens next, how long each step takes.
+- Add the failure cases. What sells out, what closes, what the card refuses, what the queue is
+  like at the wrong hour, and what to do instead.
+- Add the comparison the reader is actually making, and answer it.
+- Add practical context: seasons, weekends versus weekdays, holidays, opening patterns, how
+  early to arrive.
+
+Never reach the length by: restating the intro, restating the quick answer, restating the table
+in prose, generic travel advice that would be true of any country, or a closing paragraph that
+summarises what the reader has just read. If you find yourself writing a sentence that carries no
+new fact and no new judgement, delete it and add a real detail instead.`;
+}
+
+/** Which article type is selected right now. Falls back to the general guide. */
+function currentArticleType() {
+    const v = document.getElementById('ai-article-type')?.value;
+    return KD_ARTICLE_TYPES[v] ? v : 'guide';
+}
+
+/** Show what the selected type will produce, so the choice is not a guess. */
+function initArticleTypePicker() {
+    const sel = document.getElementById('ai-article-type');
+    const hint = document.getElementById('ai-article-type-hint');
+    if (!sel || !hint) return;
+    const paint = () => { hint.textContent = KD_ARTICLE_TYPES[currentArticleType()].hint; };
+    sel.addEventListener('change', paint);
+    paint();
+}
 
 /** Affiliate partners available for in-article banners. */
 const KD_AFFILIATE_PARTNERS = {
@@ -218,6 +426,11 @@ async function fetchReferenceSources() {
         if (data.error) throw new Error(data.error);
 
         aiSources = (data.sources || []).filter(s => s.ok);
+        // A digest built from the previous set of links is worse than none.
+        aiDigest = null;
+        aiDigestKey = '';
+        const digestEl = document.getElementById('source-digest');
+        if (digestEl) digestEl.innerHTML = '';
         renderSourceList(data.sources || []);
 
         const okCount = aiSources.length;
@@ -267,7 +480,7 @@ function renderSourceList(sources) {
  * @param {number} perSource - Characters to include from each source
  * @returns {string} Prompt block, or '' when nothing was fetched
  */
-function buildSourceBlock(perSource = 4500) {
+function buildSourceBlock(perSource = 7000) {
     if (aiSources.length === 0) return '';
 
     const docs = aiSources.map((s, i) => {
@@ -278,6 +491,8 @@ function buildSourceBlock(perSource = 4500) {
 ${s.text.slice(0, perSource)}`;
     }).join('\n\n');
 
+    const multi = aiSources.length > 1;
+
     return `
 **SOURCE MATERIAL — this is the ground truth for this article:**
 
@@ -286,17 +501,178 @@ ${docs}
 --- END OF SOURCES ---
 
 **HOW TO USE THE SOURCES (critical — this is why they were provided):**
+${multi ? `- COMBINE THEM. The sources were chosen because each one knows something the others do not.
+  Work topic by topic, not source by source: for each section, pull what every source has to say
+  on that point and merge it into one account. A section that reads like a summary of Source 1
+  followed by a summary of Source 2 is a failed article.
+- Aim for most sections to carry material from more than one source. If one source has the price
+  and another has the route, they belong in the same paragraph, not in different sections.
+- Where the sources disagree, say so plainly and give the range: "Listed at 45,000-52,000 KRW
+  depending on where you book." Do not silently pick one. Prefer the most specific and most
+  recent where you must choose.
+- Where only one source covers something, still use it — coverage by a single source is a reason
+  to include a fact, not to drop it.` : `- Use everything usable in the source. A single source is thin ground, so mine it properly:
+  every price, time, route, rule and restriction in it should end up somewhere in the article.`}
 - Every specific fact comes from the sources: prices, opening hours, addresses, subway
   lines and exit numbers, durations, phone-ahead rules, what a ticket includes.
 - Any source in Korean must be TRANSLATED into natural English. Never leave Korean
   sentences in the article and never translate word-for-word — rewrite it as English prose.
   Korean proper nouns keep romanisation with Hangul in brackets on first use.
-- You may add general background, context and explanation from your own knowledge to make
-  the guide readable — but NOT specific numbers, names, addresses or times. If a figure is
-  not in the sources, either leave it out or say what it depends on.
-- Where the sources disagree, prefer the most specific and most recent one.
+- **Your own knowledge does the explaining, the sources do the specifying.** You are expected to
+  write full explanatory prose: how a system works, what the steps feel like in practice, why one
+  option suits a certain traveller, what the trade-offs are, what first-timers get wrong, what to
+  expect on arrival. None of that needs to be in a source. What must come from a source is any
+  specific figure — a price, a time, an address, a station exit, a phone number, an opening hour,
+  a named business. If a figure is not in the sources, describe what it depends on and tell the
+  reader to check on the day, rather than inventing it or leaving the section empty.
 - Never copy a source sentence verbatim. Rewrite everything in the house voice.
 `;
+}
+
+/* ----------------------------------------------------------------------------
+   SOURCE DIGEST
+   Handing four raw pages to the model in one go reliably produces an article
+   that follows source 1 and glances at the rest. Reading them into a single
+   combined fact sheet first — grouped by topic, tagged with which source each
+   fact came from — is what makes the second pass write from all of them.
+   -------------------------------------------------------------------------- */
+
+/** Fact sheet from the most recent digest pass, or null. */
+let aiDigest = null;
+/** Which sources + topic that fact sheet was built from, so a rerun can reuse it. */
+let aiDigestKey = '';
+
+async function buildSourceDigest(topic, title) {
+    if (aiSources.length === 0) { aiDigest = null; return ''; }
+
+    // Rewriting the same article from the same links does not need a second read.
+    const key = topic + '|' + aiSources.map(s => s.finalUrl || s.url).join('|');
+    if (aiDigest && aiDigestKey === key) return formatDigestForPrompt(aiDigest);
+
+    const prompt = `
+You are preparing research notes for an article. Do NOT write the article.
+
+**Article topic:** "${topic}"
+**Working title:** "${title}"
+${buildSourceBlock()}
+
+Read ALL of the sources above together and build ONE combined fact sheet.
+
+Rules:
+- Group by TOPIC, never by source. A topic that appears in three sources is one entry listing
+  all three.
+- Record every specific figure you find: prices (with currency), durations, distances, opening
+  hours, station names and exit numbers, addresses, booking windows, age or ID rules, what is
+  included and excluded.
+- Translate anything Korean into English as you record it.
+- "sources" is the list of source numbers a fact came from.
+- Under "conflicts", record anything the sources state differently, with both values.
+- Under "gaps", list what an article on this topic needs that NONE of the sources covers. Be
+  specific; this tells the writer where to explain rather than assert.
+- Do not invent anything. If the sources are thin, return few facts and a long gap list.
+
+Return clean JSON only, in exactly this shape:
+{
+  "topics": [
+    { "heading": "Short topic name",
+      "facts": ["specific fact with its number", "another specific fact"],
+      "sources": [1, 2] }
+  ],
+  "conflicts": [ { "point": "what disagrees", "values": ["source 1 says X", "source 3 says Y"] } ],
+  "gaps": ["what no source covers"]
+}`;
+
+    try {
+        let raw = await callAI(prompt, {
+            generationConfig: { temperature: 0.2, topP: 0.8, maxOutputTokens: 8192 }
+        });
+        raw = raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+        aiDigest = JSON.parse(raw);
+        aiDigestKey = key;
+    } catch (e) {
+        console.warn('[Sources] digest failed, writing straight from the raw sources:', e);
+        aiDigest = null;
+        aiDigestKey = '';
+        return '';
+    }
+
+    renderSourceDigest();
+    return formatDigestForPrompt(aiDigest);
+}
+
+function formatDigestForPrompt(d) {
+    if (!d || !Array.isArray(d.topics) || d.topics.length === 0) return '';
+
+    const topics = d.topics.map(t =>
+        `• ${t.heading}  [sources: ${(t.sources || []).join(', ') || '?'}]\n` +
+        (t.facts || []).map(f => `    - ${f}`).join('\n')
+    ).join('\n');
+
+    const conflicts = (d.conflicts || []).length
+        ? '\n**WHERE THE SOURCES DISAGREE — give the range, do not pick silently:**\n' +
+          d.conflicts.map(c => `• ${c.point}: ${(c.values || []).join(' / ')}`).join('\n')
+        : '';
+
+    const gaps = (d.gaps || []).length
+        ? '\n**NOT COVERED BY ANY SOURCE — explain these from general knowledge, without inventing figures:**\n' +
+          d.gaps.map(g => `• ${g}`).join('\n')
+        : '';
+
+    return `
+**COMBINED FACT SHEET — built from all of the sources together.**
+This is your outline material. Every topic below must appear somewhere in the article, and a
+topic tagged with more than one source must be written as one merged account, not as separate
+mentions.
+
+${topics}
+${conflicts}
+${gaps}
+`;
+}
+
+/** Tell the editor how long the finished draft is against what was asked for. */
+function reportDraftLength() {
+    const el = document.getElementById('draft-length');
+    if (!el || !lastDraftTarget) return;
+
+    const short = lastDraftWords < lastDraftTarget.min;
+    const colour = short ? 'var(--danger)' : 'var(--accent)';
+    const note = short
+        ? 'Short of target. Usually this means the reference links did not carry enough specifics — ' +
+          'add a link with real prices, times or routes in it and run it again.'
+        : 'On target.';
+
+    el.style.display = 'block';
+    el.innerHTML = `
+        <span style="color:${colour};font-weight:700;">${lastDraftWords.toLocaleString()} words</span>
+        <span style="color:var(--text-muted);">
+            · target ${lastDraftTarget.words.toLocaleString()} (${lastDraftTarget.label}) · ${note}
+        </span>`;
+}
+
+/** Show the editor what was actually pulled out, before a word is written. */
+function renderSourceDigest() {
+    const el = document.getElementById('source-digest');
+    if (!el) return;
+    if (!aiDigest || !Array.isArray(aiDigest.topics)) { el.innerHTML = ''; return; }
+
+    const factCount = aiDigest.topics.reduce((n, t) => n + (t.facts || []).length, 0);
+    const merged = aiDigest.topics.filter(t => (t.sources || []).length > 1).length;
+    const gaps = (aiDigest.gaps || []).length;
+
+    const thin = factCount < 12;
+
+    el.innerHTML = `
+        <div style="border:1px solid var(--border);border-left:3px solid ${thin ? 'var(--danger)' : 'var(--accent)'};border-radius:6px;padding:10px 12px;font-size:12px;">
+            <strong style="color:${thin ? 'var(--danger)' : 'var(--accent)'};">
+                ${factCount} facts across ${aiDigest.topics.length} topics${merged ? ` · ${merged} drawn from more than one source` : ''}
+            </strong>
+            <div style="color:var(--text-muted);margin-top:4px;">
+                ${thin
+                    ? 'That is thin. The article will lean on explanation rather than specifics — add another reference link with real numbers in it for a fuller piece.'
+                    : `${gaps} topic${gaps === 1 ? '' : 's'} not covered by any source; those will be explained rather than quoted.`}
+            </div>
+        </div>`;
 }
 
 /* ============================================================================
@@ -680,6 +1056,8 @@ async function init() {
     document.getElementById('btn-fetch-sources')?.addEventListener('click', fetchReferenceSources);
     renderAffiliateSlots();
     initAdManager();
+    initEssentialsManager();
+    initArticleTypePicker();
 
     // Initialize Quill Editor. Wrapped because Quill comes from a CDN: if that
     // request is blocked, an unguarded throw here would take out every button
@@ -909,6 +1287,7 @@ const switchView = (viewName) => {
     if (viewName === 'automation') loadQueue();
     if (viewName === 'site-settings') loadHeroSettings();
     if (viewName === 'ads') loadAdSlots();
+    if (viewName === 'essentials') loadEssentials();
     if (viewName === 'ai-writer') {
         if (!editingPostId) resetAI();
     }
@@ -1216,6 +1595,289 @@ function initAdManager() {
         syncAdSlotsFromDOM();
         if (e.target.matches('.ad-active, .ad-sponsored')) renderAdRows();
         else updateAdPreview();
+    });
+}
+
+/* ============================================================================
+   ESSENTIALS
+   The "Before you go" box that the blog renderer drops into every article.
+   Stored in site_settings under 'essentials', same as the ad strip, so a change
+   here is live on every published post without a deploy.
+   ========================================================================== */
+
+const ESS_SETTINGS_KEY = 'essentials';
+const ESS_MAX_ITEMS = 6;
+
+/** Icon choices, kept short on purpose: a long list invites decoration. */
+const ESS_ICONS = [
+    { value: 'sim-card',       label: 'SIM / eSIM' },
+    { value: 'airplane-tilt',  label: 'Airport / flight' },
+    { value: 'train',          label: 'Train / transit' },
+    { value: 'credit-card',    label: 'Card / money' },
+    { value: 'wifi-high',      label: 'Wi-Fi' },
+    { value: 'translate',      label: 'Language' },
+    { value: 'map-trifold',    label: 'Map / area' },
+    { value: 'suitcase-rolling', label: 'Luggage' },
+    { value: 'first-aid-kit',  label: 'Health / safety' },
+    { value: 'compass',        label: 'General' },
+];
+
+let essItems = [];
+let essHeading = { label: '', sub: '' };
+
+function blankEssItem() {
+    return { active: true, title: '', blurb: '', url: '', icon: 'compass' };
+}
+
+function defaultEssentials() {
+    return [
+        { active: true, icon: 'sim-card',      title: 'Getting an eSIM for Korea',       blurb: 'Data the moment you land, no queue at the airport counter.', url: '' },
+        { active: true, icon: 'airplane-tilt', title: 'Incheon Airport into Seoul',      blurb: 'AREX, limousine bus or taxi: which one fits your arrival time.', url: '' },
+        { active: true, icon: 'credit-card',   title: 'T-money and paying for transit',  blurb: 'The one card that works on every bus, subway and most taxis.', url: '' },
+    ];
+}
+
+async function loadEssentials() {
+    const status = document.getElementById('ess-save-status');
+    try {
+        const { data, error } = await supabase
+            .from('site_settings')
+            .select('value')
+            .eq('key', ESS_SETTINGS_KEY)
+            .single();
+        if (error && error.code !== 'PGRST116') throw error;
+
+        const stored = data?.value;
+        const items = stored?.items;
+        essItems = Array.isArray(items) && items.length
+            ? items.map(s => ({ ...blankEssItem(), ...s }))
+            : defaultEssentials();
+        essHeading = {
+            label: stored?.heading || '',
+            sub:   stored?.subheading || '',
+        };
+        if (status) status.innerHTML = '';
+    } catch (e) {
+        console.error('[Essentials] load failed:', e);
+        essItems = defaultEssentials();
+        essHeading = { label: '', sub: '' };
+        if (status) status.innerHTML = `<span style="color:var(--danger);">Could not load saved guides (${e.message}). Showing defaults.</span>`;
+    }
+
+    const h = document.getElementById('ess-heading');
+    const s = document.getElementById('ess-subheading');
+    if (h) h.value = essHeading.label;
+    if (s) s.value = essHeading.sub;
+
+    renderEssRows();
+}
+
+function renderEssRows() {
+    const list = document.getElementById('ess-list');
+    if (!list) return;
+
+    const status = document.getElementById('ess-save-status');
+    if (status && status.dataset.sticky !== '1') status.innerHTML = '';
+
+    if (essItems.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:14px 0;">No pinned guides yet. The box is hidden inside articles until you add one.</p>';
+        updateEssPreview();
+        return;
+    }
+
+    list.innerHTML = essItems.map((s, i) => `
+        <div class="ess-row" data-i="${i}" style="border:1px solid var(--border);border-radius:8px;padding:14px;margin:10px 0;${s.active ? '' : 'opacity:.55;'}">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <strong style="font-size:12px;color:var(--text-muted);">#${i + 1}</strong>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+                    <input type="checkbox" class="ess-active" ${s.active ? 'checked' : ''}> Active
+                </label>
+                <span style="flex:1;"></span>
+                <button class="btn btn-outline btn-sm ess-up"   ${i === 0 ? 'disabled' : ''} title="Move up"><i class="ph ph-arrow-up"></i></button>
+                <button class="btn btn-outline btn-sm ess-down" ${i === essItems.length - 1 ? 'disabled' : ''} title="Move down"><i class="ph ph-arrow-down"></i></button>
+                <button class="btn btn-outline btn-sm ess-del" style="color:var(--danger);border-color:var(--danger);" title="Delete"><i class="ph ph-trash"></i></button>
+            </div>
+            <div class="grid-2" style="gap:10px;">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Title</label>
+                    <input class="form-input ess-title" maxlength="60" value="${escHtml(s.title)}" placeholder="Getting an eSIM for Korea">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label">Icon</label>
+                    <select class="form-select ess-icon">
+                        ${ESS_ICONS.map(o => `<option value="${o.value}" ${s.icon === o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin:10px 0 0;">
+                <label class="form-label">One line: why it matters</label>
+                <input class="form-input ess-blurb" maxlength="110" value="${escHtml(s.blurb)}" placeholder="Data the moment you land, no queue at the airport counter.">
+            </div>
+            <div class="form-group" style="margin:10px 0 0;">
+                <label class="form-label">Link</label>
+                <input class="form-input ess-url" value="${escHtml(s.url)}" placeholder="/blog/korea-esim-guide">
+                <p style="font-size:11px;color:var(--text-muted);margin:5px 0 0;">
+                    Your own article: start with <code>/blog/</code>. An outside page works too, with the full https:// address.
+                </p>
+            </div>
+        </div>
+    `).join('');
+
+    updateEssPreview();
+}
+
+function syncEssFromDOM() {
+    document.querySelectorAll('.ess-row').forEach(row => {
+        const i = Number(row.dataset.i);
+        if (!essItems[i]) return;
+        essItems[i] = {
+            active: row.querySelector('.ess-active').checked,
+            title:  row.querySelector('.ess-title').value.trim(),
+            blurb:  row.querySelector('.ess-blurb').value.trim(),
+            url:    row.querySelector('.ess-url').value.trim(),
+            icon:   row.querySelector('.ess-icon').value,
+        };
+    });
+    const h = document.getElementById('ess-heading');
+    const s = document.getElementById('ess-subheading');
+    essHeading = { label: h ? h.value.trim() : '', sub: s ? s.value.trim() : '' };
+}
+
+function updateEssPreview() {
+    const box = document.getElementById('ess-preview');
+    if (!box) return;
+
+    const live = essItems.filter(s => s.active && s.title && s.url);
+    if (live.length === 0) {
+        box.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Nothing to show &mdash; the box will be hidden inside articles.</p>';
+        return;
+    }
+
+    const label = essHeading.label || 'Before you go';
+    const sub = essHeading.sub || '';
+
+    box.innerHTML = `
+        <div style="border:1px solid #2a2a2a;border-left:3px solid var(--primary);border-radius:10px;padding:18px 20px;background:#111;">
+            <div style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--primary);">${escHtml(label)}</div>
+            ${sub ? `<div style="font-size:13px;color:var(--text-muted);margin-top:5px;">${escHtml(sub)}</div>` : ''}
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px;">
+                ${live.map(s => `
+                    <div style="display:flex;gap:10px;align-items:flex-start;border:1px solid #262626;border-radius:8px;padding:12px;">
+                        <i class="ph ph-${escHtml(s.icon || 'compass')}" style="font-size:20px;color:var(--primary);"></i>
+                        <div>
+                            <div style="font-size:14px;font-weight:700;">${escHtml(s.title)}</div>
+                            ${s.blurb ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5;">${escHtml(s.blurb)}</div>` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>`;
+}
+
+async function saveEssentials() {
+    syncEssFromDOM();
+
+    const status = document.getElementById('ess-save-status');
+    const btn = document.getElementById('btn-ess-save');
+
+    const bad = essItems.findIndex(s => s.active && (!s.title || !s.url));
+    if (bad !== -1) {
+        status.innerHTML = `<span style="color:var(--danger);">Guide #${bad + 1} needs a title and a link before it can go live.</span>`;
+        return;
+    }
+    // Internal paths and full URLs only — a bare "korea-esim" would 404 for every reader.
+    const badUrl = essItems.findIndex(s => s.url && !/^(https?:\/\/|\/)/i.test(s.url));
+    if (badUrl !== -1) {
+        status.innerHTML = `<span style="color:var(--danger);">Guide #${badUrl + 1}: the link must start with / for your own article, or https:// for an outside page.</span>`;
+        return;
+    }
+
+    btn.disabled = true;
+    status.innerHTML = '<span style="color:var(--text-muted);">Saving...</span>';
+
+    try {
+        const payload = {
+            items: essItems,
+            heading: essHeading.label,
+            subheading: essHeading.sub,
+        };
+        const { data: existing } = await supabase
+            .from('site_settings').select('id').eq('key', ESS_SETTINGS_KEY).single();
+
+        if (existing) {
+            const { error } = await supabase.from('site_settings')
+                .update({ value: payload, updated_at: new Date().toISOString() })
+                .eq('key', ESS_SETTINGS_KEY);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.from('site_settings')
+                .insert({ key: ESS_SETTINGS_KEY, value: payload });
+            if (error) throw error;
+        }
+
+        const liveCount = essItems.filter(s => s.active && s.title && s.url).length;
+        status.dataset.sticky = '1';
+        status.innerHTML = `<span style="color:var(--success);"><i class="ph ph-check-circle"></i> Published &mdash; ${liveCount} guide${liveCount === 1 ? '' : 's'} now show inside every article.</span>`;
+        setTimeout(() => { status.innerHTML = ''; status.dataset.sticky = '0'; }, 5000);
+    } catch (e) {
+        console.error('[Essentials] save failed:', e);
+        status.innerHTML = `<span style="color:var(--danger);"><i class="ph ph-warning-circle"></i> ${e.message}</span>`;
+    }
+    btn.disabled = false;
+}
+
+function initEssentialsManager() {
+    const list = document.getElementById('ess-list');
+    if (!list) return;
+
+    document.getElementById('btn-ess-add').addEventListener('click', () => {
+        syncEssFromDOM();
+        if (essItems.length >= ESS_MAX_ITEMS) {
+            document.getElementById('ess-save-status').innerHTML =
+                `<span style="color:var(--danger);">${ESS_MAX_ITEMS} guides is the maximum. Past that the box stops reading as essential.</span>`;
+            return;
+        }
+        essItems.push(blankEssItem());
+        renderEssRows();
+    });
+
+    document.getElementById('btn-ess-save').addEventListener('click', saveEssentials);
+    document.getElementById('btn-ess-reload').addEventListener('click', loadEssentials);
+
+    list.addEventListener('click', (e) => {
+        const row = e.target.closest('.ess-row');
+        if (!row) return;
+        const i = Number(row.dataset.i);
+
+        if (e.target.closest('.ess-del')) {
+            syncEssFromDOM();
+            essItems.splice(i, 1);
+            renderEssRows();
+        } else if (e.target.closest('.ess-up') && i > 0) {
+            syncEssFromDOM();
+            [essItems[i - 1], essItems[i]] = [essItems[i], essItems[i - 1]];
+            renderEssRows();
+        } else if (e.target.closest('.ess-down') && i < essItems.length - 1) {
+            syncEssFromDOM();
+            [essItems[i], essItems[i + 1]] = [essItems[i + 1], essItems[i]];
+            renderEssRows();
+        }
+    });
+
+    list.addEventListener('input', () => { syncEssFromDOM(); updateEssPreview(); });
+    list.addEventListener('change', (e) => {
+        syncEssFromDOM();
+        // Only the Active checkbox changes a row's own appearance; redrawing on a
+        // text field would steal focus mid-edit.
+        if (e.target.matches('.ess-active')) renderEssRows();
+        else updateEssPreview();
+    });
+
+    ['ess-heading', 'ess-subheading'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', () => {
+            syncEssFromDOM();
+            updateEssPreview();
+        });
     });
 }
 
@@ -1605,9 +2267,17 @@ window.resetAI = () => {
 
     // Clear reference sources and affiliate slots
     aiSources = [];
+    aiDigest = null;
+    aiDigestKey = '';
+    lastDraftWords = 0;
+    lastDraftTarget = null;
     document.getElementById('ai-source-urls').value = '';
     document.getElementById('source-list').innerHTML = '';
     document.getElementById('source-status').textContent = '';
+    const digestEl = document.getElementById('source-digest');
+    if (digestEl) digestEl.innerHTML = '';
+    const lenEl = document.getElementById('draft-length');
+    if (lenEl) { lenEl.innerHTML = ''; lenEl.style.display = 'none'; }
     document.querySelectorAll('.aff-slot-url, .aff-slot-desc').forEach(el => { el.value = ''; });
     document.getElementById('ai-keywords-container').innerHTML = '';
     const titleOptions = document.getElementById('ai-title-options-container');
@@ -1630,6 +2300,7 @@ window.runAIPhase1 = async () => {
 
     try {
         const sourceBlock = buildSourceBlock(2500);
+        const articleType = KD_ARTICLE_TYPES[currentArticleType()];
 
         const prompt = `
 You are the editor of 'Korea Decode', a practical English-language guide to Korea written from Seoul.
@@ -1644,10 +2315,11 @@ Base the titles and keywords on what the SOURCE MATERIAL above actually covers �
 place names, the real options, the angle the sources support. Do not promise anything the
 sources cannot back up.` : ''}
 
+**ARTICLE TYPE:** ${articleType.label} — ${articleType.hint}
+
 **TITLE RULES:**
 - Titles describe what the reader will be able to DO or DECIDE after reading. Search-intent first.
-- Preferred shapes: "How to ...", "... : What It Costs and How to Book", "Is ... Worth It?",
-  "Where to ... in Seoul (and What to Skip)", "... Guide for First-Time Visitors".
+${articleType.titleShapes}
 - Include the primary keyword naturally. Aim for 50-60 characters.
 - NO slang, NO clickbait, NO "hidden gem", "must-visit", "ultimate", "you won't believe",
   "amazing", "epic", "bucket list". NO emoji. NO exclamation marks.
@@ -1725,7 +2397,7 @@ window.runAIPhase2 = async () => {
     if (!title) return alert('Please generate or select a title first.');
 
     const btn = document.querySelector('#step-2 .btn-primary');
-    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing the guide...';
+    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Reading the sources...';
     btn.disabled = true;
 
     // Single house byline for the whole site.
@@ -1739,10 +2411,17 @@ window.runAIPhase2 = async () => {
     let content = '';
 
     const affiliateSlots = readAffiliateSlots();
+    const articleType = KD_ARTICLE_TYPES[currentArticleType()];
+    const len = currentLength();
+
+    // Pass 1: read every source into one combined fact sheet. Skipped when no
+    // reference links were supplied.
+    const digestBlock = await buildSourceDigest(topic, title);
+    btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing the guide...';
 
     try {
         const prompt = `
-**Task:** Write a practical guide for 'Korea Decode'.
+**Task:** Write a ${articleType.label.toLowerCase()} for 'Korea Decode'.
 
 ${MISS_PARK_VOICE}
 
@@ -1750,43 +2429,19 @@ ${MISS_PARK_VOICE}
 **Core Subject:** "${topic}"
 **Target Keywords:** ${keywords.join(', ')}
 ${buildSourceBlock()}
+${digestBlock}
 ${KD_STYLE_RULES}
+${buildLengthBlock(len)}
 ${buildAffiliateSlotBlock(affiliateSlots)}
+${articleType.format}
 
-**ARTICLE FORMAT — PRACTICAL GUIDE, NOT AN ESSAY:**
+**ALWAYS, WHATEVER THE FORMAT:**
 
-1. **Opening (2-3 sentences max):** Start with the reader's decision or problem, e.g. "Trying to work
-   out whether X is worth booking? Here is what it costs and how it actually works." No self-
-   introduction, no scene-setting, no history lesson.
-
-2. **Quick Answer box** immediately after the intro:
-   <div class="quick-answer" style="background:#111;border-left:4px solid #cdff00;padding:16px 20px;border-radius:8px;margin:24px 0;">
-   <strong style="color:#cdff00;">Quick answer:</strong>
-   <p style="color:#ccc;margin:6px 0 0;">[One or two sentences for the reader who will not read the rest]</p>
-   </div>
-
-3. **Comparison table:** at least one HTML <table> comparing the real options — price, time needed,
-   who it suits, what is included. Keep it to 3-5 rows.
-
-4. **Practical specifics throughout:** prices in KRW with an approximate USD figure, opening hours,
-   the nearest subway line/station and exit number, how long things take, what to book ahead and what
-   to buy on the day. Where a figure varies, give the range and say what it depends on.
-
-5. **Structure:** 4-6 sections using <h2> (and <h3> where a section needs sub-points). Use
-   <ul><li> for checklists, <strong> for the numbers that matter, <blockquote> for a single practical
-   tip per section.
-
-6. **Affiliate placements:** see the AFFILIATE PLACEMENTS list above. Drop each "[[AFF:n]]" marker
-   on its own line at the right point in the article. If no list was given, do not write any
-   booking buttons at all.
-
-7. **NO IMAGES:** do not write any <img>, <figure> or image placeholder of any kind.
-   Illustrations are added by the editor afterwards.
-
-8. **Ending:** a short "What to do next" section — the recommended option, the runner-up, and the one
-   thing to sort out before arriving. No motivational sign-off.
-
-9. **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <table>, <blockquote>.
+- **Sections:** 4-6 <h2> sections, with <h3> where a section needs sub-points. <ul><li> for
+  checklists, <strong> for the numbers that matter, <blockquote> for one practical tip per section.
+- **NO IMAGES:** do not write any <img>, <figure> or image placeholder of any kind.
+  Illustrations are added by the editor afterwards.
+- **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <table>, <blockquote>.
 
 **TEST BEFORE YOU FINISH:** every paragraph must help the reader decide or act. If a paragraph does
 not answer "what should I do?", "how much is it?", "how do I get there?" or "is it worth it?",
@@ -1795,16 +2450,55 @@ delete it or replace it with a fact.
 **Output:** Only the article HTML body. No explanations before or after.`;
 
         let rawContent = await callAI(prompt, {
-            generationConfig: { temperature: 0.55, topP: 0.9 }
+            generationConfig: { temperature: 0.55, topP: 0.9, maxOutputTokens: 8192 }
         });
 
-        // Clean markdown code blocks from response
-        rawContent = rawContent.trim();
-        if (rawContent.startsWith('```html')) {
-            rawContent = rawContent.replace(/^```html\s*/, '').replace(/\s*```$/, '');
-        } else if (rawContent.startsWith('```')) {
-            rawContent = rawContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        rawContent = stripCodeFence(rawContent);
+
+        // One expansion pass when the draft lands short. Asking for "more words"
+        // produces padding, so the retry names the sections that are thin and the
+        // material still unused.
+        let words = countWords(rawContent);
+        if (words < len.min) {
+            btn.innerHTML = `<i class="ph ph-spinner spinner"></i> Draft ran short (${words} words) — filling it out...`;
+            try {
+                const expanded = await callAI(`
+The draft below came back at ${words} words. It needs to be about ${len.words}.
+
+${buildSourceBlock()}
+${digestBlock}
+${KD_STYLE_RULES}
+
+**YOUR JOB:** return the SAME article, expanded with real substance. Specifically:
+- Find every topic in the fact sheet above that the draft mentions in passing or skips, and give
+  it proper treatment.
+- Wherever the draft names an option without explaining it, explain it: cost, time, where it
+  starts, what it is like in practice, who it suits.
+- Add the step-by-step detail and the failure cases wherever they are missing.
+- Keep every existing table, quick-answer box and "[[AFF:n]]" marker exactly where it is.
+- Do NOT pad. No restating the intro, no summary paragraph, no generic travel advice. Every added
+  sentence carries a fact or a judgement.
+- Keep the same voice, the same HTML structure, and the same rules: no images, no <h1>, no markdown.
+
+**DRAFT:**
+${rawContent}
+
+**Output:** only the expanded article HTML body.`, {
+                    generationConfig: { temperature: 0.5, topP: 0.9, maxOutputTokens: 8192 }
+                });
+
+                const cleaned = stripCodeFence(expanded);
+                // Only accept the retry if it actually grew; a shorter rewrite is a regression.
+                if (countWords(cleaned) > words) {
+                    rawContent = cleaned;
+                    words = countWords(rawContent);
+                }
+            } catch (e) {
+                console.warn('[AI] expansion pass failed, keeping the first draft:', e);
+            }
         }
+        lastDraftWords = words;
+        lastDraftTarget = len;
 
         // Strip any image placeholder the model wrote anyway.
         rawContent = rawContent
@@ -1825,6 +2519,7 @@ delete it or replace it with a fact.
     }
 
     loadIntoEditor(content);
+    reportDraftLength();
 
     document.getElementById('step-2').classList.remove('active');
     document.getElementById('step-3').style.opacity = '1';

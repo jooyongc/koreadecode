@@ -18,7 +18,7 @@
 const MAX_URLS = 4;              // matches the admin UI
 const FETCH_TIMEOUT_MS = 12000;  // per URL
 const MAX_BYTES = 1_500_000;     // stop reading a page after ~1.5 MB
-const MAX_TEXT_CHARS = 7000;     // per source, keeps the AI prompt manageable
+const MAX_TEXT_CHARS = 12000;    // per source; Gemini's context is large, thin sources are the real risk
 
 export async function onRequest(context) {
   const { request } = context;
@@ -63,9 +63,11 @@ async function fetchSource(rawUrl) {
   const guard = validateUrl(rawUrl);
   if (!guard.ok) return { ...base, error: guard.error };
 
+  const fetchUrl = rewriteForReadability(guard.url);
+
   try {
     const resp = await withTimeout(
-      fetch(guard.url, {
+      fetch(fetchUrl, {
         redirect: 'follow',
         headers: {
           // Some sites serve a stub to unknown agents; identify honestly but completely.
@@ -78,7 +80,7 @@ async function fetchSource(rawUrl) {
     );
 
     if (!resp.ok) {
-      return { ...base, finalUrl: resp.url || guard.url, error: `HTTP ${resp.status}` };
+      return { ...base, finalUrl: resp.url || fetchUrl, error: `HTTP ${resp.status}` };
     }
 
     const contentType = (resp.headers.get('content-type') || '').toLowerCase();
@@ -103,7 +105,7 @@ async function fetchSource(rawUrl) {
       url: base.url,
       finalUrl: resp.url,
       title: extracted.title,
-      siteName: safeHostname(resp.url || guard.url),
+      siteName: safeHostname(resp.url || fetchUrl),
       text,
       chars: text.length,
       lang: detectLang(text),
@@ -190,6 +192,40 @@ function safeHostname(u) {
   try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; }
 }
 
+/**
+ * Some sites serve the article at a different address than the one people copy.
+ * Rewriting to that address is the difference between a full page of source
+ * material and nothing at all.
+ *
+ * Naver blogs are the big one: blog.naver.com/{id}/{logNo} is a shell whose real
+ * content sits in an iframe, and this proxy strips iframes. The mobile host
+ * serves the same post as a plain document.
+ */
+function rewriteForReadability(url) {
+  let u;
+  try { u = new URL(url); } catch { return url; }
+
+  const host = u.hostname.toLowerCase().replace(/^www\./, '');
+
+  // blog.naver.com/{blogId}/{logNo}  →  m.blog.naver.com/{blogId}/{logNo}
+  if (host === 'blog.naver.com') {
+    const m = u.pathname.match(/^\/([^/]+)\/(\d+)\/?$/);
+    if (m) return `https://m.blog.naver.com/${m[1]}/${m[2]}`;
+    // blog.naver.com/PostView.naver?blogId=..&logNo=..
+    const blogId = u.searchParams.get('blogId');
+    const logNo = u.searchParams.get('logNo');
+    if (blogId && logNo) return `https://m.blog.naver.com/${blogId}/${logNo}`;
+  }
+
+  // Naver cafe and post share the same iframe pattern for cafe articles.
+  if (host === 'cafe.naver.com') {
+    const m = u.pathname.match(/^\/([^/]+)\/(\d+)\/?$/);
+    if (m) return `https://m.cafe.naver.com/${m[1]}/${m[2]}`;
+  }
+
+  return url;
+}
+
 /* ------------------------------------------------------------------ */
 /* Readability-lite extraction                                         */
 /* ------------------------------------------------------------------ */
@@ -213,21 +249,43 @@ function extractReadable(html) {
     .replace(/<(script|style|noscript|template|svg|iframe|form|select|button)\b[\s\S]*?<\/\1>/gi, ' ')
     .replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, ' ');
 
-  // Prefer the main content container when the page marks one.
-  const container =
-    cleaned.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1] ||
-    cleaned.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] ||
-    cleaned.match(/<div[^>]+(?:id|class)=["'][^"']*(?:article|content|post|entry|body)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i)?.[1] ||
-    cleaned.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] ||
-    cleaned;
+  // Every candidate container, scored by how much prose it yields.
+  //
+  // The old version took the FIRST regex match and kept it. Those patterns are
+  // non-greedy, so a <div class="post-content"> containing other divs — which is
+  // every modern page — matched only as far as the first inner </div>. A share
+  // widget or a byline could win and the rest of the article was thrown away.
+  // Picking the richest candidate instead of the first one is what keeps a long
+  // page long.
+  const bodyHTML = cleaned.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] || cleaned;
+  const bodyText = htmlToText(bodyHTML);
 
-  const text = htmlToText(container);
-  // A tiny container usually means the heuristic picked the wrong node.
-  if (text.length < 400) {
-    const whole = htmlToText(cleaned.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] || cleaned);
-    if (whole.length > text.length) return { title, text: whole };
-  }
+  const candidates = [
+    cleaned.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1],
+    cleaned.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1],
+    // Naver, Tistory and WordPress content wrappers, in their usual class names.
+    ...matchAllGroups(cleaned, /<div[^>]+(?:id|class)=["'][^"']*(?:se-main-container|post-view|postview|article|content|post|entry|body)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi),
+  ]
+    .filter(Boolean)
+    .map(htmlToText)
+    .filter(t => t.length >= 400);
+
+  const best = candidates.sort((a, b) => b.length - a.length)[0] || '';
+
+  // A container is only worth preferring over the whole body when it holds most
+  // of the prose. Otherwise it clipped the article, and the body is safer.
+  const text = best.length >= Math.max(400, bodyText.length * 0.4) ? best : bodyText;
   return { title, text };
+}
+
+/** All first capture groups of a global regex, capped so a pathological page cannot stall. */
+function matchAllGroups(s, re) {
+  const out = [];
+  for (const m of s.matchAll(re)) {
+    if (m[1]) out.push(m[1]);
+    if (out.length >= 8) break;
+  }
+  return out;
 }
 
 function htmlToText(fragment) {
