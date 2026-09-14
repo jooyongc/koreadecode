@@ -282,6 +282,47 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Auto thumbnail: the house card, drawn from two lines of text -->
+            <div class="form-group" style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <label class="form-label" style="margin:0;">Auto thumbnail</label>
+                    <span style="font-size:11px;color:var(--text-muted);">1200 &times; 675 &middot; also used as the share image</span>
+                </div>
+
+                <div class="grid-2" style="gap:10px;">
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Top line &mdash; compared to what?</label>
+                        <input id="thumb-kicker" class="form-input" maxlength="42" placeholder="DMZ tours, compared">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label class="form-label">Headline &mdash; 7 words max</label>
+                        <input id="thumb-headline" class="form-input" maxlength="80" placeholder="Is the DMZ tour actually *worth it*?">
+                    </div>
+                </div>
+                <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
+                    Wrap the one word that carries the decision in asterisks to colour it:
+                    <code>*worth it*</code>, <code>*43 min*</code>, <code>*skip*</code>. Colour comes from the category.
+                </p>
+
+                <div style="display:flex;gap:16px;align-items:flex-start;margin-top:14px;flex-wrap:wrap;">
+                    <canvas id="thumb-canvas" width="1200" height="675"
+                            style="width:400px;height:225px;border-radius:8px;border:1px solid var(--border);background:#0a0a0a;"></canvas>
+                    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px;">
+                        <button id="btn-thumb-fill" class="btn btn-outline btn-sm">
+                            <i class="ph ph-magic-wand"></i> Fill from the title
+                        </button>
+                        <button id="btn-thumb-use" class="btn btn-primary btn-sm">
+                            <i class="ph ph-image-square"></i> Use as featured image
+                        </button>
+                        <button id="btn-thumb-download" class="btn btn-outline btn-sm">
+                            <i class="ph ph-download-simple"></i> Download PNG
+                        </button>
+                        <span id="thumb-status" style="font-size:12px;"></span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Affiliate slots: paste up to 5 links and the AI places them in context -->
             <div class="form-group">
                 <label class="form-label">
@@ -538,6 +579,28 @@
             <h1>Post Manager</h1>
             <p>Manage all published, draft, and scheduled posts</p>
         </div>
+
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <h3 style="margin:0;">Thumbnails</h3>
+                    <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted);">
+                        Give every post the house card, drawn from its own title and category.
+                    </p>
+                </div>
+                <div class="flex gap-8">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+                        <input type="checkbox" id="thumb-batch-overwrite"> Replace existing images too
+                    </label>
+                    <button id="btn-thumb-batch" class="btn btn-outline btn-sm">
+                        <i class="ph ph-images"></i> Generate for all posts
+                    </button>
+                </div>
+            </div>
+            <div id="thumb-batch-status" style="font-size:13px;padding:4px 0;"></div>
+            <canvas id="thumb-batch-canvas" width="1200" height="675" style="display:none;"></canvas>
+        </div>
+
         <div id="posts-grid"></div>
     </section>
 
@@ -989,6 +1052,6 @@
     </div>
 </div>
 
-<script type="module" src="/admin/admin.js?v=2026-09-08b"></script>
+<script type="module" src="/admin/admin.js?v=2026-09-09a"></script>
 </body>
 </html>

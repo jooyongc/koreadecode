@@ -4,12 +4,12 @@ import { normalizeCategory } from '/assets/js/categories.js';
 /* Build stamp. If the module fails to parse this never runs, and the red warning
    baked into admin/index.html stays on screen — which is exactly how a stale or
    broken admin.js announces itself. */
-const KD_ADMIN_BUILD = '2026-09-08b';
+const KD_ADMIN_BUILD = '2026-09-09a';
 console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
 function stampAdminBuild() {
     document.querySelectorAll('[data-admin-build]').forEach(el => {
         el.textContent = 'build ' + KD_ADMIN_BUILD +
-            ' \u00b7 notes, source digest, length targets, essentials';
+            ' \u00b7 auto thumbnails, notes, source digest, essentials';
         el.style.color = 'var(--text-muted)';
     });
 }
@@ -1058,6 +1058,7 @@ async function init() {
     initAdManager();
     initEssentialsManager();
     initNotesManager();
+    initThumbnailMaker();
     initArticleTypePicker();
 
     // Initialize Quill Editor. Wrapped because Quill comes from a CDN: if that
@@ -1882,6 +1883,456 @@ function initEssentialsManager() {
             updateEssPreview();
         });
     });
+}
+
+/* ============================================================================
+   AUTO THUMBNAIL — "Template A"
+   One card for every article, drawn in the browser and uploaded as the featured
+   image. Every post shares a layout, and only the category colour changes, so a
+   list of articles reads as one publication. Nothing about it needs a design
+   tool, and the same file serves as the social share image.
+   ========================================================================== */
+
+const THUMB_W = 1200;
+const THUMB_H = 675;   // 16:9 — matches the site's cards, and valid for OG/Twitter
+
+const THUMB_COLORS = {
+    Book: '#cdff00',
+    Plan: '#ff6bdf',
+    Shop: '#ff8c42',
+    Food: '#ffffff',
+};
+
+/** Headlines are written as "Is it *worth it*?" — split into coloured runs. */
+function parseAccent(text) {
+    const out = [];
+    String(text || '').split(/(\*[^*]+\*)/g).forEach(part => {
+        if (!part) return;
+        const accent = part.startsWith('*') && part.endsWith('*') && part.length > 2;
+        out.push({ text: accent ? part.slice(1, -1) : part, accent });
+    });
+    return out.length ? out : [{ text: '', accent: false }];
+}
+
+/** Runs → words, each carrying its own colour flag, so wrapping can be per-word. */
+function accentWords(runs) {
+    const words = [];
+    let open = null;   // the word currently being built
+
+    runs.forEach(run => {
+        run.text.split(/(\s+)/).forEach(tok => {
+            if (tok === '') return;
+            if (/^\s+$/.test(tok)) { open = null; return; }
+            if (!open) { open = { frags: [] }; words.push(open); }
+            open.frags.push({ text: tok, accent: run.accent });
+        });
+        if (/\s$/.test(run.text)) open = null;
+    });
+
+    return words;
+}
+
+function wordWidth(ctx, w) {
+    return w.frags.reduce((n, f) => n + ctx.measureText(f.text).width, 0);
+}
+
+/**
+ * Greedy wrap at a given size. Returns null when it needs more than maxLines,
+ * so the caller can step the size down instead of overflowing the card.
+ */
+function wrapAccentWords(ctx, words, maxWidth, maxLines) {
+    const lines = [[]];
+    let width = 0;
+    const space = ctx.measureText(' ').width;
+
+    for (const w of words) {
+        const ww = wordWidth(ctx, w);
+        const line = lines[lines.length - 1];
+        const needed = line.length ? width + space + ww : ww;
+        if (line.length && needed > maxWidth) {
+            if (lines.length >= maxLines) return null;
+            lines.push([w]);
+            width = ww;
+        } else {
+            line.push(w);
+            width = needed;
+        }
+    }
+    return lines;
+}
+
+/** Make sure the webfont is actually loaded, or the card is drawn in Arial. */
+async function ensureThumbFonts() {
+    if (!document.fonts?.load) return;
+    try {
+        await Promise.all([
+            document.fonts.load('700 84px "Space Grotesk"'),
+            document.fonts.load('600 22px "Space Grotesk"'),
+            document.fonts.load('500 24px "Space Grotesk"'),
+        ]);
+        await document.fonts.ready;
+    } catch (_) {
+        // A fallback face still produces a usable card.
+    }
+}
+
+async function drawThumbnail(canvas, { category, kicker, headline }) {
+    await ensureThumbFonts();
+
+    const c = THUMB_COLORS[normalizeCategory(category)] || THUMB_COLORS.Plan;
+    const ctx = canvas.getContext('2d');
+    const F = (w, s) => `${w} ${s}px "Space Grotesk", "Inter", sans-serif`;
+
+    ctx.clearRect(0, 0, THUMB_W, THUMB_H);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, THUMB_W, THUMB_H);
+
+    // Corner glow: keeps a large black card from reading as a loading failure.
+    const glow = ctx.createRadialGradient(THUMB_W - 40, 40, 0, THUMB_W - 40, 40, 520);
+    glow.addColorStop(0, hexToRgba(c, 0.16));
+    glow.addColorStop(1, hexToRgba(c, 0));
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, THUMB_W, THUMB_H);
+
+    // Left signature bar — the part that is recognisable at thumbnail size.
+    ctx.fillStyle = c;
+    ctx.fillRect(0, 0, 14, THUMB_H);
+
+    const L = 92;   // text left edge
+    const R = 72;   // right margin
+
+    // Brand mark
+    ctx.textBaseline = 'middle';
+    ctx.font = F(600, 22);
+    ctx.letterSpacing = '6px';
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillText('KOREA ', L, 88);
+    const koreaW = ctx.measureText('KOREA ').width;
+    ctx.fillStyle = c;
+    ctx.font = F(700, 22);
+    ctx.fillText('DECODE', L + koreaW, 88);
+    ctx.letterSpacing = '0px';
+
+    // Category chip, right aligned
+    const catLabel = normalizeCategory(category).toUpperCase();
+    ctx.font = F(700, 20);
+    ctx.letterSpacing = '3px';
+    const chipW = ctx.measureText(catLabel).width + 40;
+    const chipX = THUMB_W - R - chipW;
+    roundRect(ctx, chipX, 88 - 21, chipW, 42, 6);
+    ctx.fillStyle = c;
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.fillText(catLabel, chipX + 20, 89);
+    ctx.letterSpacing = '0px';
+
+    // Kicker
+    const maxWidth = THUMB_W - L - R;
+    let y = 250;
+    if (kicker && kicker.trim()) {
+        ctx.font = F(500, 24);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.fillText(kicker.trim(), L, y);
+        y += 52;
+    } else {
+        y += 20;
+    }
+
+    // Headline: step the size down until it fits, rather than letting it spill.
+    const words = accentWords(parseAccent(headline));
+    let size = 84, lines = null;
+    for (const s of [84, 76, 68, 60, 54]) {
+        ctx.font = F(700, s);
+        lines = wrapAccentWords(ctx, words, maxWidth, s >= 68 ? 2 : 3);
+        if (lines) { size = s; break; }
+    }
+    if (!lines) {
+        size = 48;
+        ctx.font = F(700, size);
+        lines = wrapAccentWords(ctx, words, maxWidth, 4) || [words];
+    }
+
+    ctx.font = F(700, size);
+    ctx.letterSpacing = '-1px';
+    const lineH = size * 1.1;
+    const space = ctx.measureText(' ').width;
+    lines.forEach((line, i) => {
+        let x = L;
+        const ly = y + size / 2 + i * lineH;
+        line.forEach((w, j) => {
+            w.frags.forEach(f => {
+                ctx.fillStyle = f.accent ? c : '#ffffff';
+                ctx.fillText(f.text, x, ly);
+                x += ctx.measureText(f.text).width;
+            });
+            if (j < line.length - 1) x += space;
+        });
+    });
+    ctx.letterSpacing = '0px';
+
+    // Footer rule + trust line
+    ctx.fillStyle = c;
+    ctx.fillRect(L, THUMB_H - 74, 56, 2);
+    ctx.font = F(400, 21);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('Written in Seoul · Prices in KRW & USD', L + 72, THUMB_H - 73);
+
+    return canvas;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+
+function hexToRgba(hex, a) {
+    const h = hex.replace('#', '');
+    const n = parseInt(h.length === 3 ? h.split('').map(x => x + x).join('') : h, 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
+/**
+ * Turn an article title into a thumbnail headline: trim the trailing colon
+ * clause, cap it at seven words, and colour the phrase that carries the
+ * decision. The editor can always overwrite it.
+ */
+const THUMB_ACCENT_HINTS = [
+    'worth it', 'worth doing', 'worth the money', 'skip', 'free', 'sold out',
+    'cheapest', 'fastest', 'first', 'without korean', 'in advance', 'on the day',
+    'really cost', 'actually cost', 'what it costs', 'before you go', 'or not',
+    'compared', 'step by step',
+];
+
+/* Words that must never end a headline or carry the accent: ending on one
+   reads as a sentence someone cut in half. */
+const THUMB_STOPWORDS = new Set([
+    'a', 'an', 'and', 'or', 'the', 'of', 'in', 'on', 'at', 'to', 'for', 'with',
+    'from', 'by', 'is', 'are', 'was', 'be', 'that', 'this', 'your', 'you',
+]);
+
+function trimTrailingStopwords(words) {
+    const out = words.slice();
+    while (out.length > 2 && THUMB_STOPWORDS.has(out[out.length - 1].toLowerCase().replace(/[^a-z]/gi, ''))) {
+        out.pop();
+    }
+    return out;
+}
+
+/**
+ * Turn an article title into a thumbnail headline: cap it at seven words, cut
+ * any dangling connective, and colour the phrase that carries the decision.
+ * The editor can always overwrite it — this only has to be a good start.
+ */
+function headlineFromTitle(title) {
+    let t = String(title || '').trim();
+    if (!t) return '';
+    t = t.replace(/\s*\(\d{4}\)\s*$/, '').replace(/\s+in 20\d\d\b/i, '');
+
+    let words = trimTrailingStopwords(t.split(/\s+/).slice(0, 8));
+    t = words.join(' ');
+
+    const lower = t.toLowerCase();
+    for (const hint of THUMB_ACCENT_HINTS) {
+        const at = lower.lastIndexOf(hint);
+        // Only accept a hint that starts on a word boundary, or "skip" would
+        // light up inside "skipping".
+        if (at !== -1 && (at === 0 || /\s/.test(t[at - 1]))) {
+            return t.slice(0, at) + '*' + t.slice(at, at + hint.length) + '*' + t.slice(at + hint.length);
+        }
+    }
+
+    // No hint matched. Accent the tail, but walk back past any connective so it
+    // starts on a real word: "eSIM *for Korea*" becomes "eSIM for *Korea*".
+    let start = Math.max(0, words.length - 2);
+    while (start < words.length - 1 && THUMB_STOPWORDS.has(words[start].toLowerCase().replace(/[^a-z]/gi, ''))) {
+        start++;
+    }
+    if (start >= words.length) return t;
+    return words.slice(0, start).concat('*' + words.slice(start).join(' ') + '*').join(' ');
+}
+
+function kickerFromCategory(category) {
+    return {
+        Book: 'Tickets and tours, compared',
+        Plan: 'Every option, timed and priced',
+        Shop: 'What Koreans actually buy',
+        Food: 'Ordering without Korean',
+    }[normalizeCategory(category)] || 'Compared, priced, decided';
+}
+
+/** Redraw the preview from whatever is in the two fields. */
+let thumbRedrawTimer = null;
+function refreshThumbPreview() {
+    const canvas = document.getElementById('thumb-canvas');
+    if (!canvas) return;
+    clearTimeout(thumbRedrawTimer);
+    thumbRedrawTimer = setTimeout(() => {
+        drawThumbnail(canvas, {
+            category: document.getElementById('ai-category')?.value || 'Plan',
+            kicker: document.getElementById('thumb-kicker')?.value || '',
+            headline: document.getElementById('thumb-headline')?.value || '',
+        });
+        warnIfHeadlineLong();
+    }, 120);
+}
+
+function warnIfHeadlineLong() {
+    const status = document.getElementById('thumb-status');
+    if (!status || status.dataset.busy === '1') return;
+    const raw = (document.getElementById('thumb-headline')?.value || '').replace(/\*/g, '').trim();
+    const n = raw ? raw.split(/\s+/).length : 0;
+    if (n > 8) {
+        status.innerHTML = `<span style="color:var(--danger);">${n} words &mdash; it will be set small and hard to read in the list. Aim for 7.</span>`;
+    } else {
+        status.innerHTML = '';
+    }
+}
+
+function fillThumbFromTitle() {
+    const title = document.getElementById('ai-suggested-title')?.value
+               || document.getElementById('ai-topic')?.value || '';
+    const cat = document.getElementById('ai-category')?.value || 'Plan';
+    const k = document.getElementById('thumb-kicker');
+    const h = document.getElementById('thumb-headline');
+    if (h) h.value = headlineFromTitle(title);
+    if (k && !k.value.trim()) k.value = kickerFromCategory(cat);
+    refreshThumbPreview();
+}
+
+function canvasToBlob(canvas) {
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+/** Upload the current canvas and make it this post's featured image. */
+async function useThumbAsFeatured() {
+    const canvas = document.getElementById('thumb-canvas');
+    const status = document.getElementById('thumb-status');
+    const btn = document.getElementById('btn-thumb-use');
+    if (!canvas) return;
+
+    if (!(document.getElementById('thumb-headline')?.value || '').trim()) {
+        status.innerHTML = '<span style="color:var(--danger);">Write a headline first, or press &ldquo;Fill from the title&rdquo;.</span>';
+        return;
+    }
+
+    btn.disabled = true;
+    status.dataset.busy = '1';
+    status.innerHTML = '<span style="color:var(--text-muted);">Uploading...</span>';
+
+    try {
+        const url = await uploadThumbnail(canvas, document.getElementById('ai-slug')?.value);
+        activeImage = url;
+        const img = document.getElementById('selected-ai-img');
+        if (img) { img.src = url; img.style.display = 'block'; }
+        const ph = document.getElementById('ai-img-placeholder');
+        if (ph) ph.style.display = 'none';
+        status.innerHTML = '<span style="color:var(--success);"><i class="ph ph-check-circle"></i> Set as the featured image.</span>';
+    } catch (e) {
+        console.error('[Thumb] upload failed:', e);
+        status.innerHTML = `<span style="color:var(--danger);">${e.message}</span>`;
+    }
+    status.dataset.busy = '0';
+    btn.disabled = false;
+}
+
+async function uploadThumbnail(canvas, slugHint) {
+    const blob = await canvasToBlob(canvas);
+    if (!blob) throw new Error('Could not read the canvas.');
+    const base = (slugHint || 'thumb').replace(/[^a-z0-9-]/gi, '').slice(0, 40) || 'thumb';
+    const path = `thumbs/${base}-${Date.now()}.png`;
+
+    const { error } = await supabase.storage.from('images')
+        .upload(path, blob, { cacheControl: '3600', upsert: false, contentType: 'image/png' });
+    if (error) throw error;
+
+    const { data } = supabase.storage.from('images').getPublicUrl(path);
+    return data.publicUrl;
+}
+
+function downloadThumb() {
+    const canvas = document.getElementById('thumb-canvas');
+    if (!canvas) return;
+    const slug = document.getElementById('ai-slug')?.value || 'thumbnail';
+    const a = document.createElement('a');
+    a.download = `${slug}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+}
+
+/**
+ * Give every post the house card in one pass. Posts are handled one at a time
+ * on purpose: a burst of parallel uploads is how you get rate-limited halfway
+ * through and end up with half a library restyled.
+ */
+async function batchThumbnails() {
+    const canvas = document.getElementById('thumb-batch-canvas');
+    const status = document.getElementById('thumb-batch-status');
+    const btn = document.getElementById('btn-thumb-batch');
+    const overwrite = document.getElementById('thumb-batch-overwrite')?.checked;
+    if (!canvas || !status) return;
+
+    const { data: posts, error } = await supabase
+        .from('posts').select('id, title, slug, category, image').order('created_at', { ascending: false });
+    if (error) {
+        status.innerHTML = `<span style="color:var(--danger);">Could not load posts: ${error.message}</span>`;
+        return;
+    }
+
+    const targets = (posts || []).filter(p => overwrite || !p.image);
+    if (targets.length === 0) {
+        status.innerHTML = '<span style="color:var(--text-muted);">Every post already has an image. Tick &ldquo;Replace existing images too&rdquo; to restyle them.</span>';
+        return;
+    }
+    if (!confirm(`Generate a thumbnail for ${targets.length} post${targets.length === 1 ? '' : 's'}?` +
+                 (overwrite ? '\n\nThis REPLACES the images those posts use now.' : ''))) return;
+
+    btn.disabled = true;
+    let done = 0;
+    const failed = [];
+
+    for (const p of targets) {
+        status.innerHTML = `<span style="color:var(--text-muted);">${done + 1} / ${targets.length} &mdash; ${escHtml(p.title || p.slug)}</span>`;
+        try {
+            await drawThumbnail(canvas, {
+                category: p.category,
+                kicker: kickerFromCategory(p.category),
+                headline: headlineFromTitle(p.title),
+            });
+            const url = await uploadThumbnail(canvas, p.slug);
+            const { error: upErr } = await supabase.from('posts').update({ image: url }).eq('id', p.id);
+            if (upErr) throw upErr;
+            done++;
+        } catch (e) {
+            console.error('[Thumb] failed for', p.slug, e);
+            failed.push(p.slug || p.id);
+        }
+    }
+
+    status.innerHTML = `<span style="color:var(--success);"><i class="ph ph-check-circle"></i> ${done} done.</span>` +
+        (failed.length ? ` <span style="color:var(--danger);">${failed.length} failed: ${escHtml(failed.slice(0, 5).join(', '))}</span>` : '');
+    btn.disabled = false;
+    loadPosts();
+}
+
+function initThumbnailMaker() {
+    document.getElementById('btn-thumb-batch')?.addEventListener('click', batchThumbnails);
+
+    const canvas = document.getElementById('thumb-canvas');
+    if (!canvas) return;
+
+    document.getElementById('btn-thumb-fill')?.addEventListener('click', fillThumbFromTitle);
+    document.getElementById('btn-thumb-use')?.addEventListener('click', useThumbAsFeatured);
+    document.getElementById('btn-thumb-download')?.addEventListener('click', downloadThumb);
+    document.getElementById('thumb-kicker')?.addEventListener('input', refreshThumbPreview);
+    document.getElementById('thumb-headline')?.addEventListener('input', refreshThumbPreview);
+    document.getElementById('ai-category')?.addEventListener('change', refreshThumbPreview);
+
+    refreshThumbPreview();
 }
 
 /* ============================================================================
@@ -2793,6 +3244,7 @@ ${rawContent}
 
     loadIntoEditor(content);
     reportDraftLength();
+    fillThumbFromTitle();
 
     document.getElementById('step-2').classList.remove('active');
     document.getElementById('step-3').style.opacity = '1';
