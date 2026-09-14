@@ -339,6 +339,13 @@ function buildPostHTML(post, relatedPosts, pinnedNoteHTML = '') {
   const writerBio = post.writer_bio || 'Sharing the best of Korea.';
   const writerAvatar = post.writer_avatar || (writerName ? writerName[0] : 'K');
 
+  // Miss Park gets her portrait; anyone else keeps the initial. The letter stays
+  // underneath as the fallback, so a missing file degrades to what was there before.
+  const avatarHTML = /^miss\s*park$/i.test(writerName)
+    ? `${escAttr(writerAvatar)}<img src="/assets/img/miss-park-avatar.webp" alt="" width="56" height="56" loading="lazy" ` +
+      `onerror="this.remove();">`
+    : escAttr(writerAvatar);
+
   // --- JSON-LD ---
   const jsonLd = {
     "@context": "https://schema.org",
@@ -787,6 +794,16 @@ a { text-decoration: none; color: inherit; }
   font-size: 1.4rem;
   font-weight: 700;
   flex-shrink: 0;
+  overflow: hidden;              /* the photo is square; the circle does the cropping */
+  position: relative;
+}
+.writer-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .writer-info { flex: 1; }
 .writer-role {
@@ -1008,7 +1025,7 @@ ${post.image ? `
 
   <!-- Writer Card -->
   <div class="writer-card">
-    <div class="writer-avatar">${escAttr(writerAvatar)}</div>
+    <div class="writer-avatar">${avatarHTML}</div>
     <div class="writer-info">
       <div class="writer-role">${escAttr(writerJob)}</div>
       <div class="writer-name">${escAttr(writerName)}</div>

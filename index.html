@@ -1,1058 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-US">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Korea Decode CMS (AI Powered)</title>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-487F519VEM"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-487F519VEM');
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- SEO -->
+    <title>Korea Decode | Korea Travel Guides by Miss Park | Book, Plan, Shop &amp; Food</title>
+    <meta name="description" content="Korea Decode is a practical English guide to Korea, written by Miss Park, who actually lives here. Book tours and tickets, plan your trip, shop K-Beauty, and eat like a local, with real prices, addresses, and honest picks.">
+    <meta name="keywords" content="Korea travel guide, Seoul itinerary, Korea tours booking, K-Beauty shopping guide, Korean food guide, what to eat in Seoul, Korea trip planning">
+    <link rel="canonical" href="https://koreadecode.com/">
+
+    <!-- Open Graph -->
+    <meta property="og:locale" content="en_US">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Korea Decode | Book, Plan, Shop &amp; Food in Korea">
+    <meta property="og:description" content="Practical Korea guides from someone who lives here. Book, Plan, Shop, Food. Real prices, real addresses, no fluff.">
+    <meta property="og:url" content="https://koreadecode.com/">
+    <meta property="og:site_name" content="Korea Decode">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Korea Decode | Book, Plan, Shop &amp; Food in Korea">
+    <meta name="twitter:description" content="Practical Korea guides from someone who lives here. Book, Plan, Shop, Food. Real prices, real addresses, no fluff.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,800;0,900;1,400;1,500;1,700&family=Caveat:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="/admin/admin.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <link rel="stylesheet" href="/assets/css/layout.css">
+    <link rel="stylesheet" href="/assets/css/components.css">
+    <link rel="stylesheet" href="/assets/css/pages/home.css">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebSite",
+                "@id": "https://koreadecode.com/#website",
+                "url": "https://koreadecode.com/",
+                "name": "Korea Decode",
+                "description": "A practical English guide to Korea travel: book, plan, shop, and eat, written by someone who lives in Seoul.",
+                "publisher": { "@id": "https://koreadecode.com/#organization" },
+                "inLanguage": "en-US"
+            },
+            {
+                "@type": "Organization",
+                "@id": "https://koreadecode.com/#organization",
+                "name": "Korea Decode",
+                "url": "https://koreadecode.com/",
+                "description": "Korea Decode is an English-language guide to travelling, shopping, and eating in South Korea, written from Seoul.",
+                "foundingDate": "2026",
+                "sameAs": []
+            },
+            {
+                "@type": "Person",
+                "@id": "https://koreadecode.com/#misspark",
+                "name": "Miss Park",
+                "jobTitle": "Tour guide, Korean language teacher and editor of Korea Decode",
+                "description": "Born in Korea. Works as a licensed tour guide and Korean language teacher, meeting travellers from around the world every week.",
+                "homeLocation": { "@type": "Place", "name": "Seoul, South Korea" },
+                "worksFor": { "@id": "https://koreadecode.com/#organization" }
+            }
+        ]
+    }
+    </script>
 </head>
 <body>
 
-<!-- ===== LOGIN OVERLAY ===== -->
-<div id="login-section" class="login-overlay" style="display:none;">
-    <div class="login-box">
-        <h2>Korea Decode</h2>
-        <p>Admin CMS Login</p>
-        <input id="login-email" type="email" class="form-input" placeholder="Email">
-        <input id="login-password" type="password" class="form-input" placeholder="Password">
-        <button id="btn-login" class="btn btn-primary w-full" style="margin-top:8px;">Sign In</button>
-        <div id="login-error" class="login-error"></div>
-    </div>
-</div>
+    <!-- ========== HEADER ========== -->
+    <header id="site-header" class="site-header no-print"></header>
 
-<!-- ===== SIDEBAR NAVIGATION ===== -->
-<nav class="sidebar">
-    <div class="sidebar-logo">
-        <h2>Korea Decode</h2>
-        <span>AI-Powered CMS</span>
-    </div>
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="page-content">
 
-    <div class="nav-item active" data-view="dashboard">
-        <i class="ph ph-chart-line-up"></i>
-        <span>Dashboard</span>
-    </div>
-    <div class="nav-item" data-view="ai-writer">
-        <i class="ph ph-pen-nib"></i>
-        <span>AI Writer</span>
-    </div>
-    <div class="nav-item" data-view="posts">
-        <i class="ph ph-article"></i>
-        <span>Post Manager</span>
-    </div>
-    <div class="nav-item" data-view="automation">
-        <i class="ph ph-robot"></i>
-        <span>Automation</span>
-    </div>
-    <div class="nav-item" data-view="ads">
-        <i class="ph ph-megaphone"></i>
-        <span>Ad Manager</span>
-    </div>
-    <div class="nav-item" data-view="essentials">
-        <i class="ph ph-push-pin"></i>
-        <span>Essentials</span>
-    </div>
-    <div class="nav-item" data-view="notes">
-        <i class="ph ph-note-pencil"></i>
-        <span>Notes</span>
-    </div>
-    <div class="nav-item" data-view="site-settings">
-        <i class="ph ph-browser"></i>
-        <span>Site Settings</span>
-    </div>
-    <div class="nav-item" data-view="settings">
-        <i class="ph ph-gear-six"></i>
-        <span>Settings</span>
-    </div>
-
-    <div class="sidebar-footer">
-        <button id="btn-logout" class="btn btn-outline w-full">
-            <i class="ph ph-sign-out"></i>
-            <span>Logout</span>
-        </button>
-    </div>
-</nav>
-
-<!-- ===== MAIN CONTENT ===== -->
-<main class="main-content">
-
-    <!-- ===== DASHBOARD VIEW ===== -->
-    <section id="view-dashboard" class="view-section active">
-        <div class="view-header">
-            <h1>Dashboard</h1>
-            <p>Overview of your Korea Decode blog</p>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <i class="ph ph-article stat-icon"></i>
-                <div class="stat-label">Total Posts</div>
-                <div class="stat-value" id="stat-posts">-</div>
-            </div>
-            <div class="stat-card">
-                <i class="ph ph-eye stat-icon"></i>
-                <div class="stat-label">Page Views (28d)</div>
-                <div class="stat-value" id="stat-views">-</div>
-            </div>
-            <div class="stat-card">
-                <i class="ph ph-users stat-icon"></i>
-                <div class="stat-label">Users (28d)</div>
-                <div class="stat-value" id="stat-users">-</div>
-            </div>
-            <div class="stat-card">
-                <i class="ph ph-calendar-check stat-icon"></i>
-                <div class="stat-label">Scheduled</div>
-                <div class="stat-value" id="stat-scheduled">-</div>
+        <!-- ===== BRAND STRIP ===== -->
+        <div class="brand-strip no-print" aria-hidden="true">
+            <div class="brand-strip-track">
+                <span>Book <em>&bull;</em> Plan <em>&bull;</em> Shop <em>&bull;</em> Food <em>&bull;</em> Seoul <em>&bull;</em> Busan <em>&bull;</em> Jeju <em>&bull;</em> Gyeongju <em>&bull;</em> Written in Korea <em>&bull;</em>&nbsp;</span>
+                <span>Book <em>&bull;</em> Plan <em>&bull;</em> Shop <em>&bull;</em> Food <em>&bull;</em> Seoul <em>&bull;</em> Busan <em>&bull;</em> Jeju <em>&bull;</em> Gyeongju <em>&bull;</em> Written in Korea <em>&bull;</em>&nbsp;</span>
             </div>
         </div>
 
-        <div class="grid-2">
-            <!-- Traffic Sources -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>Traffic Sources</h3>
-                </div>
-                <div id="traffic-sources-container">
-                    <div style="color:var(--text-muted);">Loading...</div>
-                </div>
-            </div>
+        <!-- ===== HERO — cinematic split ===== -->
+        <section class="hero">
+            <div class="hero-glow hero-glow--neon"></div>
+            <div class="hero-glow hero-glow--pink"></div>
+            <div class="hero-glow hero-glow--orange"></div>
 
-            <!-- Top Pages -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>Top Pages</h3>
-                </div>
-                <table id="dashboard-top-posts" class="data-table">
-                    <thead><tr><th>Page</th><th style="text-align:right;">Views</th></tr></thead>
-                    <tbody><tr><td colspan="2" style="color:var(--text-muted);">Loading...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
+            <div class="container hero-grid">
 
-        <!-- Daily Trend Chart -->
-        <div class="card">
-            <div class="card-header">
-                <h3>Daily Trend (7 days)</h3>
-            </div>
-            <div id="daily-trend-chart" class="daily-trend-chart"></div>
-            <div id="daily-trend-labels" class="daily-trend-labels"></div>
-        </div>
+                <!-- Left: type -->
+                <div class="hero-copy slide-in-left">
+                    <h1 class="hero-title" id="hero-title">
+                        <span class="line word-decode">DECODE</span>
+                        <span class="line word-korea">Korea<span class="dot">.</span></span>
+                    </h1>
 
-        <!-- Quick Actions -->
-        <div class="card">
-            <div class="card-header">
-                <h3>Quick Actions</h3>
-            </div>
-            <div class="flex gap-8 flex-wrap">
-                <button class="btn btn-primary" onclick="switchView('ai-writer')"><i class="ph ph-pen-nib"></i> New Post</button>
-                <button id="btn-remove-duplicates" class="btn btn-outline"><i class="ph ph-copy-simple"></i> Remove Duplicates</button>
-                <button id="btn-start-migration" class="btn btn-outline"><i class="ph ph-database"></i> Run Migration</button>
-            </div>
-            <pre id="migration-log" style="display:none; margin-top:12px; background:var(--bg-input); padding:12px; border-radius:8px; font-size:12px; color:var(--text-muted); max-height:200px; overflow-y:auto;"></pre>
-        </div>
-    </section>
 
-    <!-- ===== AI WRITER VIEW ===== -->
-    <section id="view-ai-writer" class="view-section">
-        <div class="view-header">
-            <h1 id="writer-heading">AI Content Creator</h1>
-            <p>Grounded on your reference links, written in the Miss Park house voice</p>
-            <p id="admin-build" data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
-                admin.js did not load &mdash; you are seeing a cached or broken version.
-            </p>
-        </div>
-
-        <!-- Step 1: Topic & Brainstorm -->
-        <div id="step-1" class="step-section active">
-            <div class="step-header">
-                <div class="step-number">1</div>
-                <div class="step-title">Topic & SEO Brainstorm</div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Topic / Subject</label>
-                <input id="ai-topic" class="form-input" placeholder="e.g. Best Street Food in Myeongdong">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Article type</label>
-                <select id="ai-article-type" class="form-select">
-                    <option value="ota">Product review &mdash; one bookable thing, written to convert</option>
-                    <option value="essential">Essential how-to &mdash; the step-by-step every visitor needs</option>
-                    <option value="guide" selected>General guide &mdash; compare the options on a topic</option>
-                </select>
-                <p id="ai-article-type-hint" style="font-size:12px;color:var(--text-muted);margin:6px 0 0;"></p>
-            </div>
-            <div class="grid-2">
-                <div class="form-group">
-                    <label class="form-label">Category</label>
-                    <select id="ai-category" class="form-select">
-                        <option value="Book">Book &mdash; tickets &amp; tours</option>
-                        <option value="Plan" selected>Plan &mdash; routes &amp; logistics</option>
-                        <option value="Shop">Shop &mdash; beauty &amp; souvenirs</option>
-                        <option value="Food">Food &mdash; food &amp; drinking</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Byline</label>
-                    <div class="form-input" style="display:flex;align-items:center;gap:8px;opacity:0.85;">
-                        <i class="ph ph-user-circle"></i> Miss Park &mdash; Editor, Korea Decode
-                    </div>
-                </div>
-            </div>
-            <!-- Reference sources: the AI is grounded on these instead of guessing -->
-            <div class="form-group">
-                <label class="form-label">
-                    Reference Links <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">— up to 4, one per line. Korean pages are fine; they get translated.</span>
-                </label>
-                <textarea id="ai-source-urls" class="form-input" rows="4"
-                          style="font-family:monospace;font-size:12px;"
-                          placeholder="https://korean.visitseoul.net/...&#10;https://blog.naver.com/...&#10;https://www.klook.com/ko/activity/..."></textarea>
-                <div class="flex gap-8" style="margin-top:8px;align-items:center;">
-                    <button id="btn-fetch-sources" class="btn btn-outline btn-sm">
-                        <i class="ph ph-download-simple"></i> Read Sources
-                    </button>
-                    <span id="source-status" style="font-size:12px;color:var(--text-muted);"></span>
-                </div>
-                <div id="source-list" style="margin-top:10px;"></div>
-                <div id="source-digest" style="margin-top:10px;"></div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Article length</label>
-                <select id="ai-length" class="form-select">
-                    <option value="standard">Standard &mdash; about 1,200 words</option>
-                    <option value="long" selected>Long &mdash; 1,800 words (house standard)</option>
-                    <option value="deep">In-depth &mdash; about 2,500 words</option>
-                </select>
-                <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;">
-                    If the first draft comes back short, it is sent back once to be filled out with
-                    real detail from the sources &mdash; never padded.
-                </p>
-            </div>
-
-            <button id="btn-run-ai-phase1" class="btn btn-ai w-full">
-                <i class="ph ph-brain"></i> Brainstorm SEO Plan
-            </button>
-        </div>
-
-        <!-- Step 2: Title, Keywords, Image, Full Article -->
-        <div id="step-2" class="step-section" style="opacity:0.5; pointer-events:none;">
-            <div class="step-header">
-                <div class="step-number">2</div>
-                <div class="step-title">Title, Keywords & Generate</div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Title</label>
-                <input id="ai-suggested-title" class="form-input" placeholder="AI-generated title...">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Slug</label>
-                <div class="slug-field">
-                    <span class="slug-prefix">/blog/</span>
-                    <input id="ai-slug" placeholder="auto-generated-slug">
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">SEO Keywords</label>
-                <div id="ai-keywords-container"></div>
-            </div>
-            <div class="image-picker">
-                <div class="image-preview">
-                    <div id="ai-img-placeholder" class="placeholder">No image selected</div>
-                    <img id="selected-ai-img" style="display:none;">
-                </div>
-                <div style="flex:1;">
-                    <div class="form-group" style="margin-bottom:8px;">
-                        <input id="ai-img-query" class="form-input" placeholder="Image search query...">
-                    </div>
-                    <div class="flex gap-8">
-                        <button id="btn-search-unsplash" class="btn btn-outline btn-sm"><i class="ph ph-magnifying-glass"></i> Search Images</button>
-                        <button id="btn-upload-featured" class="btn btn-outline btn-sm"><i class="ph ph-upload-simple"></i> Upload</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Auto thumbnail: the house card, drawn from two lines of text -->
-            <div class="form-group" style="border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                    <label class="form-label" style="margin:0;">Auto thumbnail</label>
-                    <span style="font-size:11px;color:var(--text-muted);">1200 &times; 675 &middot; also used as the share image</span>
-                </div>
-
-                <div class="grid-2" style="gap:10px;">
-                    <div class="form-group" style="margin:0;">
-                        <label class="form-label">Top line &mdash; compared to what?</label>
-                        <input id="thumb-kicker" class="form-input" maxlength="42" placeholder="DMZ tours, compared">
-                    </div>
-                    <div class="form-group" style="margin:0;">
-                        <label class="form-label">Headline &mdash; 7 words max</label>
-                        <input id="thumb-headline" class="form-input" maxlength="80" placeholder="Is the DMZ tour actually *worth it*?">
-                    </div>
-                </div>
-                <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
-                    Wrap the one word that carries the decision in asterisks to colour it:
-                    <code>*worth it*</code>, <code>*43 min*</code>, <code>*skip*</code>. Colour comes from the category.
-                </p>
-
-                <div style="display:flex;gap:16px;align-items:flex-start;margin-top:14px;flex-wrap:wrap;">
-                    <canvas id="thumb-canvas" width="1200" height="675"
-                            style="width:400px;height:225px;border-radius:8px;border:1px solid var(--border);background:#0a0a0a;"></canvas>
-                    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px;">
-                        <button id="btn-thumb-fill" class="btn btn-outline btn-sm">
-                            <i class="ph ph-magic-wand"></i> Fill from the title
-                        </button>
-                        <button id="btn-thumb-use" class="btn btn-primary btn-sm">
-                            <i class="ph ph-image-square"></i> Use as featured image
-                        </button>
-                        <button id="btn-thumb-download" class="btn btn-outline btn-sm">
-                            <i class="ph ph-download-simple"></i> Download PNG
-                        </button>
-                        <span id="thumb-status" style="font-size:12px;"></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Affiliate slots: paste up to 5 links and the AI places them in context -->
-            <div class="form-group">
-                <label class="form-label">
-                    Affiliate Links <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">— up to 5. The AI drops each one where it fits in the article.</span>
-                </label>
-                <div id="affiliate-slots"></div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">
-                    The description tells the AI what the link is, e.g. &ldquo;Half-day DMZ tour with hotel pickup&rdquo;.
-                    Leave rows blank to skip them.
-                </div>
-            </div>
-
-            <button id="btn-run-ai-phase2" class="btn btn-primary w-full">
-                <i class="ph ph-pen-nib"></i> Write Full Article
-            </button>
-        </div>
-
-        <!-- Step 3: Editor & Publish -->
-        <div id="step-3" class="step-section" style="opacity:0.5; pointer-events:none;">
-            <div class="step-header">
-                <div class="step-number">3</div>
-                <div class="step-title">Edit & Publish</div>
-            </div>
-
-            <div id="draft-length" style="display:none;font-size:12px;margin:0 0 12px;"></div>
-
-            <div class="seo-score-wrapper">
-                <span style="font-size:13px; color:var(--text-muted);">SEO Score</span>
-                <div class="seo-bar-track">
-                    <div id="seo-bar" class="seo-bar-fill" style="width:0%;"></div>
-                </div>
-                <span id="seo-score-text" class="seo-score-label">0%</span>
-            </div>
-
-            <div class="editor-actions">
-                <button id="btn-toggle-html" class="btn btn-outline btn-sm"><i class="ph ph-code"></i> HTML</button>
-                <button id="btn-insert-body-img" class="btn btn-outline btn-sm"><i class="ph ph-image"></i> Insert Image</button>
-                <button id="btn-insert-affiliate" class="btn btn-outline btn-sm"><i class="ph ph-link"></i> Affiliate</button>
-                <button id="btn-insert-travel-deal" class="btn btn-outline btn-sm"><i class="ph ph-airplane-tilt"></i> Travel Deal</button>
-                <button id="btn-fix-format" class="btn btn-outline btn-sm"><i class="ph ph-broom"></i> Fix formatting</button>
-                <button id="btn-seo-polish" class="btn btn-outline btn-sm"><i class="ph ph-sparkle"></i> AI SEO Polish</button>
-                <button id="btn-show-preview" class="btn btn-outline btn-sm"><i class="ph ph-device-mobile"></i> Preview</button>
-                <button id="btn-reset-ai" class="btn btn-outline btn-sm"><i class="ph ph-arrow-counter-clockwise"></i> Reset</button>
-            </div>
-
-            <p id="editor-mode-note" style="display:none;font-size:12px;color:var(--text-muted);margin:0 0 8px;padding:8px 10px;border-left:3px solid var(--primary);background:var(--bg-input);border-radius:0 6px 6px 0;">
-                <i class="ph ph-code"></i>
-                This draft contains a table, a quick-answer box or an affiliate block, so it opened in
-                HTML mode. Edit the text between the tags and save from here &mdash; switching to the
-                visual editor would flatten those blocks.
-            </p>
-
-            <div class="editor-wrapper">
-                <div id="editor-container"></div>
-                <textarea id="html-source-editor" class="html-source-editor"></textarea>
-            </div>
-
-            <div class="form-group mt-16">
-                <label class="form-label">Pinned note &mdash; shown above this article</label>
-                <select id="post-pinned-note" class="form-select">
-                    <option value="">None</option>
-                </select>
-                <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;">
-                    Written in the <strong>Notes</strong> tab. Changing a note there updates it on
-                    every article that uses it, with no re-publishing.
-                </p>
-            </div>
-
-            <div class="grid-2 mt-16">
-                <div class="form-group">
-                    <label class="form-label">Schedule (optional)</label>
-                    <input id="post-schedule" type="datetime-local" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">&nbsp;</label>
-                    <button id="btn-save-post" class="btn btn-primary w-full">
-                        <i class="ph ph-paper-plane-right"></i> Publish
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== AD MANAGER VIEW ===== -->
-    <section id="view-ads" class="view-section">
-        <div class="view-header">
-            <h1>Ad Manager</h1>
-            <p>The rotating strip on the homepage, between &ldquo;Korea right now&rdquo; and the guide list</p>
-            <p data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
-                admin.js did not load &mdash; you are seeing a cached or broken version, so the
-                buttons on this page will do nothing. Hard-refresh (Ctrl/Cmd + Shift + R).
-            </p>
-        </div>
-
-        <div class="card" style="margin-bottom:16px;">
-            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <h3 style="margin:0;">Placements</h3>
-                    <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted);">
-                        Shown in this order, one at a time, 7 seconds each. Inactive rows are skipped.
+                    <p class="hero-tagline">
+                        <strong>Korea travel, from your first plan to your flight home.</strong>
+                        <span>Find what you need, sort it in minutes, and get back to enjoying Korea.</span>
                     </p>
-                </div>
-                <button id="btn-ad-add" class="btn btn-outline btn-sm">
-                    <i class="ph ph-plus"></i> Add placement
-                </button>
-            </div>
-            <div id="ad-list" style="padding:4px 0;"></div>
-            <div style="display:flex;gap:10px;align-items:center;padding:14px 0 4px;border-top:1px solid var(--border);margin-top:8px;">
-                <button id="btn-ad-save" class="btn btn-primary">
-                    <i class="ph ph-floppy-disk"></i> Save &amp; publish
-                </button>
-                <button id="btn-ad-reload" class="btn btn-outline btn-sm">
-                    <i class="ph ph-arrow-counter-clockwise"></i> Discard changes
-                </button>
-                <span id="ad-save-status" style="font-size:13px;"></span>
-            </div>
-        </div>
 
-        <div class="card">
-            <div class="card-header"><h3 style="margin:0;">Live preview</h3></div>
-            <div id="ad-preview" style="padding:8px 0;"></div>
-            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
-                Every paid placement shows a &ldquo;Sponsored&rdquo; label and its link is tagged
-                <code>rel="sponsored"</code>. Google requires both; leaving them off risks your AdSense
-                account and your search ranking.
-            </p>
-        </div>
-    </section>
+                    <nav class="hero-cats" aria-label="Browse by category">
+                        <a class="hero-cat" data-cat="Book" href="/blog?category=Book">BOOK</a>
+                        <a class="hero-cat" data-cat="Plan" href="/blog?category=Plan">PLAN</a>
+                        <a class="hero-cat" data-cat="Shop" href="/blog?category=Shop">SHOP</a>
+                        <a class="hero-cat" data-cat="Food" href="/blog?category=Food">FOOD</a>
+                    </nav>
 
-    <!-- ===== ESSENTIALS VIEW ===== -->
-    <section id="view-essentials" class="view-section">
-        <div class="view-header">
-            <h1>Essentials</h1>
-            <p>The &ldquo;Before you go&rdquo; box that appears inside every published article</p>
-            <p data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
-                admin.js did not load &mdash; you are seeing a cached or broken version, so the
-                buttons on this page will do nothing. Hard-refresh (Ctrl/Cmd + Shift + R).
-            </p>
-        </div>
-
-        <div class="card" style="margin-bottom:16px;">
-            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <h3 style="margin:0;">Pinned guides</h3>
-                    <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted);">
-                        Every reader sees these, whichever article they landed on. Keep them to the
-                        things nobody can skip: eSIM, airport to city, transit card, money.
-                    </p>
-                </div>
-                <button id="btn-ess-add" class="btn btn-outline btn-sm">
-                    <i class="ph ph-plus"></i> Add guide
-                </button>
-            </div>
-            <div id="ess-list" style="padding:4px 0;"></div>
-            <div style="display:flex;gap:10px;align-items:center;padding:14px 0 4px;border-top:1px solid var(--border);margin-top:8px;">
-                <button id="btn-ess-save" class="btn btn-primary">
-                    <i class="ph ph-floppy-disk"></i> Save &amp; publish
-                </button>
-                <button id="btn-ess-reload" class="btn btn-outline btn-sm">
-                    <i class="ph ph-arrow-counter-clockwise"></i> Discard changes
-                </button>
-                <span id="ess-save-status" style="font-size:13px;"></span>
-            </div>
-        </div>
-
-        <div class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3 style="margin:0;">Box heading</h3></div>
-            <div class="grid-2" style="gap:10px;padding:4px 0;">
-                <div class="form-group" style="margin:0;">
-                    <label class="form-label">Label</label>
-                    <input id="ess-heading" class="form-input" maxlength="40" placeholder="Before you go">
-                </div>
-                <div class="form-group" style="margin:0;">
-                    <label class="form-label">Sub-line</label>
-                    <input id="ess-subheading" class="form-input" maxlength="90"
-                           placeholder="Four things worth sorting before you land.">
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header"><h3 style="margin:0;">Live preview</h3></div>
-            <div id="ess-preview" style="padding:8px 0;"></div>
-            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
-                The box is inserted after the second heading of each article, or at the end if the
-                article is short. A guide is never linked from its own page.
-            </p>
-        </div>
-    </section>
-
-    <!-- ===== NOTES VIEW ===== -->
-    <section id="view-notes" class="view-section">
-        <div class="view-header">
-            <h1>Notes</h1>
-            <p>Three notepads. Pin one above any article from the writer&rsquo;s publish panel.</p>
-            <p data-admin-build style="font-size:11px;color:var(--danger);margin-top:4px;">
-                admin.js did not load &mdash; you are seeing a cached or broken version, so the
-                buttons on this page will do nothing. Hard-refresh (Ctrl/Cmd + Shift + R).
-            </p>
-        </div>
-
-        <div class="card" style="margin-bottom:16px;">
-            <div id="note-tabs" style="display:flex;gap:8px;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap;"></div>
-
-            <div class="grid-2" style="gap:10px;">
-                <div class="form-group" style="margin:0;">
-                    <label class="form-label">Note name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);">&mdash; only you see this</span></label>
-                    <input id="note-label" class="form-input" maxlength="40" placeholder="Autumn sale banner">
-                </div>
-                <div class="form-group" style="margin:0;display:flex;align-items:flex-end;">
-                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding-bottom:10px;">
-                        <input type="checkbox" id="note-active"> Live &mdash; show this note on the articles that use it
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-group" style="margin:14px 0 0;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                    <label class="form-label" style="margin:0;">Note</label>
-                    <button id="btn-note-html" class="btn btn-outline btn-sm"><i class="ph ph-code"></i> HTML</button>
-                </div>
-                <div class="editor-wrapper">
-                    <div id="note-editor-container"></div>
-                    <textarea id="note-html-source" class="html-source-editor"></textarea>
-                </div>
-            </div>
-
-            <div style="display:flex;gap:10px;align-items:center;padding:14px 0 4px;border-top:1px solid var(--border);margin-top:14px;">
-                <button id="btn-note-save" class="btn btn-primary">
-                    <i class="ph ph-floppy-disk"></i> Save &amp; publish
-                </button>
-                <button id="btn-note-reload" class="btn btn-outline btn-sm">
-                    <i class="ph ph-arrow-counter-clockwise"></i> Discard changes
-                </button>
-                <button id="btn-note-clear" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);">
-                    <i class="ph ph-eraser"></i> Empty this note
-                </button>
-                <span id="note-save-status" style="font-size:13px;"></span>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header"><h3 style="margin:0;">Live preview</h3></div>
-            <div id="note-preview" style="padding:8px 0;"></div>
-            <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0;">
-                This is how the note appears on an article, directly under the headline and above
-                the first paragraph. An empty or off note is skipped, and the article renders as normal.
-            </p>
-        </div>
-    </section>
-
-    <!-- ===== POST MANAGER VIEW ===== -->
-    <section id="view-posts" class="view-section">
-        <div class="view-header">
-            <h1>Post Manager</h1>
-            <p>Manage all published, draft, and scheduled posts</p>
-        </div>
-
-        <div class="card" style="margin-bottom:16px;">
-            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <h3 style="margin:0;">Thumbnails</h3>
-                    <p style="margin:4px 0 0;font-size:12px;color:var(--text-muted);">
-                        Give every post the house card, drawn from its own title and category.
-                    </p>
-                </div>
-                <div class="flex gap-8">
-                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-                        <input type="checkbox" id="thumb-batch-overwrite"> Replace existing images too
-                    </label>
-                    <button id="btn-thumb-batch" class="btn btn-outline btn-sm">
-                        <i class="ph ph-images"></i> Generate for all posts
-                    </button>
-                </div>
-            </div>
-            <div id="thumb-batch-status" style="font-size:13px;padding:4px 0;"></div>
-            <canvas id="thumb-batch-canvas" width="1200" height="675" style="display:none;"></canvas>
-        </div>
-
-        <div id="posts-grid"></div>
-    </section>
-
-    <!-- ===== AUTOMATION VIEW ===== -->
-    <section id="view-automation" class="view-section">
-        <div class="view-header">
-            <h1>Automation</h1>
-            <p>Batch generate and schedule AI content</p>
-        </div>
-
-        <div class="grid-2">
-            <!-- Automation Config -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>Batch Configuration</h3>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Profile</label>
-                    <div class="flex gap-8">
-                        <select id="auto-profile-select" class="form-select" style="flex:1;">
-                            <option value="">New Profile</option>
-                        </select>
-                        <button id="btn-save-auto-profile" class="btn btn-outline btn-sm"><i class="ph ph-floppy-disk"></i></button>
-                        <button id="btn-delete-auto-profile" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);"><i class="ph ph-trash"></i></button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Profile Name</label>
-                    <input id="auto-profile-name" class="form-input" placeholder="My Content Profile">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Topics (one per line)</label>
-                    <textarea id="auto-topics" class="form-textarea" rows="5" placeholder="Best Korean BBQ in Seoul&#10;Hidden Cafes in Hongdae&#10;Myeongdong Shopping Guide"></textarea>
-                </div>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label class="form-label">Byline</label>
-                        <div class="form-input" style="display:flex;align-items:center;gap:8px;opacity:0.85;">
-                            <i class="ph ph-user-circle"></i> Miss Park &mdash; house voice
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Category</label>
-                        <select id="auto-category" class="form-select">
-                            <option value="auto" selected>Auto &mdash; let AI classify</option>
-                            <option value="Book">Book &mdash; tickets &amp; tours</option>
-                            <option value="Plan">Plan &mdash; routes &amp; logistics</option>
-                            <option value="Shop">Shop &mdash; beauty &amp; souvenirs</option>
-                            <option value="Food">Food &mdash; food &amp; drinking</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Word Count</label>
-                        <select id="auto-wordcount" class="form-select">
-                            <option>800</option>
-                            <option selected>1200</option>
-                            <option>1600</option>
-                            <option>2000</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Images per Post</label>
-                        <select id="auto-img-count" class="form-select">
-                            <option>1</option>
-                            <option selected>2</option>
-                            <option>3</option>
-                            <option>4</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Output Status</label>
-                        <select id="auto-output-status" class="form-select">
-                            <option value="draft" selected>Draft (Review)</option>
-                            <option value="published">Publish Now</option>
-                            <option value="scheduled">Scheduled</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Interval (hours)</label>
-                        <select id="auto-interval" class="form-select">
-                            <option>6</option>
-                            <option>12</option>
-                            <option selected>24</option>
-                            <option>48</option>
-                            <option>72</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Tone Override (optional)</label>
-                    <input id="auto-tone" class="form-input" placeholder="e.g. Extra enthusiastic, budget-focused">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Start Date</label>
-                    <input id="auto-start-date" type="datetime-local" class="form-input">
-                </div>
-                <button id="btn-run-automation" class="btn btn-ai w-full mt-16">
-                    <i class="ph ph-robot"></i> Generate All with AI
-                </button>
-
-                <!-- Progress Card -->
-                <div id="auto-progress-card" class="progress-card mt-16">
-                    <div class="flex justify-between items-center mb-16">
-                        <span style="font-weight:600;">Progress</span>
-                        <span id="auto-progress-text">0/0</span>
-                    </div>
-                    <div class="progress-bar-wrapper">
-                        <div id="auto-progress-bar" class="progress-bar-fill"></div>
-                    </div>
-                    <pre id="auto-progress-log" class="progress-log"></pre>
-                </div>
-            </div>
-
-            <!-- Queue -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>Content Queue</h3>
-                </div>
-                <div class="auto-queue-tabs">
-                    <div class="auto-queue-tab active" data-tab="drafts" style="border-bottom-color:var(--accent);">
-                        Drafts <span id="auto-draft-count" style="background:var(--accent-dim); color:var(--accent); padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px;">0</span>
-                    </div>
-                    <div class="auto-queue-tab" data-tab="scheduled">
-                        Scheduled <span id="auto-sched-count" style="background:rgba(245,158,11,0.15); color:var(--warning); padding:2px 8px; border-radius:10px; font-size:11px; margin-left:6px;">0</span>
+                    <div class="hero-trust">
+                        <span><strong>Written in Seoul</strong></span>
+                        <span class="dot-sep"></span>
+                        <span><strong>Prices in KRW &amp; USD</strong></span>
+                        <span class="dot-sep"></span>
+                        <span><strong>Updated 2026</strong></span>
                     </div>
                 </div>
 
-                <div id="auto-tab-drafts">
-                    <table class="data-table">
-                        <thead><tr><th style="width:30px;"><input type="checkbox" id="auto-select-all"></th><th>Title</th><th>Category</th><th>Actions</th></tr></thead>
-                        <tbody id="auto-drafts-list">
-                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No drafts</td></tr>
-                        </tbody>
-                    </table>
-                    <div id="auto-batch-actions" class="auto-batch-actions">
-                        <button id="btn-batch-publish" class="btn btn-primary btn-sm"><i class="ph ph-paper-plane-right"></i> Publish Selected</button>
-                        <button id="btn-batch-delete" class="btn btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);"><i class="ph ph-trash"></i> Delete Selected</button>
-                    </div>
-                </div>
+                <!-- Right: Miss Park -->
+                <div class="hero-figure slide-in-right delay-2">
+                    <div class="hero-figure-wrap">
+                        <p class="miss-park-bubble">
+                            Hello! Welcome to Korea.<br>
+                            I&rsquo;m <strong>Miss Park</strong>.
+                        </p>
+                        <div class="hero-figure-frame">
+                            <img id="miss-park-photo"
+                                 class="miss-park-photo"
+                                 src="/assets/img/miss-park.webp"
+                                 alt="Miss Park, the Seoul-based writer behind Korea Decode"
+                                 width="620" height="867"
+                                 loading="eager"
+                                 onerror="this.onerror=null;this.src='/assets/img/miss-park.svg';">
 
-                <div id="auto-tab-scheduled" style="display:none;">
-                    <table class="data-table">
-                        <thead><tr><th>Status</th><th>Title</th><th>Scheduled For</th><th>Actions</th></tr></thead>
-                        <tbody id="auto-queue-list">
-                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No scheduled posts</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ===== SITE SETTINGS VIEW ===== -->
-    <section id="view-site-settings" class="view-section">
-        <div class="view-header">
-            <h1>Site Settings</h1>
-            <p>Manage homepage hero section, background image, and content</p>
-        </div>
-
-        <div class="settings-grid">
-            <!-- Hero Background Image -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>Hero Background Image</h3>
-                </div>
-                <div class="hero-preview-wrapper">
-                    <div class="hero-preview" id="hero-preview">
-                        <img id="hero-preview-img" src="" alt="Hero background preview">
-                        <div class="hero-preview-overlay">
-                            <span class="hero-preview-label" id="hero-preview-label"></span>
-                            <span class="hero-preview-title" id="hero-preview-title"></span>
                         </div>
                     </div>
                 </div>
-                <div class="form-group" style="margin-top:16px;">
-                    <label class="form-label">Image URL</label>
-                    <input id="hero-bg-image" class="form-input" placeholder="https://images.unsplash.com/...">
-                </div>
-                <div class="flex gap-8">
-                    <button id="btn-hero-search-img" class="btn btn-outline btn-sm"><i class="ph ph-magnifying-glass"></i> Search Image</button>
-                    <input id="hero-img-query" class="form-input" placeholder="Seoul night skyline..." style="flex:1;">
-                </div>
-                <div id="hero-img-results" class="image-grid" style="margin-top:12px;"></div>
+
             </div>
 
-            <!-- Hero Text Content -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>Hero Text Content</h3>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Top Label</label>
-                    <input id="hero-label" class="form-input" placeholder="Welcome to Korea Decode">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Title — Before Highlight</label>
-                    <input id="hero-title-before" class="form-input" placeholder="Decoding">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Title — Highlight (accent color)</label>
-                    <input id="hero-title-highlight" class="form-input" placeholder="Korea">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Title — After Highlight</label>
-                    <input id="hero-title-after" class="form-input" placeholder=", One Story at a Time">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <textarea id="hero-description" class="form-textarea" rows="3" placeholder="Your English-language guide to Korean culture..."></textarea>
+        </section>
+
+
+        <!-- ===== KOREA RIGHT NOW — rates + weather ===== -->
+        <section class="section korea-now" id="korea-now">
+            <div class="container">
+                <div class="now-head">
+                    <div>
+                        <p class="section-kicker">before you pack</p>
+                        <h2>Korea <span class="accent">right now</span></h2>
+                    </div>
+                    <span class="now-stamp">Updated <span id="now-updated">&mdash;</span></span>
                 </div>
 
-                <div class="divider" style="margin:16px 0;"></div>
-                <h4 style="margin-bottom:12px; font-size:14px; color:var(--text-muted);">CTA Buttons</h4>
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label class="form-label">Primary Button Text</label>
-                        <input id="hero-cta1-text" class="form-input" placeholder="Read Blog">
+                <div class="now-grid">
+                    <div class="now-panel">
+                        <h3 class="now-title"><i class="ph ph-currency-krw"></i> What your money is worth</h3>
+                        <ul class="now-list" id="fx-list">
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                        </ul>
+                        <p class="now-foot">Mid-market rates. Cards and ATMs land a little below this.</p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Primary Button URL</label>
-                        <input id="hero-cta1-url" class="form-input" placeholder="/blog">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Secondary Button Text</label>
-                        <input id="hero-cta2-text" class="form-input" placeholder="Try Decode This">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Secondary Button URL</label>
-                        <input id="hero-cta2-url" class="form-input" placeholder="/decode">
+
+                    <div class="now-panel">
+                        <h3 class="now-title"><i class="ph ph-thermometer-simple"></i> What to pack for</h3>
+                        <ul class="now-list" id="weather-list">
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                            <li class="now-item now-skeleton"><span class="skeleton" style="height:18px;width:100%;"></span></li>
+                        </ul>
+                        <p class="now-foot">Seoul, Busan and Jeju can differ by 5&deg;C on the same day.</p>
                     </div>
                 </div>
-
-                <button id="btn-save-hero" class="btn btn-primary w-full" style="margin-top:12px;">
-                    <i class="ph ph-floppy-disk"></i> Save Hero Settings
-                </button>
-                <div id="hero-save-status" style="margin-top:8px; font-size:12px; text-align:center;"></div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ===== SETTINGS VIEW ===== -->
-    <section id="view-settings" class="view-section">
-        <div class="view-header">
-            <h1>Settings</h1>
-            <p>API keys, model configuration, and tools</p>
-        </div>
-
-        <div class="settings-grid">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Gemini API Key</h3>
+        <!-- ===== FEATURE STRIP (rotating partner placements) ===== -->
+        <section class="feature-strip no-print" id="feature-strip" aria-label="Featured offers">
+            <div class="container">
+                <div class="fstrip">
+                    <div class="fstrip-track"></div>
+                    <div class="fstrip-nav"></div>
                 </div>
-                <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Optional: Provide your own Gemini API key for fallback AI. Primary AI uses Cloudflare Workers AI (free).</p>
-                <div class="form-group">
-                    <input id="setting-gemini-key" type="password" class="form-input" placeholder="AIzaSy...">
+            </div>
+        </section>
+
+        <!-- ===== LATEST POSTS SECTION ===== -->
+        <section class="section" id="latest-posts-section">
+            <div class="container">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">fresh from Seoul</p>
+                        <h2>Latest <span class="accent-pink italic">Guides</span></h2>
+                    </div>
+                    <a href="/blog" class="view-all">View All Posts &rarr;</a>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">AI Model</label>
-                    <select id="setting-ai-model" class="form-select">
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Default)</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                    </select>
-                </div>
-                <button id="btn-save-settings" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Settings</button>
-            </div>
-        </div>
-    </section>
-</main>
 
-<!-- ===== MODAL: Image Search / Upload ===== -->
-<div id="modal-unsplash" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="unsplash-modal-title">Image Search</h3>
-            <button id="btn-close-unsplash" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
-        </div>
-
-        <!-- Tabs: Search / Upload -->
-        <div class="img-modal-tabs">
-            <div class="img-modal-tab active" data-tab="search"><i class="ph ph-magnifying-glass"></i> Search</div>
-            <div class="img-modal-tab" data-tab="upload"><i class="ph ph-upload-simple"></i> Upload</div>
-        </div>
-
-        <!-- Search Tab -->
-        <div id="img-tab-search">
-            <div class="flex gap-8 mb-16">
-                <input id="unsplash-modal-search" class="form-input" placeholder="Search images..." style="flex:1;">
-                <button id="btn-unsplash-modal-search" class="btn btn-primary btn-sm"><i class="ph ph-magnifying-glass"></i> Search</button>
-            </div>
-            <div id="unsplash-results" class="image-grid">
-                <div style="grid-column:1/-1; text-align:center; color:var(--text-muted);">Search for an image</div>
-            </div>
-        </div>
-
-        <!-- Upload Tab -->
-        <div id="img-tab-upload" style="display:none;">
-            <div id="upload-drop-zone" class="upload-drop-zone">
-                <i class="ph ph-cloud-arrow-up" style="font-size:48px; color:var(--text-muted); margin-bottom:12px;"></i>
-                <p style="color:var(--text-muted); margin:0 0 8px;">Drag & drop an image here, or</p>
-                <label class="btn btn-outline btn-sm" style="cursor:pointer;">
-                    <i class="ph ph-folder-open"></i> Choose File
-                    <input type="file" id="upload-file-input" accept="image/*" style="display:none;">
-                </label>
-                <p style="color:var(--text-muted); font-size:11px; margin-top:8px;">Max 5MB — JPG, PNG, GIF, WebP</p>
-            </div>
-            <div id="upload-preview-area" style="display:none; text-align:center; margin-top:16px;">
-                <img id="upload-preview-img" style="max-width:100%; max-height:300px; border-radius:8px; border:1px solid var(--border);">
-                <p id="upload-file-name" style="font-size:12px; color:var(--text-muted); margin:8px 0 0;"></p>
-            </div>
-            <div id="upload-progress-area" style="display:none; margin-top:12px;">
-                <div class="upload-progress-wrapper">
-                    <div id="upload-progress-bar" class="upload-progress-fill" style="width:0%;"></div>
-                </div>
-                <p id="upload-progress-text" style="font-size:12px; color:var(--text-muted); text-align:center; margin-top:4px;">Uploading...</p>
-            </div>
-            <div id="upload-actions" style="display:none; margin-top:16px; gap:8px;">
-                <button id="btn-confirm-upload" class="btn btn-primary" style="flex:1;"><i class="ph ph-check"></i> Use This Image</button>
-                <button id="btn-cancel-upload" class="btn btn-outline" style="flex:1;"><i class="ph ph-x"></i> Cancel</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== MODAL: Mobile Preview ===== -->
-<div id="modal-preview" class="modal-overlay">
-    <div class="modal-content" style="max-width:420px; padding:0; overflow:hidden;">
-        <div style="padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin:0; font-size:16px;">Mobile Preview</h3>
-            <button id="btn-close-preview" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
-        </div>
-        <div class="preview-frame">
-            <div id="prev-cat" style="font-size:12px; color:var(--accent); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;"></div>
-            <h2 id="prev-title" style="font-size:22px; line-height:1.3; margin-bottom:16px;"></h2>
-            <img id="prev-img" style="width:100%; border-radius:8px; margin-bottom:16px; display:none;">
-            <div id="prev-content" style="font-family:'Inter', sans-serif; font-size:15px; line-height:1.7; color:#ddd;"></div>
-        </div>
-    </div>
-</div>
-
-<!-- ===== MODAL: Insert Affiliate Code ===== -->
-<div id="modal-affiliate" class="modal-overlay">
-    <div class="modal-content" style="max-width:660px;">
-        <div class="modal-header">
-            <h3>Insert Affiliate Widget</h3>
-            <button id="btn-close-affiliate" class="btn btn-outline btn-sm"><i class="ph ph-x"></i></button>
-        </div>
-
-        <!-- Tab switcher: Presets vs Manual -->
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-            <button class="btn btn-sm aff-tab-btn active" data-aff-tab="presets" style="flex:1;">
-                <i class="ph ph-list-dashes"></i> Saved Presets
-            </button>
-            <button class="btn btn-sm aff-tab-btn" data-aff-tab="manual" style="flex:1;">
-                <i class="ph ph-code"></i> Manual Code
-            </button>
-        </div>
-
-        <!-- TAB: Presets (DB-backed) -->
-        <div id="aff-tab-presets" class="aff-tab-panel">
-            <div class="form-group">
-                <label class="form-label">Select Preset</label>
-                <select id="aff-preset-select" class="form-input" style="cursor:pointer;">
-                    <option value="">-- Loading presets... --</option>
-                </select>
-            </div>
-            <div id="aff-preset-preview" style="display:none; margin-bottom:12px; padding:12px; background:var(--bg-sec); border-radius:8px; font-size:12px; font-family:monospace; max-height:150px; overflow-y:auto; color:var(--text-muted); white-space:pre-wrap; word-break:break-all;"></div>
-            <button id="btn-insert-shortcode" class="btn btn-primary" style="width:100%;">
-                <i class="ph ph-plus-circle"></i> Insert Shortcode
-            </button>
-
-            <div style="height:1px; background:var(--border); margin:16px 0;"></div>
-
-            <!-- Preset Management -->
-            <details style="margin-bottom:8px;">
-                <summary style="cursor:pointer; color:var(--accent); font-size:13px; font-weight:600;">
-                    <i class="ph ph-gear"></i> Manage Presets
-                </summary>
-                <div style="margin-top:12px;">
-                    <div class="form-group">
-                        <label class="form-label">Preset ID (slug)</label>
-                        <input id="aff-manage-id" class="form-input" placeholder="e.g. klook-seoul-tour">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Label</label>
-                        <input id="aff-manage-label" class="form-input" placeholder="e.g. Klook Seoul Tours">
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <div class="form-group" style="flex:1;">
-                            <label class="form-label">Provider</label>
-                            <select id="aff-manage-provider" class="form-input">
-                                <option value="klook">Klook</option>
-                                <option value="kkday">KKday</option>
-                                <option value="trip">Trip.com</option>
-                                <option value="agoda">Agoda</option>
-                                <option value="coupang">Coupang</option>
-                                <option value="amazon">Amazon</option>
-                                <option value="custom" selected>Custom</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex:1;">
-                            <label class="form-label">Category</label>
-                            <select id="aff-manage-category" class="form-input">
-                                <option value="">-- None --</option>
-                                <option value="Book">Book</option>
-                                <option value="Plan">Plan</option>
-                                <option value="Shop">Shop</option>
-                                <option value="Food">Food</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">HTML Code</label>
-                        <textarea id="aff-manage-code" class="form-input" rows="5" placeholder='Paste affiliate HTML/script code here...' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button id="btn-aff-preset-save" class="btn btn-outline" style="flex:1;">
-                            <i class="ph ph-floppy-disk"></i> Save Preset
-                        </button>
-                        <button id="btn-aff-preset-delete" class="btn btn-outline" style="flex:1; color:var(--danger); border-color:var(--danger);">
-                            <i class="ph ph-trash"></i> Delete Preset
-                        </button>
+                <!-- Category Filter Chips -->
+                <div class="category-filter">
+                    <div class="chips-row" id="category-chips">
+                        <button class="chip active" data-category="all">All</button>
+                        <button class="chip" data-category="Book">Book</button>
+                        <button class="chip" data-category="Plan">Plan</button>
+                        <button class="chip" data-category="Shop">Shop</button>
+                        <button class="chip" data-category="Food">Food</button>
                     </div>
                 </div>
-            </details>
-        </div>
 
-        <!-- TAB: Manual (legacy — kept for backward compat) -->
-        <div id="aff-tab-manual" class="aff-tab-panel" style="display:none;">
-            <div class="form-group">
-                <label class="form-label">Widget Label</label>
-                <input id="aff-label" class="form-input" placeholder="e.g. Klook Seoul Tours" value="Klook Widget">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Affiliate HTML Code</label>
-                <textarea id="aff-code-input" class="form-input" rows="6" placeholder='<ins class="klk-aff-widget" ...></ins>&#10;<script>...</script>' style="font-family:monospace; font-size:12px; white-space:pre;"></textarea>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <button id="btn-save-aff-preset" class="btn btn-outline" style="flex:1;">
-                    <i class="ph ph-floppy-disk"></i> Save as Preset
-                </button>
-                <button id="btn-confirm-affiliate" class="btn btn-primary" style="flex:1;">
-                    <i class="ph ph-plus-circle"></i> Insert into Editor
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+                <!-- Post Grid (populated by JS) -->
+                <div class="grid grid-3" id="posts-grid">
+                    <!-- Skeleton loaders shown while loading -->
+                    <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                    <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                    <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                    <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                    <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                    <div class="card skeleton-card"><div class="card-image skeleton"></div><div class="card-body"><div class="skeleton" style="height:14px;width:60px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:100%;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:80%;"></div></div></div>
+                </div>
 
-<script type="module" src="/admin/admin.js?v=2026-09-14a"></script>
+                <!-- View All Button -->
+                <div style="text-align:center;margin-top:var(--space-xl);">
+                    <a href="/blog" class="btn btn-outline">View All Posts</a>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- ===== STATS STRIP ===== -->
+        <section class="section">
+            <div class="container">
+                <div class="stats-strip" id="stats-strip">
+                    <div class="stat-item">
+                        <div class="stat-number" id="stat-articles">--</div>
+                        <div class="stat-label">Guides Published</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="stat-categories">4</div>
+                        <div class="stat-label">Book / Plan / Shop / Food</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="stat-readers">--</div>
+                        <div class="stat-label">Reads &amp; Counting</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer id="site-footer" class="site-footer no-print"></footer>
+
+    <!-- ========== SCRIPTS ========== -->
+    <script type="module">
+        import { initPage } from '/assets/js/components.js';
+        import { initAnalytics } from '/assets/js/analytics.js';
+        import { initHome } from '/assets/js/home.js';
+        import { initKoreaNow } from '/assets/js/korea-now.js';
+        import { initFeatureStrip } from '/assets/js/feature-strip.js';
+
+        initPage();
+        initAnalytics();
+        initHome();
+        initKoreaNow();
+        initFeatureStrip();
+    </script>
+
 </body>
 </html>

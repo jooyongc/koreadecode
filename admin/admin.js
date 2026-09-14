@@ -4,12 +4,12 @@ import { normalizeCategory } from '/assets/js/categories.js';
 /* Build stamp. If the module fails to parse this never runs, and the red warning
    baked into admin/index.html stays on screen — which is exactly how a stale or
    broken admin.js announces itself. */
-const KD_ADMIN_BUILD = '2026-09-09a';
+const KD_ADMIN_BUILD = '2026-09-14b';
 console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
 function stampAdminBuild() {
     document.querySelectorAll('[data-admin-build]').forEach(el => {
         el.textContent = 'build ' + KD_ADMIN_BUILD +
-            ' \u00b7 auto thumbnails, notes, source digest, essentials';
+            ' \u00b7 markdown fix, auto thumbnails, notes, essentials';
         el.style.color = 'var(--text-muted)';
     });
 }
@@ -1158,6 +1158,7 @@ async function init() {
     document.getElementById('btn-save-post').addEventListener('click', publishPost);
     document.getElementById('btn-show-preview').addEventListener('click', showMobilePreview);
     document.getElementById('btn-toggle-html').addEventListener('click', toggleHtmlSource);
+    document.getElementById('btn-fix-format')?.addEventListener('click', () => window.fixFormatting());
 
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
     document.getElementById('btn-save-hero').addEventListener('click', saveHeroSettings);
@@ -2244,7 +2245,8 @@ async function uploadThumbnail(canvas, slugHint) {
     const blob = await canvasToBlob(canvas);
     if (!blob) throw new Error('Could not read the canvas.');
     const base = (slugHint || 'thumb').replace(/[^a-z0-9-]/gi, '').slice(0, 40) || 'thumb';
-    const path = `thumbs/${base}-${Date.now()}.png`;
+    // Same folder as the Upload button, the one path the bucket is known to accept.
+    const path = `uploads/thumb-${base}-${Date.now()}.png`;
 
     const { error } = await supabase.storage.from('images')
         .upload(path, blob, { cacheControl: '3600', upsert: false, contentType: 'image/png' });
@@ -2884,7 +2886,168 @@ async function removeDuplicates() {
  *
  * @param {string} html - Article body
  */
-function loadIntoEditor(html) {
+/* ----------------------------------------------------------------------------
+   MARKDOWN GUARD
+   The model is asked for HTML, but it sometimes answers in Markdown. Pasting
+   Markdown into the editor as if it were HTML collapses every newline into a
+   space, which is how an article ends up as one wall of text with "###" and
+   "**" still sitting in the middle of it. Anything that looks like Markdown is
+   converted before it goes anywhere near the editor.
+   -------------------------------------------------------------------------- */
+
+function looksLikeMarkdown(s) {
+    const t = String(s || '');
+    if (!t.trim()) return false;
+    // Real HTML from the writer always has block tags; Markdown has none.
+    const hasBlockHtml = /<(p|h[1-6]|ul|ol|table|div|section|blockquote)\b/i.test(t);
+    const hasMdHeading = /(^|\n)\s*#{1,6}\s+\S/.test(t) || /###\s+\S/.test(t);
+    const hasMdBold = /\*\*[^*\n]{1,120}\*\*/.test(t);
+    const hasMdBullets = /(^|\n)\s{0,3}[-*+]\s+\S/.test(t);
+    return (hasMdHeading || hasMdBold || (hasMdBullets && !hasBlockHtml)) && !(hasBlockHtml && !hasMdHeading && !hasMdBold);
+}
+
+/** Markdown → HTML. Uses marked when it loaded, and a small converter when not. */
+function markdownToHtml(md) {
+    const src = String(md || '');
+    if (window.marked) {
+        try {
+            const fn = window.marked.parse || window.marked;
+            return fn.call(window.marked, src, { headerIds: false, mangle: false });
+        } catch (e) {
+            console.warn('[Markdown] marked failed, using the built-in converter:', e);
+        }
+    }
+    return miniMarkdown(src);
+}
+
+/** Enough Markdown for what the writer actually produces. */
+function miniMarkdown(src) {
+    const inline = (t) => t
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+        .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>');
+
+    const out = [];
+    let list = null;
+
+    const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+
+    src.split(/\r?\n/).forEach(raw => {
+        const line = raw.trim();
+        if (!line) { closeList(); return; }
+
+        const h = line.match(/^(#{1,6})\s+(.*)$/);
+        if (h) {
+            closeList();
+            // The writer uses ### for its section headings, and the article stylesheet
+            // styles <h2> as a section. Anything deeper becomes a sub-heading.
+            const level = h[1].length <= 3 ? 2 : 3;
+            out.push(`<h${level}>${inline(h[2])}</h${level}>`);
+            return;
+        }
+        const ul = line.match(/^[-*+]\s+(.*)$/);
+        if (ul) {
+            if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; }
+            out.push(`<li>${inline(ul[1])}</li>`);
+            return;
+        }
+        const ol = line.match(/^\d+[.)]\s+(.*)$/);
+        if (ol) {
+            if (list !== 'ol') { closeList(); out.push('<ol>'); list = 'ol'; }
+            out.push(`<li>${inline(ol[1])}</li>`);
+            return;
+        }
+        if (/^>\s?/.test(line)) { closeList(); out.push(`<blockquote>${inline(line.replace(/^>\s?/, ''))}</blockquote>`); return; }
+
+        closeList();
+        out.push(`<p>${inline(line)}</p>`);
+    });
+    closeList();
+    return out.join('\n');
+}
+
+/** Markdown markers survive, but the line breaks that gave them meaning do not. */
+function isFlattened(s) {
+    const t = String(s || '');
+    if (!/###\s+\S|\*\*[^*\n]+\*\*/.test(t)) return false;
+    const stripped = t.replace(/<[^>]+>/g, '\n');
+    const longestRun = stripped.split(/\n/).reduce((n, l) => Math.max(n, l.trim().length), 0);
+    // One unbroken run of 600+ characters is a wall of text, not a paragraph.
+    return longestRun > 600;
+}
+
+/**
+ * Repair an article that is already saved as a wall of text. Local conversion
+ * handles anything whose newlines survived; when they did not, only the model
+ * can tell where a heading ended and the paragraph began, so it is asked.
+ */
+window.fixFormatting = async () => {
+    const btn = document.getElementById('btn-fix-format');
+    const current = isHtmlMode
+        ? document.getElementById('html-source-editor').value
+        : quill.root.innerHTML;
+
+    if (!current.trim()) return;
+
+    const flattened = isFlattened(current);
+    if (!flattened && !looksLikeMarkdown(current)) {
+        alert('This article already looks like clean HTML — nothing to repair.');
+        return;
+    }
+
+    const original = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Fixing...'; }
+
+    try {
+        let fixed;
+        if (!flattened) {
+            fixed = markdownToHtml(current);
+        } else {
+            const plain = current.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            const out = await callAI(`
+The text below is one article whose paragraph breaks were lost. The Markdown
+markers are still in it: "###" marks where a heading started, "**text**" marks bold.
+
+Put the structure back and return HTML.
+
+RULES:
+- Every "###" becomes an <h2>. The heading is the few words that follow it, before the
+  body sentence begins — use the sense of the sentence to decide where the heading ends.
+- Break the running text into paragraphs of 2-4 sentences, each in its own <p>.
+- "**text**" becomes <strong>text</strong>. Remove every remaining # and * character.
+- Where the text lists options or steps, use <ul><li> or <ol><li>.
+- DO NOT rewrite, summarise, shorten or add anything. Every sentence must survive
+  word for word. You are only adding tags.
+- Return only the HTML body: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <blockquote>.
+  No <html>, no <body>, no <h1>, no markdown fences.
+
+TEXT:
+${plain}`, { generationConfig: { temperature: 0.1, topP: 0.8, maxOutputTokens: 8192 } });
+            fixed = stripCodeFence(out);
+        }
+
+        // Belt and braces: nothing should leave here still carrying markers.
+        fixed = fixed.replace(/\*\*([^*<>]+)\*\*/g, '<strong>$1</strong>')
+                     .replace(/(^|\s)#{1,6}\s+/g, '$1');
+
+        loadIntoEditor(fixed);
+        alert('Formatting restored. Read it through before you update the post.');
+    } catch (e) {
+        console.error('[Fix] failed:', e);
+        alert('Could not repair the formatting: ' + e.message);
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = original; }
+};
+
+function normalizeGeneratedContent(html) {
+    if (!looksLikeMarkdown(html)) return html;
+    console.warn('[Markdown] the model answered in Markdown — converting to HTML');
+    return markdownToHtml(html);
+}
+
+function loadIntoEditor(rawHtml) {
+    const html = normalizeGeneratedContent(rawHtml);
     const RICH = /<(table|div|figure|aside|iframe|script)\b/i;
     const needsHtmlMode = RICH.test(html || '');
 
@@ -3120,7 +3283,10 @@ window.runAIPhase2 = async () => {
 
     if (!title) return alert('Please generate or select a title first.');
 
-    const btn = document.querySelector('#step-2 .btn-primary');
+    // By id, not '#step-2 .btn-primary': the thumbnail panel's "Use as featured image"
+    // button comes first in step 2 and carries the same class, so a class lookup
+    // relabelled that button "Write Full Article" and the thumbnail could no longer be set.
+    const btn = document.getElementById('btn-run-ai-phase2');
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Reading the sources...';
     btn.disabled = true;
 
@@ -3165,7 +3331,11 @@ ${articleType.format}
   checklists, <strong> for the numbers that matter, <blockquote> for one practical tip per section.
 - **NO IMAGES:** do not write any <img>, <figure> or image placeholder of any kind.
   Illustrations are added by the editor afterwards.
-- **HTML only.** No <html>, <body>, <h1>, or markdown. Use <p>, <h2>, <h3>, <ul>, <table>, <blockquote>.
+- **HTML ONLY — THIS IS NOT NEGOTIABLE.** Every paragraph is wrapped in <p>...</p> and every
+  heading in <h2>...</h2>. NEVER use Markdown: no "###" for a heading, no "**" for bold, no "-"
+  for a list item, no triple-backtick fences. Bold is <strong>, a list is <ul><li>. Markdown is delivered
+  to readers as raw "###" and "**" characters in the middle of the text, so a Markdown answer is
+  a failed answer. No <html>, no <body>, no <h1>.
 
 **TEST BEFORE YOU FINISH:** every paragraph must help the reader decide or act. If a paragraph does
 not answer "what should I do?", "how much is it?", "how do I get there?" or "is it worth it?",
