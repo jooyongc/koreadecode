@@ -28,6 +28,8 @@ export function initGA() {
 export function initAdSense() {
   if (window.location.hostname === 'localhost') return;
   if (!hasConsent()) return;
+  // Public pages carry the AdSense tag in <head>; loading it a second time makes AdSense throw a TagError.
+  if (document.querySelector('script[src*="adsbygoogle.js"]')) return;
 
   const script = document.createElement('script');
   script.async = true;
