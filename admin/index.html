@@ -226,6 +226,17 @@
                 </div>
                 <div id="source-list" style="margin-top:10px;"></div>
                 <div id="source-digest" style="margin-top:10px;"></div>
+
+                <details style="margin-top:10px;">
+                    <summary style="cursor:pointer;font-size:12px;color:var(--text-muted);">
+                        A link failed, or the page needs a login? Paste the text instead
+                    </summary>
+                    <textarea id="ai-source-text" class="form-input" rows="6" style="margin-top:8px;font-size:12px;"
+                              placeholder="Paste the article text here. It is treated exactly like a fetched page, and Korean is translated."></textarea>
+                    <p style="font-size:11px;color:var(--text-muted);margin:6px 0 0;">
+                        Used automatically &mdash; no need to press Read Sources again.
+                    </p>
+                </details>
             </div>
 
             <div class="form-group">
@@ -333,6 +344,16 @@
                     The description tells the AI what the link is, e.g. &ldquo;Half-day DMZ tour with hotel pickup&rdquo;.
                     Leave rows blank to skip them.
                 </div>
+                <div class="flex gap-8" style="margin-top:10px;align-items:center;flex-wrap:wrap;">
+                    <button id="btn-aff-insert" class="btn btn-outline btn-sm">
+                        <i class="ph ph-link"></i> Insert into the article now
+                    </button>
+                    <span id="aff-status" style="font-size:12px;color:var(--text-muted);"></span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">
+                    Filling these rows only affects the <strong>next</strong> article you generate.
+                    To add them to an article that is already written, press the button above.
+                </div>
             </div>
 
             <button id="btn-run-ai-phase2" class="btn btn-primary w-full">
@@ -360,7 +381,6 @@
             <div class="editor-actions">
                 <button id="btn-toggle-html" class="btn btn-outline btn-sm"><i class="ph ph-code"></i> HTML</button>
                 <button id="btn-insert-body-img" class="btn btn-outline btn-sm"><i class="ph ph-image"></i> Insert Image</button>
-                <button id="btn-insert-affiliate" class="btn btn-outline btn-sm"><i class="ph ph-link"></i> Affiliate</button>
                 <button id="btn-insert-travel-deal" class="btn btn-outline btn-sm"><i class="ph ph-airplane-tilt"></i> Travel Deal</button>
                 <button id="btn-fix-format" class="btn btn-outline btn-sm"><i class="ph ph-broom"></i> Fix formatting</button>
                 <button id="btn-seo-polish" class="btn btn-outline btn-sm"><i class="ph ph-sparkle"></i> AI SEO Polish</button>
@@ -1053,6 +1073,6 @@
     </div>
 </div>
 
-<script type="module" src="/admin/admin.js?v=2026-09-14b"></script>
+<script type="module" src="/admin/admin.js?v=2026-09-18a"></script>
 </body>
 </html>

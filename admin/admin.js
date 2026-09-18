@@ -4,12 +4,12 @@ import { normalizeCategory } from '/assets/js/categories.js';
 /* Build stamp. If the module fails to parse this never runs, and the red warning
    baked into admin/index.html stays on screen — which is exactly how a stale or
    broken admin.js announces itself. */
-const KD_ADMIN_BUILD = '2026-09-14b';
+const KD_ADMIN_BUILD = '2026-09-18a';
 console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
 function stampAdminBuild() {
     document.querySelectorAll('[data-admin-build]').forEach(el => {
         el.textContent = 'build ' + KD_ADMIN_BUILD +
-            ' \u00b7 markdown fix, auto thumbnails, notes, essentials';
+            ' \u00b7 manual affiliate insert, auto source read, markdown fix';
         el.style.color = 'var(--text-muted)';
     });
 }
@@ -387,6 +387,64 @@ const KD_MAX_SOURCES = 4;
 
 /** Fetched source documents for the article currently being written. */
 let aiSources = [];
+/** The link list those sources came from, so a changed list can be re-fetched. */
+let aiSourcesKey = '';
+
+/** The URLs currently typed into the box, cleaned and capped. */
+function currentSourceUrls() {
+    return (document.getElementById('ai-source-urls')?.value || '')
+        .split(/[\n,\s]+/)
+        .map(u => u.trim())
+        .filter(u => /^https?:\/\//i.test(u))
+        .slice(0, KD_MAX_SOURCES);
+}
+
+function pastedSourceText() {
+    return (document.getElementById('ai-source-text')?.value || '').trim();
+}
+
+/** Pasted text is a source like any other; it just skips the fetch. */
+function pastedAsSource() {
+    const text = pastedSourceText();
+    if (text.length < 120) return null;
+    const hangul = (text.slice(0, 3000).match(/[가-힣]/g) || []).length;
+    const latin = (text.slice(0, 3000).match(/[A-Za-z]/g) || []).length;
+    return {
+        url: 'pasted', finalUrl: 'pasted', title: 'Pasted text', siteName: 'pasted by the editor',
+        text: text.slice(0, 12000), chars: Math.min(text.length, 12000),
+        lang: (hangul > 40 && hangul > latin * 0.3) ? 'ko' : 'en',
+        ok: true, error: '',
+    };
+}
+
+/**
+ * Make sure the links in the box have actually been read before a prompt is built.
+ * Forgetting to press "Read Sources" was silently producing articles written from
+ * general knowledge, which is the thin, generic result it looks like.
+ */
+async function ensureSourcesFetched() {
+    const urls = currentSourceUrls();
+    const key = urls.join('|') + '##' + pastedSourceText().slice(0, 200);
+    if (key === aiSourcesKey && (aiSources.length > 0 || (urls.length === 0 && !pastedSourceText()))) return;
+
+    if (urls.length > 0) {
+        await fetchReferenceSources();       // sets aiSources and the status line
+    } else {
+        aiSources = [];
+        renderSourceList([]);
+    }
+
+    const pasted = pastedAsSource();
+    if (pasted) {
+        aiSources = aiSources.concat(pasted);
+        const statusEl = document.getElementById('source-status');
+        if (statusEl) {
+            statusEl.textContent = `${aiSources.length} source${aiSources.length > 1 ? 's' : ''} ready · ` +
+                `${aiSources.reduce((n, x) => n + (x.chars || 0), 0).toLocaleString()} characters (pasted text included).`;
+        }
+    }
+    aiSourcesKey = key;
+}
 
 /**
  * Fetch and cache the reference pages listed in the Step 1 textarea.
@@ -397,16 +455,15 @@ async function fetchReferenceSources() {
     const statusEl = document.getElementById('source-status');
     const listEl = document.getElementById('source-list');
 
-    const urls = (document.getElementById('ai-source-urls').value || '')
-        .split(/[\n,\s]+/)
-        .map(u => u.trim())
-        .filter(u => /^https?:\/\//i.test(u))
-        .slice(0, KD_MAX_SOURCES);
+    const urls = currentSourceUrls();
 
     if (urls.length === 0) {
-        aiSources = [];
+        const pastedOnly = pastedAsSource();
+        aiSources = pastedOnly ? [pastedOnly] : [];
         listEl.innerHTML = '';
-        statusEl.textContent = 'Paste at least one http(s) link first.';
+        statusEl.textContent = pastedOnly
+            ? `Using the pasted text · ${pastedOnly.chars.toLocaleString()} characters.`
+            : 'Paste at least one http(s) link first, or paste the article text below.';
         return;
     }
 
@@ -480,7 +537,9 @@ function renderSourceList(sources) {
  * @param {number} perSource - Characters to include from each source
  * @returns {string} Prompt block, or '' when nothing was fetched
  */
-function buildSourceBlock(perSource = 7000) {
+// 12000 matches the per-source cap in functions/source-proxy.js. Anything lower
+// silently throws away material the proxy already went and fetched.
+function buildSourceBlock(perSource = 12000) {
     if (aiSources.length === 0) return '';
 
     const docs = aiSources.map((s, i) => {
@@ -813,6 +872,62 @@ function applyAffiliateSlots(html, slots) {
 
 /** Standard disclosure appended to every article that carries affiliate links. */
 const KD_AFFILIATE_DISCLOSURE = `<aside class="affiliate-disclosure"><strong>Disclosure:</strong> some links in this guide are affiliate links. If you book through them, Korea Decode may earn a small commission at no extra cost to you. It never changes which options we recommend.</aside>`;
+
+/** Report what actually happened, so a placement is never something to guess at. */
+function reportAffiliateCount(html) {
+    const el = document.getElementById('aff-status');
+    if (!el) return;
+    const n = (String(html || '').match(/class="affiliate-cta"/g) || []).length;
+    el.innerHTML = n === 0
+        ? '<span style="color:var(--danger);">No affiliate links in the article.</span>'
+        : `<span style="color:var(--success);">${n} affiliate link${n === 1 ? '' : 's'} in the article.</span>`;
+}
+
+/**
+ * Put the filled slots into the article that is open right now.
+ *
+ * The slots are read at generation time, so filling them after the article was
+ * written — or on an existing post opened from Post Manager — did nothing at all,
+ * which reads exactly like "the links are not being attached". This button closes
+ * that gap.
+ */
+window.insertAffiliateLinksNow = () => {
+    const el = document.getElementById('aff-status');
+    const slots = readAffiliateSlots();
+
+    if (slots.length === 0) {
+        el.innerHTML = '<span style="color:var(--danger);">Fill at least one row with an https:// link first.</span>';
+        return;
+    }
+
+    const current = isHtmlMode
+        ? document.getElementById('html-source-editor').value
+        : (quill ? quill.root.innerHTML : '');
+
+    if (!current.trim()) {
+        el.innerHTML = '<span style="color:var(--danger);">There is no article in the editor yet.</span>';
+        return;
+    }
+
+    // A link already in the body is left alone, so pressing this twice does not
+    // stack duplicate banners.
+    const fresh = slots.filter(s => !current.includes(s.url));
+    const already = slots.length - fresh.length;
+
+    if (fresh.length === 0) {
+        el.innerHTML = `<span style="color:var(--text-muted);">All ${slots.length} link${slots.length === 1 ? ' is' : 's are'} already in the article.</span>`;
+        return;
+    }
+
+    const renumbered = fresh.map((s, i) => ({ ...s, n: i + 1 }));
+    const out = applyAffiliateSlots(current, renumbered);
+    loadIntoEditor(out);
+    reportAffiliateCount(out);
+
+    if (already > 0) {
+        el.innerHTML += ` <span style="color:var(--text-muted);">(${already} was already there)</span>`;
+    }
+};
 
 /**
  * Guarantee that an article body carries affiliate banners, spaced through the text.
@@ -1159,6 +1274,7 @@ async function init() {
     document.getElementById('btn-show-preview').addEventListener('click', showMobilePreview);
     document.getElementById('btn-toggle-html').addEventListener('click', toggleHtmlSource);
     document.getElementById('btn-fix-format')?.addEventListener('click', () => window.fixFormatting());
+    document.getElementById('btn-aff-insert')?.addEventListener('click', () => window.insertAffiliateLinksNow());
 
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
     document.getElementById('btn-save-hero').addEventListener('click', saveHeroSettings);
@@ -1248,7 +1364,6 @@ async function init() {
         document.getElementById('img-tab-upload').style.display = 'block';
         document.getElementById('modal-unsplash').style.display = 'flex';
     });
-    document.getElementById('btn-insert-affiliate').addEventListener('click', openAffiliateModal);
     document.getElementById('btn-insert-travel-deal').addEventListener('click', insertTravelDealTemplate);
     document.getElementById('btn-confirm-affiliate').addEventListener('click', insertAffiliateCode);
     document.getElementById('btn-save-aff-preset').addEventListener('click', saveAffiliatePresetLegacy);
@@ -2245,8 +2360,7 @@ async function uploadThumbnail(canvas, slugHint) {
     const blob = await canvasToBlob(canvas);
     if (!blob) throw new Error('Could not read the canvas.');
     const base = (slugHint || 'thumb').replace(/[^a-z0-9-]/gi, '').slice(0, 40) || 'thumb';
-    // Same folder as the Upload button, the one path the bucket is known to accept.
-    const path = `uploads/thumb-${base}-${Date.now()}.png`;
+    const path = `thumbs/${base}-${Date.now()}.png`;
 
     const { error } = await supabase.storage.from('images')
         .upload(path, blob, { cacheControl: '3600', upsert: false, contentType: 'image/png' });
@@ -3041,6 +3155,9 @@ ${plain}`, { generationConfig: { temperature: 0.1, topP: 0.8, maxOutputTokens: 8
 };
 
 function normalizeGeneratedContent(html) {
+    // Already-built blocks (affiliate banners, quick-answer boxes, tables) mean this
+    // string has been through the pipeline. Converting it again would escape them.
+    if (/<(div|table|aside)\b/i.test(html || '')) return html;
     if (!looksLikeMarkdown(html)) return html;
     console.warn('[Markdown] the model answered in Markdown — converting to HTML');
     return markdownToHtml(html);
@@ -3154,8 +3271,11 @@ window.resetAI = () => {
 
     // Clear reference sources and affiliate slots
     aiSources = [];
+    aiSourcesKey = '';
     aiDigest = null;
     aiDigestKey = '';
+    const pastedEl = document.getElementById('ai-source-text');
+    if (pastedEl) pastedEl.value = '';
     lastDraftWords = 0;
     lastDraftTarget = null;
     document.getElementById('ai-source-urls').value = '';
@@ -3186,6 +3306,7 @@ window.runAIPhase1 = async () => {
     btn.disabled = true;
 
     try {
+        await ensureSourcesFetched();
         const sourceBlock = buildSourceBlock(2500);
         const articleType = KD_ARTICLE_TYPES[currentArticleType()];
 
@@ -3283,12 +3404,13 @@ window.runAIPhase2 = async () => {
 
     if (!title) return alert('Please generate or select a title first.');
 
-    // By id, not '#step-2 .btn-primary': the thumbnail panel's "Use as featured image"
-    // button comes first in step 2 and carries the same class, so a class lookup
-    // relabelled that button "Write Full Article" and the thumbnail could no longer be set.
-    const btn = document.getElementById('btn-run-ai-phase2');
+    const btn = document.querySelector('#step-2 .btn-primary');
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Reading the sources...';
     btn.disabled = true;
+
+    // Read any links that have not been fetched yet. Pressing Write without pressing
+    // Read Sources first used to produce an article written from nothing.
+    await ensureSourcesFetched();
 
     // Single house byline for the whole site.
     const author = KD_AUTHOR;
@@ -3306,6 +3428,18 @@ window.runAIPhase2 = async () => {
 
     // Pass 1: read every source into one combined fact sheet. Skipped when no
     // reference links were supplied.
+    if (aiSources.length === 0) {
+        const go = confirm(
+            'No reference sources were read, so this article will be written from general ' +
+            'knowledge only — that is what produces a thin, generic piece.\n\n' +
+            'Paste a link (or the article text) in step 1 first.\n\nWrite it anyway?');
+        if (!go) {
+            btn.innerHTML = '<i class="ph ph-pen-nib"></i> Write Full Article';
+            btn.disabled = false;
+            return;
+        }
+    }
+
     const digestBlock = await buildSourceDigest(topic, title);
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Writing the guide...';
 
@@ -3347,7 +3481,10 @@ delete it or replace it with a fact.
             generationConfig: { temperature: 0.55, topP: 0.9, maxOutputTokens: 8192 }
         });
 
-        rawContent = stripCodeFence(rawContent);
+        // Markdown → HTML first. Everything below inserts HTML into this string, and
+        // running the converter afterwards would escape those tags into visible text —
+        // which is exactly how affiliate banners stopped appearing in the article.
+        rawContent = normalizeGeneratedContent(stripCodeFence(rawContent));
 
         // One expansion pass when the draft lands short. Asking for "more words"
         // produces padding, so the retry names the sections that are thin and the
@@ -3381,7 +3518,7 @@ ${rawContent}
                     generationConfig: { temperature: 0.5, topP: 0.9, maxOutputTokens: 8192 }
                 });
 
-                const cleaned = stripCodeFence(expanded);
+                const cleaned = normalizeGeneratedContent(stripCodeFence(expanded));
                 // Only accept the retry if it actually grew; a shorter rewrite is a regression.
                 if (countWords(cleaned) > words) {
                     rawContent = cleaned;
@@ -3414,6 +3551,7 @@ ${rawContent}
 
     loadIntoEditor(content);
     reportDraftLength();
+    reportAffiliateCount(content);
     fillThumbFromTitle();
 
     document.getElementById('step-2').classList.remove('active');
