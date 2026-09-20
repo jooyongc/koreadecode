@@ -161,7 +161,9 @@
 }
 
 .card-featured .card-image {
-  aspect-ratio: 21/9;
+  /* Was 21/9, which sliced the top and bottom off a 16/9 thumbnail. The featured
+     card earns its emphasis from its width, not from a different crop. */
+  aspect-ratio: 16/9;
 }
 
 .card-featured .card-title {

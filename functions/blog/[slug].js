@@ -420,11 +420,7 @@ ${post.image ? `<meta name="twitter:image" content="${escAttr(post.image)}">` : 
 <!-- JSON-LD -->
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 
-<!-- Google AdSense -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660181512354238"
-     crossorigin="anonymous"></script>
-
-<!-- GA4: loaded only after cookie consent -->
+<!-- GA4 + AdSense: loaded only after cookie consent -->
 <script>
 (function(){
   if(localStorage.getItem('cookie_consent')!=='accepted') return;
@@ -433,6 +429,9 @@ ${post.image ? `<meta name="twitter:image" content="${escAttr(post.image)}">` : 
   document.head.appendChild(gs);
   window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
   window.gtag=gtag;gtag('js',new Date());gtag('config','G-487F519VEM');
+  var as=document.createElement('script');as.async=true;as.crossOrigin='anonymous';
+  as.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660181512354238';
+  document.head.appendChild(as);
 })();
 </script>
 
@@ -879,7 +878,10 @@ a { text-decoration: none; color: inherit; }
 }
 .related-img {
   width: 100%;
-  aspect-ratio: 4/3;
+  /* 16/9 matches the thumbnails the site generates. At 4/3 the box was taller
+     than the image is shaped, so object-fit: cover cropped the sides off and
+     cut the wordmark and the first word of every headline. */
+  aspect-ratio: 16/9;
   object-fit: cover;
   display: block;
   margin-bottom: 14px;
@@ -1079,12 +1081,15 @@ ${post.image ? `
   if(!localStorage.getItem('cookie_consent')){b.style.display='block';}
   document.getElementById('ck-accept').addEventListener('click',function(){
     localStorage.setItem('cookie_consent','accepted');b.style.display='none';
-    // Load GA4 after consent (the AdSense tag is already in <head>)
+    // Load GA4 + AdSense after consent
     var gs=document.createElement('script');gs.async=true;
     gs.src='https://www.googletagmanager.com/gtag/js?id=G-487F519VEM';
     document.head.appendChild(gs);
     window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
     window.gtag=gtag;gtag('js',new Date());gtag('config','G-487F519VEM');
+    var as=document.createElement('script');as.async=true;as.crossOrigin='anonymous';
+    as.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660181512354238';
+    document.head.appendChild(as);
   });
   document.getElementById('ck-reject').addEventListener('click',function(){
     localStorage.setItem('cookie_consent','rejected');b.style.display='none';
