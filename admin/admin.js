@@ -4,7 +4,7 @@ import { normalizeCategory } from '/assets/js/categories.js';
 /* Build stamp. If the module fails to parse this never runs, and the red warning
    baked into admin/index.html stays on screen — which is exactly how a stale or
    broken admin.js announces itself. */
-const KD_ADMIN_BUILD = '2026-09-18a';
+const KD_ADMIN_BUILD = '2026-09-24a';
 console.log('[Korea Decode] admin build ' + KD_ADMIN_BUILD);
 function stampAdminBuild() {
     document.querySelectorAll('[data-admin-build]').forEach(el => {
@@ -3404,7 +3404,10 @@ window.runAIPhase2 = async () => {
 
     if (!title) return alert('Please generate or select a title first.');
 
-    const btn = document.querySelector('#step-2 .btn-primary');
+    // By id, not '#step-2 .btn-primary': the thumbnail panel's "Use as featured image"
+    // button comes first in step 2 and carries the same class, so a class lookup
+    // relabelled that button "Write Full Article" and the thumbnail could no longer be set.
+    const btn = document.getElementById('btn-run-ai-phase2');
     btn.innerHTML = '<i class="ph ph-spinner spinner"></i> Reading the sources...';
     btn.disabled = true;
 

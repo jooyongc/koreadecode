@@ -420,7 +420,11 @@ ${post.image ? `<meta name="twitter:image" content="${escAttr(post.image)}">` : 
 <!-- JSON-LD -->
 <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
 
-<!-- GA4 + AdSense: loaded only after cookie consent -->
+<!-- Google AdSense: in <head> on every page, or the AdSense crawler cannot find it -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660181512354238"
+     crossorigin="anonymous"></script>
+
+<!-- GA4: loaded only after cookie consent -->
 <script>
 (function(){
   if(localStorage.getItem('cookie_consent')!=='accepted') return;
@@ -429,9 +433,6 @@ ${post.image ? `<meta name="twitter:image" content="${escAttr(post.image)}">` : 
   document.head.appendChild(gs);
   window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
   window.gtag=gtag;gtag('js',new Date());gtag('config','G-487F519VEM');
-  var as=document.createElement('script');as.async=true;as.crossOrigin='anonymous';
-  as.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660181512354238';
-  document.head.appendChild(as);
 })();
 </script>
 
@@ -993,9 +994,9 @@ a { text-decoration: none; color: inherit; }
   <a href="/" class="header-logo">KOREA DECODE<span>.</span></a>
   <nav class="header-nav">
     <a href="/">Home</a>
-    <a href="/blog">Blog</a>
-    <a href="/about">About</a>
-    <a href="/contact">Contact</a>
+    <a href="/blog/">Blog</a>
+    <a href="/about/">About</a>
+    <a href="/contact/">Contact</a>
   </nav>
 </header>
 
@@ -1055,10 +1056,10 @@ ${post.image ? `
 <!-- Footer -->
 <footer class="site-footer">
   <div class="footer-links">
-    <a href="/about">About Us</a>
-    <a href="/contact">Contact</a>
-    <a href="/privacy-policy">Privacy Policy</a>
-    <a href="/terms">Terms of Service</a>
+    <a href="/about/">About Us</a>
+    <a href="/contact/">Contact</a>
+    <a href="/privacy-policy/">Privacy Policy</a>
+    <a href="/terms/">Terms of Service</a>
   </div>
   <p>&copy; 2026 Korea Decode. All rights reserved.</p>
 </footer>
@@ -1067,7 +1068,7 @@ ${post.image ? `
 <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#111;border-top:1px solid #333;padding:20px 24px;">
   <div style="max-width:780px;margin:0 auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
     <div style="flex:1;min-width:250px;">
-      <p style="font-family:Inter,sans-serif;font-size:0.85rem;color:#aaa;line-height:1.6;margin:0;">We use cookies for analytics and personalized ads. By clicking "Accept All," you consent to our use of cookies. See our <a href="/privacy-policy" style="color:#CCFF00;text-decoration:underline;">Privacy Policy</a>. Learn about <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="color:#CCFF00;text-decoration:underline;">how Google uses your data</a>.</p>
+      <p style="font-family:Inter,sans-serif;font-size:0.85rem;color:#aaa;line-height:1.6;margin:0;">We use cookies for analytics and personalized ads. By clicking "Accept All," you consent to our use of cookies. See our <a href="/privacy-policy/" style="color:#CCFF00;text-decoration:underline;">Privacy Policy</a>. Learn about <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener" style="color:#CCFF00;text-decoration:underline;">how Google uses your data</a>.</p>
     </div>
     <div style="display:flex;gap:10px;flex-shrink:0;">
       <button id="ck-accept" style="padding:10px 20px;background:#CCFF00;color:#000;font-weight:600;border:none;cursor:pointer;font-family:Space Grotesk,sans-serif;font-size:0.85rem;">Accept All</button>
@@ -1081,15 +1082,12 @@ ${post.image ? `
   if(!localStorage.getItem('cookie_consent')){b.style.display='block';}
   document.getElementById('ck-accept').addEventListener('click',function(){
     localStorage.setItem('cookie_consent','accepted');b.style.display='none';
-    // Load GA4 + AdSense after consent
+    // Load GA4 after consent (the AdSense tag is already in <head>)
     var gs=document.createElement('script');gs.async=true;
     gs.src='https://www.googletagmanager.com/gtag/js?id=G-487F519VEM';
     document.head.appendChild(gs);
     window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
     window.gtag=gtag;gtag('js',new Date());gtag('config','G-487F519VEM');
-    var as=document.createElement('script');as.async=true;as.crossOrigin='anonymous';
-    as.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6660181512354238';
-    document.head.appendChild(as);
   });
   document.getElementById('ck-reject').addEventListener('click',function(){
     localStorage.setItem('cookie_consent','rejected');b.style.display='none';

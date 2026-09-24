@@ -1,3 +1,13 @@
 https://www.koreadecode.com/* https://koreadecode.com/:splat 301
 /post.html* /blog/:splat 301
-/posts/* /blog 301
+/posts/* /blog/ 301
+/about.html /about/ 301
+/contact.html /contact/ 301
+/privacy-policy.html /privacy-policy/ 301
+/terms.html /terms/ 301
+/blog.html /blog/ 301
+/category/* /blog/ 301
+/tag/* /blog/ 301
+/author/* /about/ 301
+/feed /blog/ 301
+/wp-login.php / 301

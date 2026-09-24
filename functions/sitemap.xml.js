@@ -13,27 +13,36 @@ export async function onRequest(context) {
   };
 
   // --- Static pages ---
+  // Every path keeps its trailing slash: that is the URL the page is actually
+  // served at and the one its canonical tag names. Listing '/blog' instead sends
+  // Google to a 308 redirect on every crawl.
   const staticPages = [
     { loc: '/', changefreq: 'daily', priority: '1.0' },
-    { loc: '/blog', changefreq: 'daily', priority: '0.9' },
-    { loc: '/decode', changefreq: 'weekly', priority: '0.8' },
-{ loc: '/about', changefreq: 'monthly', priority: '0.6' },
-    { loc: '/contact', changefreq: 'monthly', priority: '0.5' },
-    { loc: '/privacy-policy', changefreq: 'yearly', priority: '0.3' },
-    { loc: '/terms', changefreq: 'yearly', priority: '0.3' },
+    { loc: '/blog/', changefreq: 'daily', priority: '0.9' },
+    { loc: '/decode/', changefreq: 'weekly', priority: '0.8' },
+    { loc: '/travel-deals/', changefreq: 'weekly', priority: '0.7' },
+    { loc: '/about/', changefreq: 'monthly', priority: '0.6' },
+    { loc: '/contact/', changefreq: 'monthly', priority: '0.5' },
+    { loc: '/privacy-policy/', changefreq: 'yearly', priority: '0.3' },
+    { loc: '/terms/', changefreq: 'yearly', priority: '0.3' },
   ];
 
   // --- Fetch all published posts ---
   let posts = [];
   try {
+    // Only columns that exist on the table: asking for a missing one (updated_at)
+    // makes PostgREST answer 400, and the sitemap silently loses every article.
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/posts?status=eq.published&select=slug,updated_at,created_at&order=created_at.desc&limit=1000`,
+      `${SUPABASE_URL}/rest/v1/posts?status=eq.published&select=slug,created_at&order=created_at.desc&limit=1000`,
       { headers }
     );
     if (res.ok) {
       posts = await res.json();
+    } else {
+      console.error('[sitemap] posts query failed:', res.status, await res.text());
     }
-  } catch (_) {
+  } catch (err) {
+    console.error('[sitemap] posts query threw:', err);
     // Continue with static-only sitemap
   }
 
@@ -57,7 +66,7 @@ export async function onRequest(context) {
 
   // Dynamic blog posts
   for (const post of posts) {
-    const lastmod = (post.updated_at || post.created_at || '').split('T')[0] || today;
+    const lastmod = (post.created_at || '').split('T')[0] || today;
     xml += `  <url>
     <loc>${SITE_URL}/blog/${encodeURIComponent(post.slug)}</loc>
     <lastmod>${lastmod}</lastmod>
